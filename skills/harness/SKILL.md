@@ -33,9 +33,11 @@ Auto-detect and run the appropriate mode:
 ```bash
 /harness              # Auto-detect: bootstrap if no harness, audit if exists
 /harness audit        # Run 10-step audit on current harness
-/harness bootstrap    # Spawn harness-builder, generate from scratch
+/harness bootstrap    # Analyze project, install skills/agents from plugin, generate project-specific additions
+/harness update       # Pull latest from upstream sources, smart-merge with local changes
+/harness add <repo>   # Add skills from another plugin marketplace
 /harness retro        # Post-session retrospective
-/harness hoist        # Promote generic skills/agents to global
+/harness hoist        # Propose upstream PR for generic improvements
 ```
 
 If no `.claude/` → runs `bootstrap` (generates harness). If `.claude/` exists → runs `audit` (validates quality).
@@ -44,8 +46,10 @@ If no `.claude/` → runs `bootstrap` (generates harness). If `.claude/` exists 
 
 - [Auditing existing harness] — Read DETAIL: Audit Mode (10-step protocol)
 - [Setting up new project] — Read DETAIL: Bootstrap Mode (scaffolding workflow)
+- [Syncing with upstream] — Read DETAIL: Update Mode (pull latest, smart-merge)
+- [Adding external skills] — Read DETAIL: Add Mode (multi-source skill installation)
 - [Session reflection] — Read DETAIL: Retro Mode (identify gaps and improvements)
-- [Sharing generic tools] — Read DETAIL: Hoist Mode (promote skills to global)
+- [Sharing generic tools] — Read DETAIL: Hoist Mode (propose upstream improvements)
 - [Design guidance] — Read DETAIL: Design Principles (patterns for skill/agent design)
 - [Hook exits non-zero on no-op] — Read DETAIL: Hook Exit Code Safety
 
@@ -185,45 +189,127 @@ For each finding:
 
 ## DETAIL: Bootstrap Mode
 
-Spawn the `harness-builder` agent to analyze the codebase and generate a harness from scratch. **Auto-triggers when `.claude/` directory doesn't exist or is empty.**
+Analyze the project, install skills/agents from the harness-kit plugin, and generate project-specific additions. **Auto-triggers when `.claude/` directory doesn't exist or is empty.**
 
 ### Workflow
 
 1. **Spawn `harness-builder` agent** — It analyzes the codebase and returns:
    - Stack summary (language, toolchain, verification command)
    - Draft CLAUDE.md skeleton
+   - **Recommended architecture pattern** (from `agents/references/architecture-patterns.md`)
    - **Recommended agents** with model + allowed-tools (always includes code-reviewer, verifier, test-writer, domain-advisor; adds project-manager if GitHub detected)
-   - **Recommended skills** with purpose (always includes /commit; adds /feature-spec, /issue-triage, /standup for GitHub projects; /ui-review for frontend projects)
+   - **Recommended skills from harness-kit:** which of the plugin's base skills to copy into the project
+   - **Recommended external sources:** additional plugin marketplaces based on stack (e.g., Vercel skills for React, impeccable for frontend)
+   - **Project-specific skills** to generate (domain workflows, custom checks)
    - Recommended hooks (PostToolUse: formatters → validators → guidance; Stop: session-end guidance)
-   - Domain knowledge (entity types, ownership model, business rules, auth/session system, mutations side effects)
+   - Domain knowledge (entity types, ownership model, business rules)
 
 2. **Present recommendations for approval:**
-   - **Stack:** one-line summary
-   - **Agents to create:** table with name, purpose, model, why this project needs it
-   - **Skills to create:** table with name, purpose
+   - **Stack:** one-line summary + architecture pattern
+   - **Skills from harness-kit to install:** table with name, purpose, why this project needs it
+   - **External sources to add:** marketplace repos with rationale
+   - **Project-specific skills to generate:** table with name, purpose
+   - **Agents to create:** table with name, purpose, model
    - **Domain knowledge:** institutional rules the harness should encode
    - **Hooks to configure:** execution order and commands
 
 3. **Do NOT write any files until the user approves.**
 
-4. **After approval, generate files:**
-   - Write `CLAUDE.md` with all sections filled in (Stack, Project Structure, Coding Standards, Verification, Known Pitfalls, Domain Knowledge, Self-Improvement)
-   - Create `.claude/agents/*.md` — each agent with context, constraints, tools, and domain knowledge
-   - Create `.claude/skills/*/SKILL.md` — each skill with purpose, critical constraints, standard path, edge cases
-   - Update `.gitignore`
+4. **After approval, install and generate:**
+   - Copy approved skills from `${CLAUDE_PLUGIN_ROOT}/skills/` to `.claude/skills/`
+   - Copy approved agents from `${CLAUDE_PLUGIN_ROOT}/agents/` to `.claude/agents/`
+   - Copy `skills/shared/` scripts to `.claude/skills/shared/`
+   - Rewrite `${CLAUDE_PLUGIN_ROOT}` references to `.claude` in copied files
+   - Generate project-specific agents (domain-advisor, etc.) in `.claude/agents/`
+   - Generate project-specific skills in `.claude/skills/`
+   - Write `CLAUDE.md` with all sections filled in
+   - Configure hooks in `.claude/settings.local.json`
+   - Create `.harness-lock.json` tracking provenance of every installed file
+   - Update `.gitignore` (add `.claude/settings.local.json` if it contains secrets)
    - Never generate `.claude/commands/` — commands are legacy
 
 5. **Run verification command** to confirm nothing broke.
 
-### Composition Principle
+### Lock File Creation
 
-When a global skill already exists (e.g., `/commit`, `/review-pr`, `/feature-spec`, `/standup`), the project-local version should extend it with project-specific flavor rather than reimplementing it. Generate thin wrapper skills that reference the global skill and add only domain-specific constraints.
+The `.harness-lock.json` file is created during bootstrap and tracks every file's provenance:
+
+```json
+{
+  "sources": {
+    "harness-kit": { "version": "0.1.0", "installed": "2026-04-04" }
+  },
+  "files": {
+    ".claude/skills/commit/SKILL.md": { "source": "harness-kit", "modified": false },
+    ".claude/agents/code-reviewer.md": { "source": "harness-kit", "modified": false },
+    ".claude/agents/domain-advisor.md": { "source": "local" }
+  }
+}
+```
+
+This file should be committed — it lets teammates run `/harness update` to sync.
 
 ### Agent Recommendations
 
 - **Always include:** `code-reviewer` (6D review), `verifier` (validation), `test-writer` (testing), `domain-advisor` (read-only business rules)
 - **If GitHub:** Add `project-manager` (issue/PR/sprint management via `gh` CLI)
-- **If frontend:** Design harness (`.impeccable.md`) + `/ui-review` skill for accessibility audits
+- **If frontend:** Add `/ui-review` skill for accessibility audits
+
+---
+
+## DETAIL: Update Mode
+
+Pull latest changes from upstream sources and smart-merge with local modifications. **Run after the harness-kit plugin is updated.**
+
+### Workflow
+
+1. **Read `.harness-lock.json`** — Get current source versions and file provenance.
+
+2. **Check for upstream updates:**
+   - Compare plugin version (`${CLAUDE_PLUGIN_ROOT}` has the latest) vs lock file version
+   - List files that differ between plugin and project `.claude/`
+
+3. **For each upstream file:**
+   - `modified: false` → **Overwrite** with latest from plugin. Silent.
+   - `modified: true` → **Show diff** between upstream and local. Ask user:
+     - Accept upstream (overwrite local changes)
+     - Keep local (skip this file)
+     - Merge manually (show both versions)
+   - `source: "local"` → **Never touch**. These are project-specific.
+
+4. **Check for new upstream files** — Files in the plugin that aren't in the lock file yet. Offer to install them.
+
+5. **Update `.harness-lock.json`** — New version, updated timestamps, modified flags.
+
+6. **Show changelog** — Summary of what was updated, what was skipped, what's new.
+
+---
+
+## DETAIL: Add Mode
+
+Add skills from another plugin marketplace into the project's `.claude/`.
+
+### Workflow
+
+```bash
+/harness add vercel-labs/agent-skills
+```
+
+1. **Check if marketplace is already added:**
+   ```bash
+   claude plugin marketplace list
+   ```
+   If not, instruct user: `/plugin marketplace add vercel-labs/agent-skills`
+
+2. **Browse available skills** from the marketplace.
+
+3. **User selects** which skills to install into `.claude/`.
+
+4. **Copy selected skills** to `.claude/skills/`.
+
+5. **Update `.harness-lock.json`** with new source and file entries.
+
+6. **Run verification command** to confirm nothing broke.
 
 ---
 
@@ -247,13 +333,16 @@ Post-session retrospective to identify gaps and improvements in the harness. **R
    - Which gave wrong or outdated guidance?
 
 3. **Identify gaps and classify:**
-   - Type A: Existing skill needs content update
-   - Type B: New skill needed
-   - Type C: Builder template would not have generated this correctly → fix the global harness
+   - Type A: Existing skill needs content update (fix the local skill, mark as modified in lock file)
+   - Type B: New skill needed (create in `.claude/skills/`, add to lock as `source: "local"`)
+   - Type C: Builder template would not have generated this correctly → fix the upstream harness (most valuable — prevents the gap in every future project)
+   - Type D: Lightweight pattern — a learned heuristic that doesn't warrant a full skill (store in memory or `.claude/patterns/`)
 
 4. **Propose 1-3 improvements** as specific, actionable changes.
 
-5. **For Type C gaps:** Note that the global harness-builder template needs updating. These are the most valuable findings — they prevent the same gap in every future project.
+5. **For Type C gaps:** These should become upstream PRs to harness-kit (use `/harness hoist`). They improve the builder template so future bootstraps are better.
+
+6. **For Type D patterns:** Save as a brief markdown note. Patterns are lighter than skills — they capture heuristics like "in this codebase, always check X before Y" or "this API returns 404 for deleted resources, not 410." Store in memory files or a `.claude/patterns/` directory.
 
 ---
 
