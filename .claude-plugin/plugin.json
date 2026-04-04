@@ -1,0 +1,23 @@
+{
+  "name": "harness-kit",
+  "description": "Self-improving agent harness: audit, bootstrap, review, and evolve your project's AI tooling",
+  "version": "0.1.0",
+  "author": {
+    "name": "Doug Borg"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "harness",
+    "meta-skill",
+    "code-review",
+    "pr-workflow",
+    "agent-harness",
+    "self-improving"
+  ],
+  "agents": [
+    "./agents/code-reviewer.md",
+    "./agents/verifier.md",
+    "./agents/harness-builder.md"
+  ],
+  "hooks": "./hooks/hooks.json"
+}

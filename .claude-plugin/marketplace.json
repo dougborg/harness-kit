@@ -1,0 +1,16 @@
+{
+  "name": "harness-kit",
+  "owner": {
+    "name": "Doug Borg"
+  },
+  "metadata": {
+    "description": "Self-improving agent harness for any project"
+  },
+  "plugins": [
+    {
+      "name": "harness-kit",
+      "source": "./",
+      "description": "Self-improving agent harness: audit, bootstrap, review, and evolve your project's AI tooling"
+    }
+  ]
+}
