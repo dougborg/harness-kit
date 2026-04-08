@@ -1,4 +1,15 @@
 {
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "${CLAUDE_PLUGIN_ROOT}/skills/shared/markdownlint-fix.sh {file_path}"
+        }
+      ]
+    }
+  ],
   "Stop": [
     {
       "hooks": [

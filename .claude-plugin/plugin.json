@@ -19,5 +19,21 @@
     "./agents/verifier.md",
     "./agents/harness-builder.md"
   ],
+  "skills": [
+    "./skills/code-reviewer",
+    "./skills/commit",
+    "./skills/documentation-writer",
+    "./skills/feature-spec",
+    "./skills/harness",
+    "./skills/harness-builder",
+    "./skills/open-pr",
+    "./skills/pr-comments",
+    "./skills/rebase",
+    "./skills/review-pr",
+    "./skills/skill-writer",
+    "./skills/standup",
+    "./skills/svg-logo-designer",
+    "./skills/ui-review"
+  ],
   "hooks": "./hooks/hooks.json"
 }

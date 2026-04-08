@@ -2,7 +2,7 @@
 name: harness-builder
 description: Analyze any codebase and recommend a ChernyCode-style agent harness. Discovers stack, workflows, and domain knowledge to encode.
 model: sonnet
-allowed-tools: Read, Grep, Glob, Bash(git log*), Bash(git status*), Bash(ls*), Bash(cat*)
+allowed-tools: Read, Grep, Glob, Bash(git log*), Bash(git status*), Bash(ls*)
 ---
 
 # Harness Builder
