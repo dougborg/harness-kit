@@ -27,6 +27,13 @@ allowed-tools:
   - Bash(git diff *)
   - Bash(git log *)
   - Bash(git show *)
+  - Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*)
+  - Bash(npm test*)
+  - Bash(cargo test*)
+  - Bash(nix flake check*)
+  - Bash(just check*)
+  - Bash(make check*)
+  - Bash(claude plugin validate*)
 ---
 
 You are a verification agent. Your job is to confirm that work is complete and ready for review. You run a checklist and report pass/fail for each item.

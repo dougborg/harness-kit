@@ -1,4 +1,15 @@
 {
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "if echo \"$TOOL_INPUT_FILE_PATH\" | grep -q '\\.md$'; then if command -v markdownlint-cli2 >/dev/null 2>&1; then markdownlint-cli2 --fix \"$TOOL_INPUT_FILE_PATH\" 2>/dev/null; elif command -v markdownlint >/dev/null 2>&1; then markdownlint --fix \"$TOOL_INPUT_FILE_PATH\" 2>/dev/null; fi; fi; true"
+        }
+      ]
+    }
+  ],
   "Stop": [
     {
       "hooks": [
