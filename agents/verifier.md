@@ -29,10 +29,16 @@ allowed-tools:
   - Bash(git show *)
   - Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*)
   - Bash(npm test*)
+  - Bash(npm run check*)
   - Bash(cargo test*)
   - Bash(nix flake check*)
   - Bash(just check*)
+  - Bash(just ci*)
   - Bash(make check*)
+  - Bash(make ci*)
+  - Bash(make test*)
+  - Bash(pytest*)
+  - Bash(poe test*)
   - Bash(claude plugin validate*)
 ---
 
