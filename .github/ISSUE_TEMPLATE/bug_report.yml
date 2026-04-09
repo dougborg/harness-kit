@@ -1,0 +1,35 @@
+name: Bug Report
+description: Report a bug in harness-kit
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: input
+    id: skill
+    attributes:
+      label: Skill or agent
+      description: Which skill or agent is affected?
+      placeholder: e.g., /open-pr, code-reviewer agent
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+      value: |
+        1.
+        2.
+        3.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Environment
+      description: Claude Code version, OS, etc.
+      placeholder: claude --version

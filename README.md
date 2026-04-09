@@ -5,6 +5,7 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 ## What's included
 
 **Meta-harness** (`/harness`) with 6 modes:
+
 - `bootstrap` — Analyze your project, install relevant skills/agents, generate project-specific additions
 - `update` — Pull latest upstream changes, smart-merge with local modifications
 - `add` — Install skills from external plugin marketplaces
@@ -13,8 +14,9 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 - `hoist` — Propose upstream PRs for generic improvements
 
 **14 skills:**
+
 | Skill | Purpose |
-|-------|---------|
+| --- | --- |
 | `/harness` | Meta-harness management |
 | `/commit` | Conventional commits with quality gates |
 | `/open-pr` | PR creation with CI polling and review monitoring |
@@ -31,8 +33,9 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 | `/svg-logo-designer` | Generate SVG logos |
 
 **3 agents:**
+
 | Agent | Model | Purpose |
-|-------|-------|---------|
+| --- | --- | --- |
 | `code-reviewer` | sonnet | 6D review: correctness, design, readability, performance, testing, security |
 | `verifier` | haiku | Stack-agnostic validation runner |
 | `harness-builder` | sonnet | Deep-read codebase and recommend harness |
@@ -41,14 +44,14 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 
 ## Install
 
-```
+```bash
 /plugin marketplace add dougborg/harness-kit
 /plugin install harness-kit@harness-kit
 ```
 
 Then in your project:
 
-```
+```bash
 /harness bootstrap
 ```
 
@@ -66,7 +69,7 @@ This analyzes your project, recommends which skills/agents to install, copies th
 
 You can install skills from multiple plugin marketplaces:
 
-```
+```bash
 /harness add vercel-labs/agent-skills    # React/Next.js skills
 /harness add pbakaus/impeccable          # Frontend design skills
 ```

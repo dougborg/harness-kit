@@ -261,7 +261,7 @@ This file should be committed — it lets teammates run `/harness update` to syn
 
 Pull latest changes from upstream sources and smart-merge with local modifications. **Run after the harness-kit plugin is updated.**
 
-### Workflow
+### Steps
 
 1. **Read `.harness-lock.json`** — Get current source versions and file provenance.
 
@@ -289,16 +289,18 @@ Pull latest changes from upstream sources and smart-merge with local modificatio
 
 Add skills from another plugin marketplace into the project's `.claude/`.
 
-### Workflow
+### Add procedure
 
 ```bash
 /harness add vercel-labs/agent-skills
 ```
 
 1. **Check if marketplace is already added:**
+
    ```bash
    claude plugin marketplace list
    ```
+
    If not, instruct user: `/plugin marketplace add vercel-labs/agent-skills`
 
 2. **Browse available skills** from the marketplace.
@@ -317,7 +319,7 @@ Add skills from another plugin marketplace into the project's `.claude/`.
 
 Post-session retrospective to identify gaps and improvements in the harness. **Run after significant sessions to capture learnings.**
 
-### Workflow
+### Retro procedure
 
 1. **Analyze recent changes:**
 
@@ -350,7 +352,7 @@ Post-session retrospective to identify gaps and improvements in the harness. **R
 
 Propose improvements to the upstream harness-kit plugin (or other upstream sources) when a project-local skill improvement is generic enough to benefit all projects.
 
-### Workflow
+### Hoist procedure
 
 1. **Read the lock file** — `.harness-lock.json` tells you which files came from which upstream source and whether they've been modified.
 
