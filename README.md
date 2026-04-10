@@ -83,6 +83,17 @@ The lock file tracks all sources.
 - **Scripts over inline bash** — Shell logic is extracted to testable scripts, not inlined in skills.
 - **Composition over duplication** — Project-local skills extend upstream skills with project-specific flavor.
 
+## Releases
+
+harness-kit uses [Release Please](https://github.com/googleapis/release-please) for automated semver releases driven by [Conventional Commits](https://www.conventionalcommits.org/).
+
+- `feat:` commits bump the **minor** version
+- `fix:` commits bump the **patch** version
+- `feat!:` or `BREAKING CHANGE:` bump the **major** version
+- `chore:`, `docs:`, `ci:`, `refactor:`, `test:` do not bump the version
+
+After merging PRs to `main`, Release Please opens (or updates) a release PR with the proposed version bump and `CHANGELOG.md` entries. Merge that PR to cut a release — the git tag and GitHub Release are created automatically, and the bumped `version` in `.claude-plugin/plugin.json` signals installed clients to update their cached copy.
+
 ## License
 
 Apache-2.0
