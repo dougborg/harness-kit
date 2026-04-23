@@ -144,6 +144,8 @@ Exit 0 = passed, exit 1 = failed (fix, commit, push, re-poll), exit 2 = timeout.
 
 ## Phase 7: Wait for review
 
+**Always use the polling script** — never check for review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. The polling script uses the correct API (`gh api repos/.../pulls/.../comments`).
+
 ```bash
 ctx=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh <number>)
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')

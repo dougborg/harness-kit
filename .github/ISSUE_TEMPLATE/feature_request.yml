@@ -1,0 +1,28 @@
+name: Feature Request
+description: Suggest a new skill, agent, or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What would you like harness-kit to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What problem does this solve? When would you use it?
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - New skill
+        - New agent
+        - Improvement to existing skill/agent
+        - Meta-harness enhancement
+        - Other

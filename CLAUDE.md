@@ -5,6 +5,7 @@ Self-improving agent harness distributed as a Claude Code plugin.
 ## What This Is
 
 A collection of skills, agents, and shared utilities for Claude Code that provide:
+
 - **Meta-harness** (`/harness`) — audit, bootstrap, update, retro, and hoist modes
 - **PR workflows** — `/open-pr`, `/review-pr`, `/pr-comments`, `/rebase`
 - **Code review** — 6-dimension structured review (code-reviewer agent + skill)
@@ -13,7 +14,7 @@ A collection of skills, agents, and shared utilities for Claude Code that provid
 
 ## Plugin Structure
 
-```
+```text
 .claude-plugin/          Plugin manifest and marketplace config
 skills/                  SKILL.md files (auto-discovered by Claude Code)
   shared/                Cross-skill shell scripts
@@ -38,7 +39,7 @@ claude plugin validate .
 
 ## Distribution
 
-```
+```bash
 /plugin marketplace add dougborg/harness-kit
 /plugin install harness-kit@harness-kit
 ```
