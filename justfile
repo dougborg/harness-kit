@@ -9,11 +9,11 @@ validate:
 
 # Lint shell scripts with ShellCheck
 lint-shell:
-    shellcheck skills/**/*.sh
+    find skills -name '*.sh' -exec shellcheck {} +
 
 # Lint markdown files
 lint-md:
-    markdownlint '**/*.md'
+    markdownlint .
 
 # Check file hygiene (trailing whitespace + final newline)
 hygiene:
