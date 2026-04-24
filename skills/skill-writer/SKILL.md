@@ -278,6 +278,7 @@ allowed-tools: Read, Glob, Grep
 
 - `/documentation-writer` — Write scannable docs using progressive disclosure
 - `/harness audit` — Audit skills for structure compliance
+- `agents/references/hooks-reference.md` — Plugin hooks.json schema, events, and gotchas (for plugins that include hooks)
 
 ## SOURCES
 

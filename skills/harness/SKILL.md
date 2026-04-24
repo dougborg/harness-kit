@@ -475,6 +475,8 @@ Instead:
 
 **Principle:** Don't ask users to do things we can automate.
 
+**Schema reference:** For the correct shape of plugin `hooks/hooks.json` (including the common plugin-vs-settings.json gotcha), see `agents/references/hooks-reference.md`. Validate locally with `just validate-hooks`.
+
 #### PostToolUse Hooks
 
 Configure in `.claude/settings.local.json` to auto-fix on every file edit:

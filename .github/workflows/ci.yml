@@ -22,6 +22,9 @@ jobs:
       - name: Validate plugin manifest
         run: claude plugin validate .
 
+      - name: Validate plugin hooks schema
+        run: ./skills/shared/validate-hooks-schema.sh hooks/hooks.json
+
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest

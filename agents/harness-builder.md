@@ -205,6 +205,8 @@ This structure degrades gracefully: PURPOSE + CRITICAL prevents catastrophic mis
 
 Hooks are always **project-local** — configured in `.claude/settings.local.json`. They reference project-specific tools and file patterns that vary across codebases. Each project gets hooks tailored to its stack during bootstrap.
 
+**Schema reference:** For plugin `hooks/hooks.json` (different shape from `settings.json`!), see `agents/references/hooks-reference.md`.
+
 **Execution order principle:** Formatters → Validators → Guidance. This ensures:
 
 1. **Formatters** (zero-token, silent) — auto-fix style issues before Claude sees them
