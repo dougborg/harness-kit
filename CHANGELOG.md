@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/dougborg/harness-kit/compare/v0.2.0...v0.3.0) (2026-04-24)
+
+
+### Features
+
+* **harness:** add plugin hooks reference doc and schema validator ([#8](https://github.com/dougborg/harness-kit/issues/8)) ([48a1458](https://github.com/dougborg/harness-kit/commit/48a1458d7ae50cf2eb518cea0d6ebd83e1d9301b))
+
+
+### Bug Fixes
+
+* **hooks:** wrap hooks.json content in top-level "hooks" key ([#6](https://github.com/dougborg/harness-kit/issues/6)) ([cf78ebb](https://github.com/dougborg/harness-kit/commit/cf78ebbfa8858a9950c6d5c4c59dacb87a630a92))
+
 ## [0.2.0](https://github.com/dougborg/harness-kit/compare/v0.1.0...v0.2.0) (2026-04-24)
 
 
