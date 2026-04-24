@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
-# Validate plugin hooks.json has the correct top-level shape.
-#
-# Plugin hooks.json must wrap event types in a top-level "hooks" object.
-# This validator catches the common mistake of copying settings.json format
-# (event types at top level) into a plugin hooks.json file.
-#
-# Usage: validate-hooks-schema.sh [path-to-hooks.json]
-# Default path: hooks/hooks.json
-# Exit 0 on success (including when the file doesn't exist — plugins
-# without hooks are valid), exit 1 on schema error.
+# Validate plugin hooks.json has the correct top-level "hooks" wrapper.
+# Usage: validate-hooks-schema.sh [path]   (default: hooks/hooks.json)
+# Exit 0: valid or no hooks.json. Exit non-zero: malformed.
 
 set -euo pipefail
 

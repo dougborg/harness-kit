@@ -10,7 +10,11 @@ Schema, event types, and patterns for writing Claude Code plugin `hooks.json`.
 
 ## Schema Shape
 
-A plugin `hooks/hooks.json` file **must** have a top-level `"hooks"` object whose keys are event type names:
+Plugin `hooks.json` is a **dedicated file** whose entire root object is `{"hooks": { ... }}`. Inside the `hooks` key, the shape is the same as `settings.json`'s `hooks` value — event types map to arrays of matcher/handler entries.
+
+**Rule of thumb:** a valid plugin `hooks.json` has exactly one top-level key: `"hooks"`.
+
+### Valid
 
 ```json
 {
@@ -30,19 +34,18 @@ A plugin `hooks/hooks.json` file **must** have a top-level `"hooks"` object whos
 }
 ```
 
-Compare to `settings.json`, where the event types live at the top level directly (no outer `hooks` wrapper):
+### The bug we keep hitting
+
+Dropping the outer `hooks` wrapper and putting event types at the root — this is the shape `settings.json`'s `hooks` value takes, but at the root of `hooks.json` it's wrong:
 
 ```json
 {
-  "hooks": {
-    "PostToolUse": [ ... ]
-  }
+  "PostToolUse": [],
+  "Stop": []
 }
 ```
 
-Wait — that's actually the same. The difference is that `settings.json`'s `hooks` key is one of many top-level settings (alongside `model`, `permissions`, etc.), while plugin `hooks.json` is a dedicated file whose entire content is the `hooks` object. Tools and AI agents often flatten the plugin file by mistake, dropping the outer wrapper.
-
-**Rule of thumb:** a valid plugin `hooks.json` will have exactly one top-level key: `"hooks"`.
+Claude Code loads this and reports `Hook load failed: expected 'record' at path ['hooks'], received undefined`. Run `just validate-hooks` locally to catch this before release.
 
 ## Event Types
 
@@ -88,17 +91,7 @@ Inside a `command` string:
 
 ## Exit Code Safety
 
-Claude Code treats any non-zero exit code from a hook as a failure. Conditional hooks are a common source of silent bugs — the command works correctly but reports an error because `[ ] && action` exits 1 when the condition is false.
-
-```bash
-# BAD: exits 1 when changed < 3
-[ "$changed" -gt 3 ] && echo "big session"
-
-# GOOD: if/then/fi always exits 0 on the false branch
-if [ "$changed" -gt 3 ]; then echo "big session"; fi
-```
-
-See the full discussion in `skills/harness/SKILL.md` → `DETAIL: Hook Exit Code Safety` (includes common patterns and fixes).
+Claude Code treats any non-zero exit code from a hook as a failure. Common pitfall: `[ cond ] && action` exits 1 when the condition is false. For the full rundown (common patterns, fixes, audit rule), see `skills/harness/SKILL.md` → `DETAIL: Hook Exit Code Safety`.
 
 ## The 3-Stage PostToolUse Pattern
 
