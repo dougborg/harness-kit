@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/dougborg/harness-kit/compare/v0.3.0...v0.4.0) (2026-04-26)
+
+
+### Features
+
+* **harness:** bundle audit fixes and retro learnings into the harness ([#13](https://github.com/dougborg/harness-kit/issues/13)) ([59a0f59](https://github.com/dougborg/harness-kit/commit/59a0f59792ff1a4486d90427f424d47879e453ad))
+
 ## [0.3.0](https://github.com/dougborg/harness-kit/compare/v0.2.0...v0.3.0) (2026-04-26)
 
 
