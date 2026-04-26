@@ -4,7 +4,6 @@ description: >-
   Rebase a feature branch onto a target branch, resolving conflicts
   intelligently. Use when a branch is behind and needs updating.
 argument-hint: "[target branch]"
-model: sonnet
 allowed-tools: Bash(git rebase*), Bash(git fetch*), Bash(git status*), Bash(git diff*), Bash(git log*), Bash(git add*), Bash(git stash*), Bash(git branch*), Bash(git rev-parse*), Bash(git merge-base*), Bash(git show*), Bash(git checkout*), Bash(GIT_SEQUENCE_EDITOR*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/rebase/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/is-branch-shared.sh*), Read, Grep, Glob
 ---
 

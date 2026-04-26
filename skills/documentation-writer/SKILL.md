@@ -1,7 +1,6 @@
 ---
 name: documentation-writer
 description: Write scannable, progressive-discovery documentation using layered contract pattern
-model: sonnet
 allowed-tools: Read, Write, Edit
 ---
 
@@ -30,16 +29,17 @@ Create documentation that readers can scan quickly: short PURPOSE, non-negotiabl
 
 ### 1. Frontmatter
 
-Add YAML with name, description, model, tools:
+Add YAML with name, description, tools:
 
 ```yaml
 ---
 name: skill-name
 description: [One-liner, <80 chars, specific]
-model: [haiku|sonnet|opus]
 allowed-tools: [Bash(pattern*), Read, Write, ...]
 ---
 ```text
+
+Skip `model:` on skills — they run in the parent conversation context, so pinning a model can break long-context sessions. Agents (read-only advisors) get a fresh context and can specify `model:` safely.
 
 ### 2. Sections
 

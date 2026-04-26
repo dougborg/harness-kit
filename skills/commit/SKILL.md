@@ -1,7 +1,6 @@
 ---
 name: commit
 description: Create conventional commits with quality gates and validation
-model: haiku
 allowed-tools: Bash(git add*), Bash(git commit*), Bash(git diff*), Bash(git status*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Read
 ---
 

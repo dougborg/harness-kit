@@ -1,7 +1,6 @@
 ---
 name: feature-spec
 description: Write feature specifications before implementation with structured templates
-model: haiku
 allowed-tools: Read, Grep, Glob, Bash(gh issue*)
 ---
 

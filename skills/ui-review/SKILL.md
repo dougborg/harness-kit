@@ -1,7 +1,6 @@
 ---
 name: ui-review
 description: Accessibility and UX audit based on WCAG 2.1 AA guidelines
-model: sonnet
 allowed-tools: Read, Grep, Glob
 ---
 

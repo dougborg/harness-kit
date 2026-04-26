@@ -1,7 +1,6 @@
 ---
 name: skill-writer
 description: Create well-structured skills and agents using progressive disclosure pattern
-model: sonnet
 allowed-tools: Glob, Grep, Read, Write, Edit
 ---
 
@@ -40,10 +39,11 @@ Generate well-structured `.claude/skills/*/SKILL.md` and `.claude/agents/*.md` f
 ---
 name: skill-name
 description: [One-liner, <80 chars]
-model: [haiku|sonnet]
 allowed-tools: [minimum permissions needed]
 ---
 ```text
+
+Omit `model:` on skills — they execute in the parent conversation context, and pinning a model can break long sessions (e.g. 1M-context Opus). Agents get a fresh context, so specifying `model:` on agent frontmatter is fine.
 
 ### 3. Write Structure
 
@@ -196,7 +196,6 @@ Grant minimum permissions needed:
 ---
 name: skill-name
 description: [One-liner, specific, <80 chars]
-model: [haiku for fast, sonnet for generation]
 allowed-tools: Bash(git add*), Bash(git commit*), Read, Write
 ---
 
