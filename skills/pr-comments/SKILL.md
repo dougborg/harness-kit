@@ -1,7 +1,6 @@
 ---
 name: pr-comments
 description: Respond to PR review comments systematically in thread context
-model: haiku
 allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(git *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/fetch-pr-context.sh*), Read
 ---
 

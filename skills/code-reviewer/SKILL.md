@@ -1,7 +1,6 @@
 ---
 name: code-reviewer
 description: Structured code review using 6 dimensions. Works with or without the code-reviewer agent.
-model: sonnet
 allowed-tools: Read, Grep, Glob, Bash(git diff*), Bash(git log*)
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: svg-logo-designer
 description: Generate scalable vector graphics (SVG) logos with multiple concepts, layouts, and color variations
-model: sonnet
 allowed-tools: Read, Write, Glob
 ---
 

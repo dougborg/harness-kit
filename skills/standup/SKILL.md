@@ -1,7 +1,6 @@
 ---
 name: standup
 description: Generate a daily standup report from git history and GitHub activity
-model: haiku
 allowed-tools: Bash(git log*), Bash(git config*), Bash(gh pr*), Bash(gh issue*), Read
 ---
 

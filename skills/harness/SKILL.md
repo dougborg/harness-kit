@@ -1,7 +1,6 @@
 ---
 name: harness
 description: Self-improving meta-harness for auditing, bootstrapping, and improving agent harnesses
-model: sonnet
 allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Read, Glob, Write, Edit
 ---
 

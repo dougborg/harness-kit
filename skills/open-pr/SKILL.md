@@ -5,7 +5,6 @@ description: >-
   organize commits, push, create the PR, wait for CI and review, then address
   feedback. Use when implementation is complete and ready for review.
 argument-hint: "[base branch]"
-model: sonnet
 allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git reset *), Bash(git rev-list *), Bash(git rev-parse *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/open-pr/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh*), Read
 ---
 

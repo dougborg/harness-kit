@@ -1,7 +1,6 @@
 ---
 name: harness-builder
 description: Analyze codebase and recommend AI agent harness (agents, skills, hooks)
-model: sonnet
 allowed-tools: Read, Grep, Glob, Bash(git log*), Bash(git status*), Bash(ls*)
 ---
 
