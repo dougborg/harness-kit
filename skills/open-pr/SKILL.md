@@ -12,6 +12,33 @@ allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), 
 
 Take the current feature branch from "implementation done" to "PR open, CI green, first-round review addressed."
 
+## PURPOSE
+
+Ship a feature branch end-to-end: validate, self-review, push, create PR, wait for CI, address the first round of review.
+
+## CRITICAL
+
+- **Validate before opening** — the project's verification command must pass before `gh pr create`. Don't push broken code.
+- **Self-review the full diff** — read every change before opening; never skip this and rely on reviewers.
+- **Stage specific files** — never `git add -A` or `git add .`. Intentional staging prevents accidentally committing secrets, scratch files, or unrelated changes.
+- **Use polling scripts for CI and review state** — never check review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. Use `poll-review.sh` which calls the correct API (`gh api repos/.../pulls/.../comments`).
+- **Never merge with unaddressed review comments** — every comment gets fixed, deferred with a tracked issue, or discussed. CI green does not override review feedback.
+- **No `--no-verify`** — never bypass commit hooks, type checkers, or linters. If a check fails, fix the cause.
+
+## STANDARD PATH
+
+The skill runs nine phases. Each phase is short; phase headings below are the navigation index.
+
+1. **Pre-flight** — ensure feature branch, run validation, check for existing PR
+2. **Self-review** — read the full diff, check for bugs/secrets/debug code
+3. **Simplify (optional)** — reuse, dead code, duplication
+4. **Organize commits** — logical commits with conventional format + HEREDOC
+5. **Push and create PR** — `gh pr create` with HEREDOC body
+6. **Wait for CI** — `poll-ci.sh`; fix in place if anything fails
+7. **Wait for review** — `poll-review.sh`; never skip with `gh pr view`
+8. **Address review comments** — delegate to `/review-pr`
+9. **Summary** — report PR URL, CI status, comments addressed
+
 ## Phase 1: Pre-flight
 
 1. **Ensure feature branch** — auto-create if on `main`:

@@ -207,6 +207,8 @@ Hooks are always **project-local** — configured in `.claude/settings.local.jso
 
 **Schema reference:** For plugin `hooks/hooks.json` (different shape from `settings.json`!), see `agents/references/hooks-reference.md`.
 
+**Release automation reference:** When the project uses Conventional Commits + GitHub, recommend Release Please for automated semver. Setup has three reliable gotchas (workflow PR-create permission, release-PR CI triggering, CHANGELOG markdownlint conflicts) — see `agents/references/release-please-reference.md` for the working config.
+
 **Execution order principle:** Formatters → Validators → Guidance. This ensures:
 
 1. **Formatters** (zero-token, silent) — auto-fix style issues before Claude sees them
