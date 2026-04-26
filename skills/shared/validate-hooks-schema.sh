@@ -31,4 +31,34 @@ if [ -n "$bad_events" ]; then
   exit 1
 fi
 
+# Each handler entry inside an event array must have a "hooks" array of commands.
+# Catches: forgot the inner "hooks" key, used a string instead of array, etc.
+bad_handlers=$(jq -r '
+  .hooks | to_entries[] as $e
+  | $e.value | to_entries[]
+  | select(.value | (has("hooks") | not) or (.hooks | type != "array"))
+  | "\($e.key)[\(.key)]"
+' "$file")
+if [ -n "$bad_handlers" ]; then
+  echo "ERROR: $file handler entries must contain a 'hooks' array." >&2
+  echo "       Bad entries: $bad_handlers" >&2
+  echo "       See agents/references/hooks-reference.md" >&2
+  exit 1
+fi
+
+# Each command entry must have type=="command" and a non-empty command string.
+bad_commands=$(jq -r '
+  .hooks | to_entries[] as $e
+  | $e.value | to_entries[] as $h
+  | $h.value.hooks | to_entries[]
+  | select(.value.type != "command" or (.value.command | type != "string") or (.value.command | length == 0))
+  | "\($e.key)[\($h.key)].hooks[\(.key)]"
+' "$file")
+if [ -n "$bad_commands" ]; then
+  echo "ERROR: $file command entries must have type=\"command\" and a non-empty command string." >&2
+  echo "       Bad entries: $bad_commands" >&2
+  echo "       See agents/references/hooks-reference.md" >&2
+  exit 1
+fi
+
 echo "✓ $file schema OK"

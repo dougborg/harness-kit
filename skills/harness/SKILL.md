@@ -339,6 +339,8 @@ Post-session retrospective to identify gaps and improvements in the harness. **R
    - Type C: Builder template would not have generated this correctly → fix the upstream harness (most valuable — prevents the gap in every future project)
    - Type D: Lightweight pattern — a learned heuristic that doesn't warrant a full skill (store in memory or `.claude/patterns/`)
 
+   **Promotion heuristic:** Before classifying as Type D, ask: *would this prevent the same mistake in another project, or for another agent?* If yes, escalate to A/B/C — encode it in a skill, not memory. Memories are session/user-scoped and fade; skills persist and ship to every consumer of the harness. Type D is for pattern learnings genuinely scoped to *this* project's quirks.
+
 4. **Propose 1-3 improvements** as specific, actionable changes.
 
 5. **For Type C gaps:** These should become upstream PRs to harness-kit (use `/harness hoist`). They improve the builder template so future bootstraps are better.
