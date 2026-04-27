@@ -210,7 +210,8 @@ Print:
 - **Never merge with unaddressed comments** — All review comments must be resolved before merging. No exceptions.
 - **Validate before opening** — verification must pass before creating the PR
 - **Self-review is mandatory** — always review the full diff
-- **Simplify is mandatory** — always run `/simplify` before opening
+- **Simplify is encouraged but optional** — Phase 3; use `/simplify` if it would
+  meaningfully reduce duplication or dead code, otherwise skip
 - **Logical commits** — organize into meaningful commits, not one giant squash
 - **No shortcuts** — never use `--no-verify`, `noqa`, or `type: ignore`
 - **Fix CI in-place** — don't close and re-open
