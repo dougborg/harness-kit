@@ -26,6 +26,7 @@
     "./skills/feature-spec",
     "./skills/harness",
     "./skills/harness-builder",
+    "./skills/harness-issue",
     "./skills/open-pr",
     "./skills/pr-comments",
     "./skills/rebase",
