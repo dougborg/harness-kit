@@ -47,6 +47,16 @@ Dropping the outer `hooks` wrapper and putting event types at the root — this 
 
 Claude Code loads this and reports `Hook load failed: expected 'record' at path ['hooks'], received undefined`. Run `just validate-hooks` locally to catch this before release.
 
+## Manifest Registration
+
+Hooks have *additive* semantics across plugin sources, unlike `skills`/`agents`/`commands` where a custom path in `plugin.json` *replaces* the default. This means a `hooks` field in `plugin.json` adds to (not replaces) the file auto-discovered at `hooks/hooks.json`.
+
+### The duplicate-registration trap
+
+Declaring `"hooks": "./hooks/hooks.json"` in `plugin.json` **and** placing the file at the auto-discovery path `hooks/hooks.json`. Both registrations load, Claude Code reports `Duplicate hooks file detected`, and refuses to load the plugin.
+
+**Rule of thumb:** never set the `hooks` field in `plugin.json` if the file lives at the conventional `hooks/hooks.json` path. Pick one — and auto-discovery is the canonical choice. `validate-hooks-schema.sh` enforces this on every `just check`.
+
 ## Event Types
 
 | Event | When it fires | Matcher support |

@@ -61,4 +61,23 @@ if [ -n "$bad_commands" ]; then
   exit 1
 fi
 
+# If hooks.json sits at the auto-discovery path, plugin.json must NOT also
+# declare a "hooks" field — Claude Code loads both and refuses with
+# "Duplicate hooks file detected". See agents/references/hooks-reference.md.
+#
+# `-ef` compares inodes, so any spelling of the same file (./hooks/hooks.json,
+# hooks/hooks.json, an absolute path) is detected. The check is silently
+# skipped when cwd isn't the plugin root, since auto-discovery wouldn't fire
+# there anyway.
+manifest=".claude-plugin/plugin.json"
+if [ -f "hooks/hooks.json" ] && [ "$file" -ef "hooks/hooks.json" ] && [ -f "$manifest" ]; then
+  if jq -e 'has("hooks")' "$manifest" >/dev/null 2>&1; then
+    echo "ERROR: $manifest declares a 'hooks' field, but $file is at the auto-discovery path." >&2
+    echo "       Both register the same hooks, causing 'Duplicate hooks file detected' at load time." >&2
+    echo "       Remove the 'hooks' field from $manifest." >&2
+    echo "       See agents/references/hooks-reference.md" >&2
+    exit 1
+  fi
+fi
+
 echo "✓ $file schema OK"

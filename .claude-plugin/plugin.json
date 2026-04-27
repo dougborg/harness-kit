@@ -34,6 +34,5 @@
     "./skills/standup",
     "./skills/svg-logo-designer",
     "./skills/ui-review"
-  ],
-  "hooks": "./hooks/hooks.json"
+  ]
 }
