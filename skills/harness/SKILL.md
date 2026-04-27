@@ -224,6 +224,7 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
    - Write `CLAUDE.md` with all sections filled in
    - Configure hooks in `.claude/settings.local.json`
    - Create `.harness-lock.json` tracking provenance of every installed file
+   - Write `.claude/harness-upstream` (one line: `owner/repo`) so `/harness-issue` knows where to file feedback. Use the source repo from the lock file (default `dougborg/harness-kit`).
    - Update `.gitignore` (add `.claude/settings.local.json` if it contains secrets)
    - Never generate `.claude/commands/` — commands are legacy
 
@@ -236,7 +237,7 @@ The `.harness-lock.json` file is created during bootstrap and tracks every file'
 ```json
 {
   "sources": {
-    "harness-kit": { "version": "0.1.0", "installed": "2026-04-04" }
+    "harness-kit": { "version": "0.1.0", "installed": "2026-04-04", "repo": "dougborg/harness-kit" }
   },
   "files": {
     ".claude/skills/commit/SKILL.md": { "source": "harness-kit", "modified": false },
@@ -245,6 +246,8 @@ The `.harness-lock.json` file is created during bootstrap and tracks every file'
   }
 }
 ```
+
+The `repo` field on each source records the GitHub upstream so `/harness-issue` and `/harness hoist` can route feedback and proposed changes to the right place. Omit `repo` for purely local sources.
 
 This file should be committed — it lets teammates run `/harness update` to sync.
 
@@ -343,9 +346,18 @@ Post-session retrospective to identify gaps and improvements in the harness. **R
 
 4. **Propose 1-3 improvements** as specific, actionable changes.
 
-5. **For Type C gaps:** These should become upstream PRs to harness-kit (use `/harness hoist`). They improve the builder template so future bootstraps are better.
+5. **Promotion pass — what belongs upstream?** For *every* finding (not just Type C), ask: would this prevent the same problem in another harness-kit consumer? If yes, mark it as upstream-worthy. Common cases:
+   - Type C — by definition belongs upstream
+   - Type A on a file sourced from upstream (per `.harness-lock.json`) — the upstream skill is wrong, not just your local copy
+   - Type B that's generic — a new skill that has nothing project-specific in it should be proposed upstream as a new skill, not kept local
+   - Type D — patterns rarely belong upstream; keep local unless the pattern is genuinely cross-project
 
-6. **For Type D patterns:** Save as a brief markdown note. Patterns are lighter than skills — they capture heuristics like "in this codebase, always check X before Y" or "this API returns 404 for deleted resources, not 410." Store in memory files or a `.claude/patterns/` directory.
+6. **Surface upstream candidates and confirm with the user before filing.** Show each upstream-worthy finding and ask per item: file as Issue, open as PR, hoist a local fix, or skip. Then act:
+   - **Issue / PR** → invoke `/harness-issue` (configurable upstream; defaults to harness-kit)
+   - **Hoist local fix** → invoke `/harness hoist` for cases where you already have a working local diff to propose back
+   - **Skip / keep local** → no upstream action; leave a note in the retro summary so it's not forgotten next session
+
+7. **For Type D patterns:** Save as a brief markdown note. Patterns are lighter than skills — they capture heuristics like "in this codebase, always check X before Y" or "this API returns 404 for deleted resources, not 410." Store in memory files or a `.claude/patterns/` directory.
 
 ---
 
