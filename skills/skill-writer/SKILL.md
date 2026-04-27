@@ -41,7 +41,7 @@ name: skill-name
 description: [One-liner, <80 chars]
 allowed-tools: [minimum permissions needed]
 ---
-```text
+```
 
 Omit `model:` on skills — they execute in the parent conversation context, and pinning a model can break long sessions (e.g. 1M-context Opus). Agents get a fresh context, so specifying `model:` on agent frontmatter is fine.
 
@@ -139,7 +139,7 @@ Link to DETAIL sections. Name them and link; don't explain yet.
 ## EDGE CASES
 
 - [Case name] — read DETAIL: Name if you encounter this
-```text
+```
 
 ### 7. Write DETAIL Sections (If Needed)
 
@@ -230,7 +230,7 @@ allowed-tools: Bash(git add*), Bash(git commit*), Read, Write
 ## DETAIL: Edge Case Name
 
 [Explanation when triggered]
-```text
+```
 
 ---
 
@@ -269,7 +269,7 @@ allowed-tools: Read, Glob, Grep
 ## RELATED
 
 - [Related agents/skills]
-```text
+```
 
 ---
 

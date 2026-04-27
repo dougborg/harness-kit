@@ -37,7 +37,7 @@ name: skill-name
 description: [One-liner, <80 chars, specific]
 allowed-tools: [Bash(pattern*), Read, Write, ...]
 ---
-```text
+```
 
 Skip `model:` on skills — they run in the parent conversation context, so pinning a model can break long-context sessions. Agents (read-only advisors) get a fresh context and can specify `model:` safely.
 
@@ -128,7 +128,7 @@ Example structure:
 [Prose: what to do and why]
 [command showing the action]
 [Prose: what to expect next]
-```text
+```
 
 ### Target: ≤30 Lines
 

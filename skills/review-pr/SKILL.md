@@ -37,7 +37,7 @@ Analyze code changes thoroughly and respond to review comments without missing i
 ```bash
 /review-pr [PR#]                    # Or: /review-pr (current branch)
 gh pr view <PR#> --json state,reviews
-```text
+```
 
 - **No review comments** → Mode A: Initial review (analyze with code-reviewer agent)
 - **Unresolved comments** → Mode B: Address feedback (fix issues, validate, reply)
@@ -49,7 +49,7 @@ gh pr view <PR#> --json title,body,diff
 [Invoke code-reviewer agent with PR context]
 Organize findings: BLOCKING → SUGGESTION → NITPICK
 Post structured review via gh pr review
-```text
+```
 
 ### 3. Mode B: Address Feedback
 
@@ -60,7 +60,7 @@ Post structured review via gh pr review
 3. Run project verification (test suite, lint, type-check)
 4. Commit, push
 5. Reply to EVERY comment in-thread (this step is NOT optional)
-```text
+```
 
 **Steps 4-5 are atomic.** Never finish at "pushed fixes" — always continue to reply to every comment before reporting done. See DETAIL: Mode B Workflow.
 
@@ -94,7 +94,7 @@ This PR is quite large (47 files, 2500 lines). I've reviewed:
 Blocked on: Vendor update changes (auto-generated, skipping).
 Recommendation: For future PRs, split refactors by domain
 (auth, API, database) for focused reviews.
-```text
+```
 
 ---
 
@@ -108,7 +108,7 @@ git merge origin/<baseRefName>
 # Resolve conflicts manually
 git add <resolved-files>
 git commit -m "Merge branch 'origin/<baseRefName>'"
-```text
+```
 
 Then resume review-addressing workflow. **Conflicts can invalidate prior comments** — recheck affected sections.
 
@@ -121,7 +121,7 @@ Check CI status before responding to review comments:
 ```bash
 gh pr view {number} --json mergeable,mergeStateStatus
 gh pr checks {number}
-```text
+```
 
 **If code-related** (lint, type, test failure):
 
@@ -193,7 +193,7 @@ Use this structure for consistent, thorough reviews (avoid repeating automated f
 ## Summary
 - Verdict: Approved / Changes requested / Comment
 - Ready to merge after addressing blocking items
-```text
+```
 
 ---
 
@@ -206,26 +206,26 @@ Reply to each comment with one of these patterns:
 ```text
 Fixed — [describe what changed].
 [If tests added: Also added tests for X].
-```text
+```
 
 ### Already Fixed in Prior Commit
 
 ```text
 This was addressed in [commit hash] — [brief explanation].
-```text
+```
 
 ### Acknowledged but Deferred
 
 ```text
 Acknowledged — [reason for deferral].
 Tracked in #NNN [link to GitHub issue].
-```text
+```
 
 ### Cannot Reproduce or Misunderstanding
 
 ```text
 I wasn't able to reproduce this. Can you clarify [specific question]?
-```text
+```
 
 ---
 
@@ -239,7 +239,7 @@ Initial PR review (no comments yet).
 ctx=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh <PR#>)
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
 ${CLAUDE_PLUGIN_ROOT}/skills/shared/fetch-pr-context.sh "$owner_repo" <PR#>
-```text
+```
 
 ### 2. Invoke code-reviewer Agent
 
@@ -252,7 +252,7 @@ Description: [body]
 Labels: [labels]
 Diff: [patch]
 Existing Comments: [any automated reviewer comments]
-```text
+```
 
 Agent returns: 6D analysis + findings organized by severity.
 
@@ -263,13 +263,13 @@ BLOCKING: [list items that must be fixed]
 SUGGESTION: [list improvements]
 NITPICK: [list nice-to-haves]
 ✨ What Looks Good: [highlight strengths]
-```text
+```
 
 ### 4. Post Review
 
 ```bash
 gh pr review <PR#> --approve    # or --request-changes / --comment
-```text
+```
 
 ---
 
@@ -302,7 +302,7 @@ Make code changes. Validate:
 ```bash
 cmd=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh)
 eval "$cmd"   # ALL must pass
-```text
+```
 
 ### 4. Commit, Rebase, and Push
 
@@ -310,7 +310,7 @@ Use the fixup-and-push script (stages, creates fixup commit, autosquash rebases,
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> "original commit subject" <file1> <file2> ...
-```text
+```
 
 ### 5. Reply to Each Comment (After Push)
 
@@ -320,7 +320,7 @@ Use the reply script — it validates the comment belongs to the correct PR befo
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
-```text
+```
 
 **Never reply before pushing** — replies confirm fix is live.
 

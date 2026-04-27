@@ -52,7 +52,7 @@ As a [role], I want to [goal] so that [outcome].
 ## Related Issues
 - Closes #N
 - Depends on #M
-```text
+```
 
 ## EDGE CASES
 

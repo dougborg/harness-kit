@@ -31,7 +31,7 @@ Create a daily standup summary: yesterday's work, today's plans, blockers.
 git log --since="1 day ago" --oneline --author="$(git config user.email)"
 gh pr list --author="@me" --state=open
 gh issue list --assignee="@me" --state=open
-```text
+```
 
 ### 2. Format Report
 
@@ -46,7 +46,7 @@ gh issue list --assignee="@me" --state=open
 
 ### Blockers
 - [none | what's blocking]
-```text
+```
 
 ### 3. Output
 
