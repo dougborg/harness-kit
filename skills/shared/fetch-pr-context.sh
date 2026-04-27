@@ -28,7 +28,9 @@ pr_json=$(gh pr view "$PR_NUMBER" --repo "$REPO" \
 comments_json=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/comments" \
   --paginate --jq '[.[] | {id: .id, path: .path, line: .line, body: .body, author: .user.login, created_at: .created_at}]')
 
-# Fetch review thread resolved status (GraphQL)
+# Fetch review thread resolved status (GraphQL).
+# Pull every comment in each thread so reply-comment IDs also inherit the
+# thread's is_resolved status, not just the first comment.
 read -r -d '' query <<'GRAPHQL' || true
   query($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
@@ -37,7 +39,7 @@ read -r -d '' query <<'GRAPHQL' || true
           nodes {
             id
             isResolved
-            comments(first: 1) {
+            comments(first: 100) {
               nodes { databaseId }
             }
           }
@@ -46,13 +48,17 @@ read -r -d '' query <<'GRAPHQL' || true
     }
   }
 GRAPHQL
+# One row per (thread_id, comment_id) so the join works for replies too.
+# shellcheck disable=SC2016  # $t is a jq variable, not shell — single-quote intentional.
 resolved_json=$(gh api graphql -f query="$query" \
   -F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR_NUMBER" \
-  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | {
-    comment_id: .comments.nodes[0].databaseId,
-    thread_id: .id,
-    is_resolved: .isResolved
-  }]')
+  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] as $t |
+    $t.comments.nodes[] | {
+      comment_id: .databaseId,
+      thread_id: $t.id,
+      is_resolved: $t.isResolved
+    }
+  ]')
 
 # Merge resolved status into comments
 if command -v jq >/dev/null; then
