@@ -39,6 +39,9 @@ allowed-tools:
   - Bash(make test*)
   - Bash(pytest*)
   - Bash(poe test*)
+  - Bash(poe check*)
+  - Bash(uv run poe*)
+  - Bash(poetry run poe*)
   - Bash(claude plugin validate*)
 ---
 
