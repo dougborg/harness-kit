@@ -83,6 +83,22 @@ if command -v jq >/dev/null; then
     }
   '
 else
-  # Fallback: return without merged resolution (jq not available)
-  echo "${pr_json%\}}, \"comments\": $comments_json, \"resolved_threads\": $resolved_json}"
+  # Fallback: merge JSON via python3 (jq is not available).
+  # The previous string-concat approach used `${pr_json%\}}`, which fails
+  # because `\}` is a literal pattern, not an escape — leaving invalid JSON.
+  if ! command -v python3 >/dev/null; then
+    echo "fetch-pr-context.sh: needs jq or python3 to merge JSON" >&2
+    exit 1
+  fi
+  PR_JSON="$pr_json" COMMENTS_JSON="$comments_json" RESOLVED_JSON="$resolved_json" \
+    python3 - <<'PY'
+import json, os, sys
+
+pr = json.loads(os.environ["PR_JSON"])
+pr["comments"] = json.loads(os.environ["COMMENTS_JSON"])
+pr["resolved_threads"] = json.loads(os.environ["RESOLVED_JSON"])
+
+json.dump(pr, sys.stdout)
+sys.stdout.write("\n")
+PY
 fi
