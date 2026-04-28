@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/dougborg/harness-kit/compare/v0.5.0...v0.5.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* **shared:** align python3 fallback schema with jq path; fix verifier doc order ([#21](https://github.com/dougborg/harness-kit/issues/21)) ([d92f869](https://github.com/dougborg/harness-kit/commit/d92f86940f01c0fffccc585612e9d1efa6de35b0))
+
 ## [0.5.0](https://github.com/dougborg/harness-kit/compare/v0.4.0...v0.5.0) (2026-04-28)
 
 
