@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/dougborg/harness-kit/compare/v0.4.0...v0.5.0) (2026-04-28)
+
+
+### Features
+
+* **harness-issue:** file upstream Issues or PRs from any consumer project ([#18](https://github.com/dougborg/harness-kit/issues/18)) ([4e438ba](https://github.com/dougborg/harness-kit/commit/4e438ba4a9c21a05ea92912bc2be9f1e7ca4e75a))
+
+
+### Bug Fixes
+
+* code-fence rendering, fetch-pr-context bugs, discover-cmd precedence ([#19](https://github.com/dougborg/harness-kit/issues/19)) ([f999e4d](https://github.com/dougborg/harness-kit/commit/f999e4dbc2bbe9d94c7249ef9bb20fdadc11d28d))
+* **hooks:** drop redundant hooks field from plugin manifest ([#15](https://github.com/dougborg/harness-kit/issues/15)) ([622a368](https://github.com/dougborg/harness-kit/commit/622a3682f582cb30311fb3220b8e4495bb8c57e9))
+
 ## [0.4.0](https://github.com/dougborg/harness-kit/compare/v0.3.0...v0.4.0) (2026-04-26)
 
 
