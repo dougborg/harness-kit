@@ -53,10 +53,11 @@ Find the project's verification command by checking (in order):
 
 - `justfile` for `check`/`ci` recipe
 - `Makefile` for `ci`/`check`/`test` target
-- `package.json` for `test`/`check` script
+- `pyproject.toml` with `[tool.poe.tasks]` → run the discovered Poe `check`/`test` task (`uv run poe ...`, `poetry run poe ...`, or bare `poe ...`, depending on which launcher is installed)
+- `package.json` for `check`/`test` script
 - `Cargo.toml` → `cargo test`
 - `flake.nix` → `nix flake check`
-- `pyproject.toml` for poe/pytest tasks
+- `pyproject.toml` (no poe) → `pytest`
 
 ## Checklist
 

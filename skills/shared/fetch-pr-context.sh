@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Fetch PR metadata, diff, comments, and review thread resolution status.
+# Fetch PR metadata, comments, and review-thread resolution status.
 #
 # Usage: fetch-pr-context.sh <owner/repo> <pr-number>
-# Output: JSON to stdout with title, body, comments (with resolved status)
+# Output: JSON to stdout with title, body, comments (each with is_resolved)
+#         and a top-level unresolved_count.
 #
 # Combines REST API (for comment details) and GraphQL (for resolved status)
 # into a single output so skills don't need to make multiple API calls.
+#
+# Requires: gh CLI; jq (preferred) or python3 (fallback) for JSON merge.
 
 set -euo pipefail
 
@@ -95,8 +98,18 @@ else
 import json, os, sys
 
 pr = json.loads(os.environ["PR_JSON"])
-pr["comments"] = json.loads(os.environ["COMMENTS_JSON"])
-pr["resolved_threads"] = json.loads(os.environ["RESOLVED_JSON"])
+comments = json.loads(os.environ["COMMENTS_JSON"])
+resolved = json.loads(os.environ["RESOLVED_JSON"])
+
+# Build comment_id -> is_resolved index so each comment (including replies)
+# inherits its thread's flag. Mirror the jq path's output schema exactly so
+# downstream consumers don't need to branch on which merger ran.
+resolved_by_comment = {row["comment_id"]: row["is_resolved"] for row in resolved}
+for c in comments:
+    c["is_resolved"] = resolved_by_comment.get(c["id"], False)
+
+pr["comments"] = comments
+pr["unresolved_count"] = sum(1 for c in comments if not c["is_resolved"])
 
 json.dump(pr, sys.stdout)
 sys.stdout.write("\n")
