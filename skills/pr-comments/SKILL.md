@@ -51,7 +51,7 @@ Use comment ID to reply in-thread via GitHub API:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
-```text
+```
 
 **Never:** `gh pr comment {number} --body='...'` (loses thread context)
 **Never:** `gh api .../pulls/comments/{id}/replies` (endpoint does not exist, returns 404)
@@ -88,7 +88,7 @@ Fixed:
 1. Added validation on line 45 (comment #1)
 2. Extracted to utility function (comment #2)
 Both validated locally before push.
-```text
+```
 
 ### Keep Complex Changes Separate
 
@@ -98,7 +98,7 @@ If responses are lengthy or unrelated, reply individually:
 Comment #1: Lengthy architectural discussion
 Comment #2: Simple typo fix
 → Two separate replies (don't batch)
-```text
+```
 
 ### One Reply Per Thread
 
@@ -120,7 +120,7 @@ Reviewer B: "This function is hard to test"
 
 ✅ Unified response: "Extracted to utility and added tests"
 ❌ Different responses: Looks like we ignored one reviewer
-```text
+```
 
 ### Timing
 
@@ -133,7 +133,7 @@ If two reviewers disagree, reply:
 ```text
 Good points from both. We've decided on approach X because [reasoning].
 Link to GitHub issue for extended discussion if needed.
-```text
+```
 
 ---
 
@@ -147,7 +147,7 @@ If reviewer feedback contradicts design or project standards:
 I understand the concern about [issue]. However, we're using pattern X
 because [project constraint]. If you'd like to discuss alternatives,
 let's open a separate issue.
-```text
+```
 
 ### Don't Dismiss
 
@@ -157,7 +157,7 @@ Even if you disagree, acknowledge the valid concern:
 ❌ Bad: "That's not how we do things here"
 ✅ Good: "I see the readability concern. We've chosen approach X
          because [trade-off]. Happy to discuss in future PRs."
-```text
+```
 
 ### Link to Guidance
 
@@ -166,7 +166,7 @@ If feedback relates to project standards, link to CLAUDE.md or relevant docs:
 ```text
 Good catch. This follows pattern documented in CLAUDE.md#section.
 Let me know if the guidance is unclear.
-```text
+```
 
 ---
 
@@ -178,60 +178,60 @@ Let me know if the guidance is unclear.
 Fixed — [one sentence what changed].
 
 [If tests added: Also added tests for X.]
-```text
+```
 
 **Example:**
 
 ```text
 Fixed — Added null check before accessing user.email on line 45.
 Also added test case for when user creation fails mid-transaction.
-```text
+```
 
 ### When Issue Was Already Fixed in Prior Commit
 
 ```text
 This was addressed in [commit hash] — [brief explanation].
-```text
+```
 
 **Example:**
 
 ```text
 This was addressed in 3bc4e2a — Validation now happens in middleware
 before request reaches the handler.
-```text
+```
 
 ### When Acknowledging but Deferring
 
 ```text
 Acknowledged — [reason for deferring]. Tracked in #NNN.
-```text
+```
 
 **Example:**
 
 ```text
 Acknowledged — Migrating to async/await is valuable, but out of scope
 for this PR. Tracked in #456 for next quarter.
-```text
+```
 
 ### When Asking for Clarification
 
 ```text
 I want to make sure I understand. Can you clarify [specific question]?
-```text
+```
 
 **Example:**
 
 ```text
 I want to make sure I understand the concern. Are you concerned about
 performance at scale, or the maintainability of this pattern in general?
-```text
+```
 
 ### When Declining Feedback
 
 ```text
 I appreciate the suggestion. However, [reason why we're not doing this].
 Let's discuss in [GitHub issue link] if you'd like to revisit.
-```text
+```
 
 **Example:**
 
@@ -239,7 +239,7 @@ Let's discuss in [GitHub issue link] if you'd like to revisit.
 I appreciate the suggestion to use immutable data structures. However,
 we've benchmarked this code path and mutation is actually faster here.
 See discussion in #789 for performance trade-off analysis.
-```text
+```
 
 ---
 

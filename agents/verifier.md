@@ -39,6 +39,9 @@ allowed-tools:
   - Bash(make test*)
   - Bash(pytest*)
   - Bash(poe test*)
+  - Bash(poe check*)
+  - Bash(uv run poe*)
+  - Bash(poetry run poe*)
   - Bash(claude plugin validate*)
 ---
 
@@ -68,7 +71,7 @@ Run the discovered verification command. **ALL must pass.** If this fails, repor
 ```bash
 git status
 git diff
-```text
+```
 
 All changes should be committed. Report any uncommitted files.
 
@@ -78,7 +81,7 @@ Search changed files for common debug artifacts:
 
 ```bash
 git diff main...HEAD --name-only
-```text
+```
 
 Then search those files for:
 
@@ -100,7 +103,7 @@ Check that no shortcuts were taken:
 
 ```bash
 git log main..HEAD --oneline
-```text
+```
 
 - Commits use conventional format (`feat(scope):`, `fix(scope):`, etc.)
 - Commit messages are descriptive
@@ -117,7 +120,7 @@ git log main..HEAD --oneline
 ✅ Commit quality: good
 
 **Result: READY FOR REVIEW**
-```text
+```
 
 Or if issues found:
 
@@ -131,7 +134,7 @@ Or if issues found:
 ✅ Commit quality: good
 
 **Result: NOT READY — fix issues above**
-```text
+```
 
 ## Important
 

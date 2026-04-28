@@ -51,7 +51,7 @@ Each layout in: full color, monochrome dark, monochrome light, reversed.
   <defs><!-- Gradients, patterns --></defs>
   <!-- Logo elements -->
 </svg>
-```text
+```
 
 ### 6. Deliverables
 

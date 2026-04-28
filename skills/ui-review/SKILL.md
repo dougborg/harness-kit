@@ -47,7 +47,7 @@ For each violation:
 Rule: [rule name]
 Issue: [what is wrong]
 Fix: [specific code change]
-```text
+```
 
 ### 3. Summary
 
@@ -120,4 +120,4 @@ Issue: [what is wrong]
 Fix: [specific code change]
 
 Summary: N critical, M important, P minor. Ready: [YES|NO]
-```text
+```

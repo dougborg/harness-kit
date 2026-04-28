@@ -79,7 +79,7 @@ Review **every change** in the diff:
 git diff <base>...HEAD
 git diff
 git diff --cached
-```text
+```
 
 Check for:
 
@@ -113,14 +113,14 @@ Note: This phase is optional and relies on manual review or the `/simplify` skil
    git status
    ```
 
-1. Organize changes into logical commits:
+2. Organize changes into logical commits:
    - If all uncommitted: group into meaningful commits (separate feature from tests, refactoring from new functionality)
    - If commits exist and are well-organized: just commit remaining changes
    - If messy (WIP, fixup): clean up
 
-2. **Stage specific files** — never use `git add -A` or `git add .`
+3. **Stage specific files** — never use `git add -A` or `git add .`
 
-3. Use conventional commit format with HEREDOC:
+4. Use conventional commit format with HEREDOC:
 
    ```bash
    git commit -m "$(cat <<'EOF'
@@ -190,7 +190,7 @@ Invoke `/review-pr` to handle all review comments:
 
 ```bash
 /review-pr <number>
-```text
+```
 
 **Do not duplicate the review-comment workflow** — always delegate to `/review-pr`.
 
@@ -210,7 +210,8 @@ Print:
 - **Never merge with unaddressed comments** — All review comments must be resolved before merging. No exceptions.
 - **Validate before opening** — verification must pass before creating the PR
 - **Self-review is mandatory** — always review the full diff
-- **Simplify is mandatory** — always run `/simplify` before opening
+- **Simplify is encouraged but optional** — Phase 3; use `/simplify` if it would
+  meaningfully reduce duplication or dead code, otherwise skip
 - **Logical commits** — organize into meaningful commits, not one giant squash
 - **No shortcuts** — never use `--no-verify`, `noqa`, or `type: ignore`
 - **Fix CI in-place** — don't close and re-open

@@ -30,13 +30,13 @@ Get a tailored harness recommendation (agents, skills, hooks, CLAUDE.md skeleton
 
 ```bash
 /harness bootstrap       # Triggers harness-builder agent automatically
-```text
+```
 
 Or manually:
 
 ```bash
 [Invoke harness-builder agent on current codebase]
-```text
+```
 
 ### 2. Review Recommendations
 
@@ -71,7 +71,7 @@ Run verification command to confirm setup works:
 
 ```bash
 git add . && nix flake check   # Or your stack's validation
-```text
+```
 
 ## EDGE CASES
 
@@ -226,7 +226,7 @@ Orient developers with skill/doc references. Examples:
     }
   }
 }
-```text
+```
 
 ---
 

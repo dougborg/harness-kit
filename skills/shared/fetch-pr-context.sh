@@ -28,7 +28,9 @@ pr_json=$(gh pr view "$PR_NUMBER" --repo "$REPO" \
 comments_json=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/comments" \
   --paginate --jq '[.[] | {id: .id, path: .path, line: .line, body: .body, author: .user.login, created_at: .created_at}]')
 
-# Fetch review thread resolved status (GraphQL)
+# Fetch review thread resolved status (GraphQL).
+# Pull every comment in each thread so reply-comment IDs also inherit the
+# thread's is_resolved status, not just the first comment.
 read -r -d '' query <<'GRAPHQL' || true
   query($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
@@ -37,7 +39,7 @@ read -r -d '' query <<'GRAPHQL' || true
           nodes {
             id
             isResolved
-            comments(first: 1) {
+            comments(first: 100) {
               nodes { databaseId }
             }
           }
@@ -46,13 +48,17 @@ read -r -d '' query <<'GRAPHQL' || true
     }
   }
 GRAPHQL
+# One row per (thread_id, comment_id) so the join works for replies too.
+# shellcheck disable=SC2016  # $t is a jq variable, not shell — single-quote intentional.
 resolved_json=$(gh api graphql -f query="$query" \
   -F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR_NUMBER" \
-  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | {
-    comment_id: .comments.nodes[0].databaseId,
-    thread_id: .id,
-    is_resolved: .isResolved
-  }]')
+  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] as $t |
+    $t.comments.nodes[] | {
+      comment_id: .databaseId,
+      thread_id: $t.id,
+      is_resolved: $t.isResolved
+    }
+  ]')
 
 # Merge resolved status into comments
 if command -v jq >/dev/null; then
@@ -77,6 +83,22 @@ if command -v jq >/dev/null; then
     }
   '
 else
-  # Fallback: return without merged resolution (jq not available)
-  echo "${pr_json%\}}, \"comments\": $comments_json, \"resolved_threads\": $resolved_json}"
+  # Fallback: merge JSON via python3 (jq is not available).
+  # The previous string-concat approach used `${pr_json%\}}`, which fails
+  # because `\}` is a literal pattern, not an escape — leaving invalid JSON.
+  if ! command -v python3 >/dev/null; then
+    echo "fetch-pr-context.sh: needs jq or python3 to merge JSON" >&2
+    exit 1
+  fi
+  PR_JSON="$pr_json" COMMENTS_JSON="$comments_json" RESOLVED_JSON="$resolved_json" \
+    python3 - <<'PY'
+import json, os, sys
+
+pr = json.loads(os.environ["PR_JSON"])
+pr["comments"] = json.loads(os.environ["COMMENTS_JSON"])
+pr["resolved_threads"] = json.loads(os.environ["RESOLVED_JSON"])
+
+json.dump(pr, sys.stdout)
+sys.stdout.write("\n")
+PY
 fi

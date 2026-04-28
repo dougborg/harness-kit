@@ -36,7 +36,7 @@ git diff HEAD~1 HEAD
 
 # Or: review specific file
 git diff -- path/to/file.js
-```text
+```
 
 ### 2. Apply 6 Dimensions
 
@@ -106,7 +106,7 @@ If user creation fails mid-transaction, email will be undefined.
 SUGGESTION: Add early return on line 32:
 if (!validateInput(data)) return null;
 instead of wrapping entire function in if-block.
-```text
+```
 
 ---
 
@@ -143,7 +143,7 @@ not scattered across handlers.
 
 SUGGESTION: Extract email parsing into a standalone utility function
 rather than inline regex. Makes it reusable and testable.
-```text
+```
 
 ---
 
@@ -181,7 +181,7 @@ if (user.status === 'active' && user.verified && !user.suspended) {
   // ... 20 lines ...
 }
 → helper: isUserEligible(user)
-```text
+```
 
 ---
 
@@ -216,7 +216,7 @@ Currently parsing the same config every iteration.
 
 SUGGESTION: Use Set instead of Array for user lookup (line 8).
 Current O(n) lookup inside loop → O(n²) overall. Set gives O(1).
-```text
+```
 
 ---
 
@@ -251,7 +251,7 @@ Add tests for: valid email, invalid format, empty string, null.
 
 SUGGESTION: Test error case on line 5. What happens if API fails?
 Currently only testing happy path.
-```text
+```
 
 ---
 
@@ -289,7 +289,7 @@ parameterization. Vulnerable to SQL injection.
 
 BLOCKING: API key hardcoded on line 5. This will leak if pushed to repo.
 → Move to environment variable: process.env.OPENAI_API_KEY
-```text
+```
 
 ---
 
@@ -312,7 +312,7 @@ This PR is quite large. I've reviewed:
 
 Recommendation: For next round, consider splitting refactors by domain
 (auth, API, database) so reviews can be focused.
-```text
+```
 
 ---
 
@@ -336,7 +336,7 @@ support hard later. Worth discussing if those are on the roadmap.
 
 If you expect to cache: add a service layer now.
 If you expect to stay monolithic: fine as-is.
-```text
+```
 
 ---
 
@@ -359,7 +359,7 @@ If code depends on insertion order, this breaks behavior.
 
 SUGGESTION: The new version is ~20% faster (good!), but readability
 dropped. Consider adding a comment explaining the performance trade-off.
-```text
+```
 
 ---
 
@@ -381,7 +381,7 @@ Use built-in padStart() instead.
 
 SUGGESTION: Consider lighter dependency (2kb vs 50kb).
 Similar functionality in `tiny-validator` or as 10-line utility function.
-```text
+```
 
 ---
 
