@@ -1,7 +1,7 @@
 {
   "name": "harness-kit",
   "description": "Self-improving agent harness: audit, bootstrap, review, and evolve your project's AI tooling",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": {
     "name": "Doug Borg"
   },
