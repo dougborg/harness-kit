@@ -19,6 +19,9 @@
 # After autosquash, this script verifies that no `fixup!`-prefixed commits remain
 # in the rebase range. If any do, it prints a manual-recovery snippet and exits
 # non-zero rather than failing silently — see harness-kit#40 and harness-kit#42.
+#
+# The force-push uses a lease that's robust against the remote PR branch having
+# moved (e.g. a GitHub "Update branch" merge commit) — see harness-kit#46.
 
 set -euo pipefail
 
@@ -79,6 +82,15 @@ fi
 
 files=("$@")
 
+# Bail BEFORE mutating anything if we're in detached HEAD. `git rev-parse
+# --abbrev-ref HEAD` returns the literal string "HEAD" when detached; we'd
+# otherwise try to fetch/push a ref named HEAD downstream.
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [ "$branch" = "HEAD" ]; then
+  echo "ERROR: cannot run fixup-and-push from a detached HEAD state. Check out the feature branch first (\`git checkout <branch>\`)." >&2
+  exit 1
+fi
+
 # Fetch the base ref first — we need it for inference AND the rebase, and a
 # stale origin ref would silently widen/narrow the range.
 git fetch origin "$base"
@@ -114,7 +126,8 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 
-# Autosquash rebase
+# Autosquash rebase onto the latest base. The base was already fetched above
+# (before subject inference), so we don't re-fetch it here.
 git rebase --autosquash "origin/${base}"
 
 # Post-rebase safety check. Note: only reachable when the autosquash rebase
@@ -145,5 +158,34 @@ EOF
   exit 1
 fi
 
-# Force push with lease
-git push --force-with-lease
+# Push, hardened against a moved remote branch.
+#
+# A bare ``git push --force-with-lease`` leases against the locally-tracked
+# ``origin/<branch>`` ref. But we only fetched "$base" above, so that ref is
+# STALE whenever the remote branch moved since our last push — most commonly a
+# GitHub "Update branch" merge commit. The stale lease then rejects the push
+# with "stale info", and ``set -e`` aborts the script here, leaving the rebase
+# above UNPUSHED — so the PR keeps showing as behind base and the next round
+# hits the same wall (a self-perpetuating loop fed by clicking "Update branch").
+#
+# Fix: re-fetch THIS branch and lease against its FRESH remote tip. That still
+# blocks a genuine concurrent push (the lease fails if the remote moves again
+# between this fetch and the push), while letting our rebase supersede a
+# redundant Update-branch merge — whose content (base's commits) our rebase
+# already incorporated.
+#
+# We must also distinguish "branch is not on the remote yet" (the legitimate
+# first-push case, handled by the plain tracking push below) from "fetch itself
+# failed" (network, auth, permission — a real problem we should NOT silently
+# swallow, because the stale local ``refs/remotes/origin/${branch}`` would
+# otherwise feed a misleading lease).
+if git fetch origin "$branch" 2>/dev/null; then
+  remote_tip="$(git rev-parse --verify "refs/remotes/origin/${branch}")"
+  git push --force-with-lease="${branch}:${remote_tip}" origin "$branch"
+elif git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+  echo "ERROR: failed to fetch origin/${branch} but the branch exists on the remote. Check network/auth and retry." >&2
+  exit 1
+else
+  # Branch genuinely doesn't exist on the remote yet — first push.
+  git push -u origin "$branch"
+fi
