@@ -312,6 +312,8 @@ Use the fixup-and-push script (stages, creates fixup commit, autosquash rebases,
 ${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> "original commit subject" <file1> <file2> ...
 ```
 
+(If autosquash silently fails to squash — leaving a dangling `fixup!` commit on the branch — see [DETAIL: Manual Recovery from Autosquash No-op](#detail-manual-recovery-from-autosquash-no-op) below.)
+
 ### 5. Reply to Each Comment (After Push)
 
 **Verify the PR number first** — confirm you're replying on the correct PR (e.g., via `gh pr view` or the web UI). If fixes were made in a follow-up PR, reply on that PR, not the original.
@@ -343,6 +345,49 @@ Print results:
 - Threads resolved: X
 - Validation: PASSED/FAILED
 - Any unaddressed items
+
+---
+
+## DETAIL: Manual Recovery from Autosquash No-op
+
+### When This Happens
+
+`fixup-and-push.sh` creates a `fixup! <subject>` commit and then runs `git rebase --autosquash origin/<base>`. Autosquash only squashes when a commit matching `<subject>` exists **within the rebase range** (i.e., on the feature branch, not yet on the base). If the matching commit was already merged to base — or the subject collides with a base-branch commit — autosquash silently does nothing: the rebase reports success, but the `fixup!` commit remains as a dangling commit on the branch. CI sees an unsquashed `fixup!` commit and history reviewers see noise.
+
+Tracked as dougborg/harness-kit#40 (detect-and-infer fix coming to `fixup-and-push.sh`); the companion `fetch-unresolved-comments.sh` thread-selection bug was #41 (already fixed).
+
+### Recovery Procedure
+
+```bash
+# Recover from autosquash no-op by manually squashing the fixup commit.
+# Two gotchas:
+#   1. Use `env` so GIT_SEQUENCE_EDITOR is exported portably across shells.
+#   2. The rebase-todo line format varies (`pick <sha> <subject>` is the
+#      default; some configs emit `pick <sha> # <subject>`). Match any
+#      `pick` line containing `fixup!` so the script works regardless.
+cat > /tmp/squash-fixup.sh <<'SH'
+#!/bin/bash
+sed -i.bak '/fixup!/s/^pick /fixup /' "$1"
+SH
+chmod +x /tmp/squash-fixup.sh
+env GIT_SEQUENCE_EDITOR=/tmp/squash-fixup.sh git rebase -i origin/<base>
+```
+
+### Why These Two Details Matter
+
+- **`env GIT_SEQUENCE_EDITOR=...`** — The shell-inline `VAR=value command` form is fragile across shells and certain wrapper setups. Using `env` is portable and always exports the variable correctly to the child process.
+- **Why the flexible sed pattern?** — `git rebase -i`'s todo format varies (`pick <sha> <subject>` is the default, but some configs emit `pick <sha> # <subject>` with a separator). A pattern that matches any `pick` line containing `fixup!` works regardless of the format — and is harder to silently no-op than a tighter regex tied to one shape.
+
+### Verification
+
+After the rebase completes, confirm no `fixup!` commits remain on the branch:
+
+```bash
+git log origin/<base>..HEAD --format=%s | grep -c '^fixup!' || true
+# Expected: 0
+```
+
+If the count is nonzero, the script didn't match — re-check the sed pattern against `git log --format='%s' | head` and rerun.
 
 ---
 
