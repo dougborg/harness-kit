@@ -309,7 +309,11 @@ eval "$cmd"   # ALL must pass
 Use the fixup-and-push script (stages, creates fixup commit, autosquash rebases, force-pushes):
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> "original commit subject" <file1> <file2> ...
+# Subject is now optional — inferred from the latest non-merge, non-fixup
+# commit in `origin/<baseRefName>..HEAD`. Pass `--subject "..."` to override.
+${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> <file1> <file2> ...
+# or explicit:
+${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> --subject "fix(scope): description" <file1> <file2> ...
 ```
 
 (If autosquash silently fails to squash — leaving a dangling `fixup!` commit on the branch — see [DETAIL: Manual Recovery from Autosquash No-op](#detail-manual-recovery-from-autosquash-no-op) below.)
