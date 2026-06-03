@@ -285,7 +285,7 @@ owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
 ${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fetch-unresolved-comments.sh "$owner_repo" {number}
 ```
 
-Returns JSON array of unresolved comments with id, path, body, author. Resolved threads are already filtered out.
+Returns JSON array of unresolved comments with id, path, line, body, author. Resolved threads are already filtered out.
 
 ### 2. Triage Each Comment
 
