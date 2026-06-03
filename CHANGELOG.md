@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/dougborg/harness-kit/compare/v0.5.1...v0.6.0) (2026-06-03)
+
+
+### Features
+
+* **issue:** split lifecycle skill into four focused per-operation skills ([#25](https://github.com/dougborg/harness-kit/issues/25)) ([7ce23fb](https://github.com/dougborg/harness-kit/commit/7ce23fb18d69decd092ba4e1d5cc660fa960b8ff))
+* **review-pr:** infer subject when omitted + detect dangling fixup! commits (closes [#40](https://github.com/dougborg/harness-kit/issues/40)) ([#45](https://github.com/dougborg/harness-kit/issues/45)) ([5c633f1](https://github.com/dougborg/harness-kit/commit/5c633f172fdb31940c302f79a7856a367c40b588))
+
+
+### Bug Fixes
+
+* **review-pr:** harden fixup-and-push against stale-lease rejection when the remote branch moved ([#46](https://github.com/dougborg/harness-kit/issues/46)) ([ade0b98](https://github.com/dougborg/harness-kit/commit/ade0b982aebc2626105e27bb2e6a6237f56bd25e))
+* **review-pr:** include line field + surface latest comment in unresolved threads (closes [#41](https://github.com/dougborg/harness-kit/issues/41)) ([#43](https://github.com/dougborg/harness-kit/issues/43)) ([e40dea8](https://github.com/dougborg/harness-kit/commit/e40dea8e0bbb41ed4e387e4508bcfb0753a7f5fc))
+
 ## [0.5.1](https://github.com/dougborg/harness-kit/compare/v0.5.0...v0.5.1) (2026-04-28)
 
 
