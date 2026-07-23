@@ -2,7 +2,7 @@
 name: review-pr
 description: Review and address PR feedback using 6-dimensional code review
 argument-hint: "[PR number or URL]"
-allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/review-pr/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh*), Read
+allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status), Bash(git rev-parse *), Bash(git switch *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/review-pr/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh*), Read
 ---
 
 # /review-pr — Structured PR Review
@@ -54,6 +54,7 @@ Post structured review via gh pr review
 ### 3. Mode B: Address Feedback
 
 ```bash
+0. Branch guard: verify current branch == PR head branch (auto-switch if clean, STOP if dirty)
 [For each unresolved comment]
 1. Read affected code
 2. Fix or acknowledge
@@ -276,6 +277,33 @@ gh pr review <PR#> --approve    # or --request-changes / --comment
 ## DETAIL: Mode B Workflow
 
 Address unresolved review feedback.
+
+### 0. Branch Guard: Ensure You're on the PR's Head Branch
+
+**Run this BEFORE fetching any comments.** Every later Mode B step assumes the local working tree matches the PR — skipping this check can produce successfully-pushed wrong fixes on the wrong PR.
+
+```bash
+pr_branch=$(gh pr view {number} --json headRefName --jq .headRefName)
+current=$(git rev-parse --abbrev-ref HEAD)
+```
+
+- **If `$pr_branch` == `$current`** — proceed to step 1.
+- **If they differ and the working tree is clean** (`git status --porcelain` is empty) — auto-switch. Print what you're doing first, e.g. `Switching from '<current>' to '<pr_branch>' to address PR #{number}`, then:
+
+  ```bash
+  git switch "$pr_branch"
+  # If the branch doesn't exist locally:
+  git fetch origin "$pr_branch" && git switch -c "$pr_branch" --track "origin/$pr_branch"
+  ```
+
+- **If they differ and the working tree is dirty** — STOP. Do not switch, do not stash, do not fetch comments. Tell the user:
+
+  ```text
+  PR #{number} is on branch '<pr_branch>' but you're on '<current>' with uncommitted changes.
+  Commit or stash them, then run 'git switch <pr_branch>' (or re-run /review-pr {number}).
+  ```
+
+- **If the PR is from a fork** (`gh pr view {number} --json headRepositoryOwner` differs from the repo owner) — the local checkout flow above won't work; STOP and tell the user to check the fork branch out explicitly (e.g. `gh pr checkout {number}`).
 
 ### 1. Fetch Unresolved Comments
 
