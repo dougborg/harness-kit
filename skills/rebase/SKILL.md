@@ -19,6 +19,7 @@ Update a feature branch by replaying its commits onto a target branch (default: 
 
 - **Never rebase shared/published branches** — Only rebase local feature branches. If the branch has been pushed and others are working on it, confirm with the user first.
 - **Stash or commit uncommitted changes first** — Dirty working tree will cause rebase to fail. Stash automatically if needed.
+- **Never stash a clean tree** — On a clean tree, `git stash` silently saves nothing, and a later `git stash pop` pops the topmost *existing* stash entry (possibly months-old WIP from an unrelated branch), causing a surprise merge conflict. Only stash when `git status --short` shows work to save; to compare against a ref, use `git diff <ref>` or a separate `git worktree` — never a stash/pop pair.
 - **Understand both sides of every conflict** — Read `git log` for the target branch changes to the conflicting file before resolving. Never blindly pick one side.
 - **Never use `--no-verify`** — Hooks exist for a reason. Fix issues, don't skip them.
 - **Verify after rebase** — Run the project's validation command after rebase completes to catch integration issues.

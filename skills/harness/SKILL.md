@@ -80,6 +80,7 @@ Find the verification command for this project:
 - Do tool references match what's actually installed?
 - Do agents reference correct paths and conventions from CLAUDE.md?
 - Is CLAUDE.md present and does it document all agents and skills?
+- Does CLAUDE.md include the `<new-diagnostics>` protocol (verify LSP diagnostics with the project's type-check CLI before dismissing as stale)? See the baseline section in `agents/harness-builder.md`.
 
 ### 4. Check Model Tiering
 

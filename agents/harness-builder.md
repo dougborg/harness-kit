@@ -104,6 +104,43 @@ Output a draft CLAUDE.md with sections filled in from discovery. Include:
 
 - Stack, Project Structure, Coding Standards, Verification, Known Pitfalls, Self-Improvement
 
+#### Baseline Known Pitfalls Entries
+
+Seed the Known Pitfalls section with discovered project-specific gotchas **plus** these stack-agnostic entries:
+
+```markdown
+- **`git stash` + `git stash pop` is not a "compare against HEAD" tool** —
+  When the working tree is already clean, `git stash` silently saves nothing
+  ("No local changes to save"), and the subsequent `git stash pop` pops the
+  **topmost existing stash entry** — in a long-lived worktree, possibly
+  months-old WIP from an unrelated branch. Result: surprise multi-file merge
+  conflict. Check `git status --short` first; only stash when there's actual
+  work to save. To compare the working tree against a ref, use `git diff <ref>`
+  or check out the ref in a separate `git worktree`.
+```
+
+#### Baseline `<new-diagnostics>` Protocol
+
+Include this section in every generated CLAUDE.md so downstream agents verify LSP diagnostics instead of waving them off:
+
+```markdown
+### Handling `<new-diagnostics>` system reminders
+
+After an edit, the harness may surface a `<new-diagnostics>` block listing
+language-server diagnostics on the file. **Treat these as real until proven
+otherwise** — type checkers in CI (pyright, ty, mypy, tsc) will fail the build
+if the diagnostic is real.
+
+1. **Run the project's type-check CLI on the affected file** — the CLI is the
+   source of truth; the LSP can be stale.
+2. **If the CLI agrees**, fix it. A real diagnostic is always a fix, never a
+   suppression (`# type: ignore`, `# noqa`). Don't push code with pending
+   type errors.
+3. **If the CLI disagrees**, the LSP is stale (common after generator regen,
+   rebase, or stash/pop — it re-indexes lazily). Note it explicitly in your
+   reply so the user knows their editor may need a restart.
+```
+
 ### Recommended Agents
 
 For each, provide:
