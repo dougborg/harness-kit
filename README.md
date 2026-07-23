@@ -94,6 +94,24 @@ harness-kit uses [Release Please](https://github.com/googleapis/release-please) 
 
 After merging PRs to `main`, Release Please opens (or updates) a release PR with the proposed version bump and `CHANGELOG.md` entries. Merge that PR to cut a release — the git tag and GitHub Release are created automatically, and the bumped `version` in `.claude-plugin/plugin.json` signals installed clients to update their cached copy.
 
+### GitHub App token for release PRs
+
+The `release-please.yml` workflow does not use the default `GITHUB_TOKEN` — PRs authored with it never trigger downstream `pull_request` workflows, so required CI checks would never run on release PRs. Instead, it mints an installation token from a repo-owned GitHub App via [`actions/create-github-app-token`](https://github.com/actions/create-github-app-token).
+
+One-time setup (repo owner):
+
+1. Create a GitHub App (e.g. `harness-kit-release-bot`) under your account: <https://github.com/settings/apps/new>. Disable webhooks. Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**, **Metadata: Read-only**.
+2. Install the App on this repository (App settings → Install App).
+3. Generate a private key for the App (App settings → Private keys) and note the App ID.
+4. Store both in the repo:
+
+   ```bash
+   gh variable set RELEASE_PLEASE_APP_ID --body <app-id>
+   gh secret set RELEASE_PLEASE_APP_PRIVATE_KEY < private-key.pem
+   ```
+
+Until these are set, the Release Please workflow fails loudly at the token-mint step on every push to `main` — it never silently falls back to `GITHUB_TOKEN`.
+
 ## License
 
 Apache-2.0
