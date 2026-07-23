@@ -330,6 +330,8 @@ Add skills from another plugin marketplace into the project's `.claude/`.
 
 Post-session retrospective to identify gaps and improvements in the harness. **Run after significant sessions to capture learnings.**
 
+Scope: this mode audits the *harness* (skills, agents, hooks). To document the *session's work* — goal, narrative, issues filed, lessons — run `/session-retro`; the two compose and are best run back-to-back at end-of-session.
+
 ### Retro procedure
 
 1. **Analyze recent changes:**
@@ -637,5 +639,6 @@ Lightweight in-flight signal that feeds the next audit. Don't stop work — just
 ## RELATED
 
 - `harness-builder` agent — Used by bootstrap mode to analyze codebases and recommend harness setup
+- `/session-retro` — Session-side retrospective (documents the work, not the harness); run alongside retro mode
 - `/documentation-writer` — Write scannable, progressive-disclosure docs
 - `/skill-writer` — Create well-structured skills with PURPOSE/CRITICAL/STANDARD PATH
