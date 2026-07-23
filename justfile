@@ -1,7 +1,7 @@
 # harness-kit development recipes
 
 # Run local validation and lint checks
-check: validate validate-hooks lint-shell lint-md hygiene
+check: validate validate-hooks test-hooks lint-shell lint-md hygiene
 
 # Validate plugin manifest and structure
 validate:
@@ -10,6 +10,10 @@ validate:
 # Validate plugin hooks.json schema shape (minimal, catches missing top-level hooks key)
 validate-hooks:
     ./skills/shared/validate-hooks-schema.sh hooks/hooks.json
+
+# Run validate-hooks-schema.sh regression tests against fixtures in skills/shared/testdata/
+test-hooks:
+    ./skills/shared/test-hooks-schema.sh
 
 # Lint shell scripts with ShellCheck
 lint-shell:

@@ -1,0 +1,12 @@
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo missing-top-level-wrapper"
+        }
+      ]
+    }
+  ]
+}

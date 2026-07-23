@@ -1,0 +1,5 @@
+{
+  "name": "fixture-no-hooks-file",
+  "description": "Test fixture: plugin without any hooks.json — validator must exit 0",
+  "version": "0.0.0"
+}

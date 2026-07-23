@@ -1,0 +1,6 @@
+{
+  "name": "fixture-clean-cwd",
+  "description": "Test fixture: manifest declares hooks, but no hooks/hooks.json exists at cwd, so the duplicate-registration check must not fire",
+  "version": "0.0.0",
+  "hooks": "./elsewhere/hooks.json"
+}
