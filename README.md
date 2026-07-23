@@ -13,7 +13,7 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 - `retro` — Post-session gap identification (Type A/B/C/D classification)
 - `hoist` — Propose upstream PRs for generic improvements
 
-**14 skills:**
+**15 skills:**
 
 | Skill | Purpose |
 | --- | --- |
@@ -29,16 +29,18 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 | `/harness-builder` | Analyze codebases and recommend harness setup |
 | `/feature-spec` | Write feature specifications before implementation |
 | `/standup` | Generate daily standup from git history |
+| `/groom` | Backlog grooming: theme buckets, PR train, stale flags, gaps |
 | `/ui-review` | Accessibility and UX audit (WCAG 2.1 AA) |
 | `/svg-logo-designer` | Generate SVG logos |
 
-**3 agents:**
+**4 agents:**
 
 | Agent | Model | Purpose |
 | --- | --- | --- |
 | `code-reviewer` | sonnet | 6D review: correctness, design, readability, performance, testing, security |
 | `verifier` | haiku | Stack-agnostic validation runner |
 | `harness-builder` | sonnet | Deep-read codebase and recommend harness |
+| `project-manager` | sonnet | Read-only backlog grooming: PR train, stale flags, gap analysis |
 
 **Architecture patterns reference** — 6 multi-agent coordination patterns (Pipeline, Fan-out/Fan-in, Expert Pool, Producer-Reviewer, Supervisor, Hierarchical Delegation).
 
@@ -78,7 +80,7 @@ The lock file tracks all sources.
 
 ## Philosophy
 
-- **Quality over quantity** — 14 skills, not 150. Each one is well-structured with progressive disclosure.
+- **Quality over quantity** — 15 skills, not 150. Each one is well-structured with progressive disclosure.
 - **Self-improving** — `/harness retro` identifies gaps after sessions; `/harness hoist` proposes upstream improvements.
 - **Scripts over inline bash** — Shell logic is extracted to testable scripts, not inlined in skills.
 - **Composition over duplication** — Project-local skills extend upstream skills with project-specific flavor.

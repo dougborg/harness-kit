@@ -17,13 +17,15 @@
   "agents": [
     "./agents/code-reviewer.md",
     "./agents/verifier.md",
-    "./agents/harness-builder.md"
+    "./agents/harness-builder.md",
+    "./agents/project-manager.md"
   ],
   "skills": [
     "./skills/code-reviewer",
     "./skills/commit",
     "./skills/documentation-writer",
     "./skills/feature-spec",
+    "./skills/groom",
     "./skills/harness",
     "./skills/harness-builder",
     "./skills/harness-issue",
