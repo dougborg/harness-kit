@@ -1,7 +1,7 @@
 ---
 name: harness
 description: Self-improving meta-harness for auditing, bootstrapping, and improving agent harnesses
-allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Read, Glob, Write, Edit
+allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Read, Glob, Write, Edit
 ---
 
 # /harness — Self-Improving Meta-Harness
@@ -105,6 +105,12 @@ ChernyCode principle: "If you do something more than once a day, make it a skill
 - If GitHub is used: `project-manager` agent? + `/feature-spec`, `/issue-triage`, `/standup` skills?
 - If frontend present: design harness (`.impeccable.md`) + `/ui-review` skill?
 
+**Official plugin coverage** (catalog: `agents/references/external-plugins.md`):
+
+- Would an official Anthropic plugin cover a detected gap? (e.g., Python without `pyright-lsp`, an MCP server without `mcp-server-dev`, a legacy codebase without `code-modernization`) — recommend the install command, don't generate a local equivalent
+- Check installed plugins (`claude plugin list`) for **double-coverage**: is both a harness-kit skill and an overlapping official plugin active (e.g., `code-reviewer` + `code-review`, `/commit` + `commit-commands`)? Recommend picking one — with a one-line comparison — or documenting the composition in CLAUDE.md
+- Does CLAUDE.md's "External plugins" section reflect what's actually installed?
+
 **Project-specific:**
 
 - Is there a `/commit` skill with quality gates?
@@ -199,6 +205,7 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
    - **Recommended architecture pattern** (from `agents/references/architecture-patterns.md`)
    - **Recommended agents** with model + allowed-tools (always includes code-reviewer, verifier, test-writer, domain-advisor; adds project-manager if GitHub detected)
    - **Recommended skills from harness-kit:** which of the plugin's base skills to copy into the project
+   - **Recommended official Anthropic plugins:** stack-matched picks from `agents/references/external-plugins.md`, with overlap flags against harness-kit skills
    - **Recommended external sources:** additional plugin marketplaces based on stack (e.g., Vercel skills for React, impeccable for frontend)
    - **Project-specific skills** to generate (domain workflows, custom checks)
    - Recommended hooks (PostToolUse: formatters → validators → guidance; Stop: session-end guidance)
@@ -207,6 +214,7 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
 2. **Present recommendations for approval:**
    - **Stack:** one-line summary + architecture pattern
    - **Skills from harness-kit to install:** table with name, purpose, why this project needs it
+   - **Official Anthropic plugins to install (optional):** for each stack-matched plugin from `agents/references/external-plugins.md`, show one-line rationale plus the install command (`/plugin install <name>@claude-plugins-official`). Where a plugin overlaps a harness-kit skill (e.g., `code-review` vs `code-reviewer`, `commit-commands` vs `/commit`), flag the overlap and ask the user to pick one or accept the documented composition — never install both sides of an overlap silently
    - **External sources to add:** marketplace repos with rationale
    - **Project-specific skills to generate:** table with name, purpose
    - **Agents to create:** table with name, purpose, model
@@ -222,7 +230,7 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
    - Rewrite `${CLAUDE_PLUGIN_ROOT}` references to `.claude` in copied files
    - Generate project-specific agents (domain-advisor, etc.) in `.claude/agents/`
    - Generate project-specific skills in `.claude/skills/`
-   - Write `CLAUDE.md` with all sections filled in
+   - Write `CLAUDE.md` with all sections filled in, including an "External plugins" section recording which official plugins were installed or deliberately skipped, with rationale (external plugins are installed via `/plugin install`, not copied — they are NOT tracked in `.harness-lock.json`)
    - Configure hooks in `.claude/settings.local.json`
    - Create `.harness-lock.json` tracking provenance of every installed file
    - Write `.claude/harness-upstream` (one line: `owner/repo`) so `/harness-issue` knows where to file feedback. Use the source repo from the lock file (default `dougborg/harness-kit`).
