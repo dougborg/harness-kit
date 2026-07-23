@@ -41,6 +41,7 @@ gh pr view <PR#> --json state,reviews
 
 - **No review comments** → Mode A: Initial review (analyze with code-reviewer agent)
 - **Unresolved comments** → Mode B: Address feedback (fix issues, validate, reply)
+- **Overall review only** (a reviewer's review has state `COMMENTED` but zero inline comments — `poll-review.sh` reports `summary-only`) → read the review body, surface it to the user, and stop. There are no comments to address, so do NOT run the Mode B fix loop. See DETAIL: Mode B Workflow, "Summary-only reviews".
 
 ### 2. Mode A: Initial Review
 
@@ -314,6 +315,17 @@ ${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fetch-unresolved-comments.sh "$owner_repo
 ```
 
 Returns JSON array of unresolved comments with id, path, line, body, author. Resolved threads are already filtered out.
+
+#### Summary-only reviews (empty array with review activity)
+
+If the array is empty but a reviewer did post a review — e.g. `/open-pr` Phase 7 returned `summary-only` — the reviewer left only an overall `COMMENTED` review with no inline action items. This is not an error and not a fix loop:
+
+```bash
+gh api "repos/{owner}/{repo}/pulls/{number}/reviews" \
+  --jq '[.[] | select(.state == "COMMENTED" and .body != "")] | last | .body'
+```
+
+Read the body, present it to the user, and decide together whether anything needs action (file issues for deferred items). Then stop — do not proceed to steps 2–6.
 
 ### 2. Triage Each Comment
 
