@@ -21,7 +21,7 @@ Ship a feature branch end-to-end: validate, self-review, push, create PR, wait f
 - **Validate before opening** — the project's verification command must pass before `gh pr create`. Don't push broken code.
 - **Self-review the full diff** — read every change before opening; never skip this and rely on reviewers.
 - **Stage specific files** — never `git add -A` or `git add .`. Intentional staging prevents accidentally committing secrets, scratch files, or unrelated changes.
-- **Use polling scripts for CI and review state** — never check review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. Use `poll-review.sh` which calls the correct API (`gh api repos/.../pulls/.../comments`).
+- **Use polling scripts for CI and review state** — never check review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. Use `poll-review.sh` which queries review threads and review states via the correct APIs.
 - **The Bash tool's default 120s timeout silently kills long polls** — every watch/poll invocation (`poll-ci.sh`, `poll-review.sh`, `gh pr checks --watch`) MUST either pass an explicit Bash `timeout` well above the script's own timeout, or run with `run_in_background: true`. A foreground poll on the default timeout dies mid-wait with truncated output that looks like a status report — and no notification is coming.
 - **Never merge with unaddressed review comments** — every comment gets fixed, deferred with a tracked issue, or discussed. CI green does not override review feedback.
 - **No `--no-verify`** — never bypass commit hooks, type checkers, or linters. If a check fails, fix the cause.
@@ -196,7 +196,7 @@ When scheduling a wakeup, phrase the prompt as the **goal**, not a task referenc
 
 ## Phase 7: Wait for review
 
-**Always use the polling script** — never check for review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. The polling script uses the correct API (`gh api repos/.../pulls/.../comments`).
+**Always use the polling script** — never check for review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. The polling script uses the correct APIs (GraphQL review threads + review states).
 
 ```bash
 ctx=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh <number>)
@@ -206,11 +206,23 @@ ${CLAUDE_PLUGIN_ROOT}/skills/open-pr/poll-review.sh "$owner_repo" <number>
 
 The Bash-timeout and wakeup-resume rules from Phase 6 apply here too — `poll-review.sh` waits even longer than `poll-ci.sh`, so it MUST also run with an explicit Bash `timeout` above the script's own, or with `run_in_background: true`.
 
-Outputs: `approved`, `comments`, or `timeout` (exit 2).
+Outputs exactly one state:
 
-- **approved** → tell user and stop
-- **comments** → proceed to Phase 8
-- **timeout** → tell user "CI green, PR open, no review comments yet" and stop
+- **approved** (exit 0) → tell user and stop
+- **changes-requested** (exit 0) → a reviewer requested changes — proceed to Phase 8
+- **comments** (exit 0) → new actionable inline threads (unresolved, and the last comment is not yours — threads you already replied to don't re-trigger) — proceed to Phase 8
+- **summary-only** (exit 0) → a reviewer posted a COMMENTED review with **no inline comments** (common for Copilot follow-up passes). Read the review body and surface it to the user — there is no fixup loop to run:
+
+  ```bash
+  gh api "repos/$owner_repo/pulls/<number>/reviews" \
+    --jq '[.[] | select(.state == "COMMENTED" and .body != "")] | last | .body'
+  ```
+
+  Decide with the user whether anything in the summary needs action; otherwise stop.
+
+- **timeout** (exit 2) → tell user "CI green, PR open, no review comments yet" and stop
+
+**Wait for Copilot:** the script does not report `timeout` until the Copilot review bot has left a review or the PR is older than `POLL_REVIEW_COPILOT_WAIT` seconds (default 300, measured from PR creation). Copilot reviews typically land 2–5 minutes after PR open — never conclude "no review" before that window passes. Repos without Copilot review are covered by the same window: the hold simply expires.
 
 ## Phase 8: Address review comments
 
