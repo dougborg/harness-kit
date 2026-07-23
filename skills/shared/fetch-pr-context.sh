@@ -31,18 +31,26 @@ pr_json=$(gh pr view "$PR_NUMBER" --repo "$REPO" \
 comments_json=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/comments" \
   --paginate --jq '[.[] | {id: .id, path: .path, line: .line, body: .body, author: .user.login, created_at: .created_at}]')
 
-# Fetch review thread resolved status (GraphQL).
+# Fetch review thread resolved status (GraphQL), cursor-paginated.
 # Pull every comment in each thread so reply-comment IDs also inherit the
 # thread's is_resolved status, not just the first comment.
-read -r -d '' query <<'GRAPHQL' || true
-  query($owner: String!, $repo: String!, $number: Int!) {
+#
+# Both connections use pageInfo { hasNextPage, endCursor } so PRs with >100
+# review threads, or threads with >100 comments, are fully reported instead
+# of silently truncated (issue #20). All per-page parsing goes through gh's
+# built-in --jq (gojq), so pagination adds no dependency beyond gh itself;
+# jq/python3 are still only needed for the final merge below.
+read -r -d '' threads_query <<'GRAPHQL' || true
+  query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
-        reviewThreads(first: 100) {
+        reviewThreads(first: 100, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             id
             isResolved
             comments(first: 100) {
+              pageInfo { hasNextPage endCursor }
               nodes { databaseId }
             }
           }
@@ -51,17 +59,110 @@ read -r -d '' query <<'GRAPHQL' || true
     }
   }
 GRAPHQL
-# One row per (thread_id, comment_id) so the join works for replies too.
-# shellcheck disable=SC2016  # $t is a jq variable, not shell — single-quote intentional.
-resolved_json=$(gh api graphql -f query="$query" \
-  -F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR_NUMBER" \
-  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] as $t |
-    $t.comments.nodes[] | {
-      comment_id: .databaseId,
-      thread_id: $t.id,
-      is_resolved: $t.isResolved
+
+# Follow-up query for the rare thread with >100 comments: resume that
+# thread's comments connection from the cursor where the main query stopped
+# (no refetch, so no duplicate rows reach the merge).
+read -r -d '' thread_comments_query <<'GRAPHQL' || true
+  query($threadId: ID!, $cursor: String!) {
+    node(id: $threadId) {
+      ... on PullRequestReviewThread {
+        comments(first: 100, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
+          nodes { databaseId }
+        }
+      }
     }
-  ]')
+  }
+GRAPHQL
+
+# Per page the --jq program emits line-oriented output (gh prints jq string
+# results raw, and @json renders compact single-line JSON):
+#   line 1:  reviewThreads hasNextPage ("true"/"false")
+#   line 2:  reviewThreads endCursor (empty when null)
+#   line 3:  rows for this page — compact JSON array, one row per
+#            (thread_id, comment_id) so the join works for replies too
+#   line 4+: threads whose comments overflowed first:100 —
+#            TSV of thread_id, isResolved, comments endCursor
+row_pages=()
+overflow=""
+cursor=""
+while :; do
+  page_args=(-F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR_NUMBER")
+  if [ -n "$cursor" ]; then
+    page_args+=(-f "cursor=$cursor")
+  fi
+  # shellcheck disable=SC2016  # $rt/$t are jq variables, not shell — single-quote intentional.
+  page=$(gh api graphql -f query="$threads_query" "${page_args[@]}" \
+    --jq '.data.repository.pullRequest.reviewThreads as $rt
+      | ($rt.pageInfo.hasNextPage | tostring),
+        ($rt.pageInfo.endCursor // ""),
+        ([$rt.nodes[] as $t | $t.comments.nodes[] | {
+          comment_id: .databaseId,
+          thread_id: $t.id,
+          is_resolved: $t.isResolved
+        }] | @json),
+        ($rt.nodes[]
+          | select(.comments.pageInfo.hasNextPage)
+          | [.id, (.isResolved | tostring), .comments.pageInfo.endCursor]
+          | @tsv)')
+  {
+    read -r has_next
+    read -r cursor
+    read -r page_rows
+    page_overflow=$(cat)
+  } <<<"$page"
+  row_pages+=("$page_rows")
+  if [ -n "$page_overflow" ]; then
+    overflow+="$page_overflow"$'\n'
+  fi
+  [ "$has_next" = "true" ] || break
+done
+
+# Drain comments for any thread that overflowed first:100.
+if [ -n "$overflow" ]; then
+  while IFS=$'\t' read -r thread_id thread_resolved comments_cursor; do
+    [ -n "$thread_id" ] || continue
+    extra_rows=""
+    while :; do
+      # shellcheck disable=SC2016  # $c is a jq variable, not shell — single-quote intentional.
+      page=$(gh api graphql -f query="$thread_comments_query" \
+        -f "threadId=$thread_id" -f "cursor=$comments_cursor" \
+        --jq '.data.node.comments as $c
+          | ($c.pageInfo.hasNextPage | tostring),
+            ($c.pageInfo.endCursor // ""),
+            ($c.nodes[].databaseId)')
+      {
+        read -r has_next
+        read -r comments_cursor
+        ids=$(cat)
+      } <<<"$page"
+      while read -r comment_id; do
+        [ -n "$comment_id" ] || continue
+        if [ -n "$extra_rows" ]; then
+          extra_rows+=","
+        fi
+        extra_rows+="{\"comment_id\":${comment_id},\"thread_id\":\"${thread_id}\",\"is_resolved\":${thread_resolved}}"
+      done <<<"$ids"
+      [ "$has_next" = "true" ] || break
+    done
+    row_pages+=("[$extra_rows]")
+  done <<<"$overflow"
+fi
+
+# Flatten the per-page compact arrays into one array (plain string surgery
+# on compact JSON — only the outermost brackets are touched).
+resolved_rows=""
+for page_rows in "${row_pages[@]}"; do
+  inner="${page_rows#\[}"
+  inner="${inner%\]}"
+  [ -n "$inner" ] || continue
+  if [ -n "$resolved_rows" ]; then
+    resolved_rows+=","
+  fi
+  resolved_rows+="$inner"
+done
+resolved_json="[$resolved_rows]"
 
 # Merge resolved status into comments
 if command -v jq >/dev/null; then

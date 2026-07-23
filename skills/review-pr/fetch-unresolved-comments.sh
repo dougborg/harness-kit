@@ -21,11 +21,16 @@ PR_NUMBER="$2"
 OWNER="${REPO%%/*}"
 REPO_NAME="${REPO##*/}"
 
+# reviewThreads is cursor-paginated via pageInfo { hasNextPage, endCursor }
+# so PRs with >100 review threads are fully reported instead of silently
+# truncated (issue #20). Nested comments need no pagination here: see the
+# `comments(last: 1)` note below.
 read -r -d '' query <<'GRAPHQL' || true
-  query($owner: String!, $repo: String!, $number: Int!) {
+  query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
-        reviewThreads(first: 100) {
+        reviewThreads(first: 100, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             isResolved
             comments(last: 1) {
@@ -54,12 +59,46 @@ GRAPHQL
 # guard drops threads whose only comment was deleted (empty `nodes`).
 # The reply itself attaches to the thread regardless of which comment
 # ID is used as the anchor.
-gh api graphql -f query="$query" \
-  -F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR_NUMBER" \
-  --jq '[
-    .data.repository.pullRequest.reviewThreads.nodes[]
-    | select(.isResolved | not)
-    | .comments.nodes[0]
-    | select(. != null)
-    | {id: .databaseId, path: .path, line: .line, body: .body, author: .author.login}
-  ]'
+#
+# Per page the --jq program emits three lines (gh prints jq string results
+# raw, and @json renders compact single-line JSON):
+#   line 1: hasNextPage ("true"/"false")
+#   line 2: endCursor (empty when null)
+#   line 3: this page's unresolved comments — compact JSON array
+rows=""
+cursor=""
+while :; do
+  page_args=(-F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR_NUMBER")
+  if [ -n "$cursor" ]; then
+    page_args+=(-f "cursor=$cursor")
+  fi
+  # shellcheck disable=SC2016  # $rt is a jq variable, not shell — single-quote intentional.
+  page=$(gh api graphql -f query="$query" "${page_args[@]}" \
+    --jq '.data.repository.pullRequest.reviewThreads as $rt
+      | ($rt.pageInfo.hasNextPage | tostring),
+        ($rt.pageInfo.endCursor // ""),
+        ([$rt.nodes[]
+          | select(.isResolved | not)
+          | .comments.nodes[0]
+          | select(. != null)
+          | {id: .databaseId, path: .path, line: .line, body: .body, author: .author.login}
+        ] | @json)')
+  {
+    read -r has_next
+    read -r cursor
+    read -r page_rows
+  } <<<"$page"
+  # Splice this page's rows into the accumulator (compact JSON — only the
+  # outermost brackets are touched).
+  inner="${page_rows#\[}"
+  inner="${inner%\]}"
+  if [ -n "$inner" ]; then
+    if [ -n "$rows" ]; then
+      rows+=","
+    fi
+    rows+="$inner"
+  fi
+  [ "$has_next" = "true" ] || break
+done
+
+printf '[%s]\n' "$rows"
