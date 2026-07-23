@@ -1,21 +1,35 @@
 #!/usr/bin/env bash
-# Ensure we're on a feature branch. If on main/master, auto-create one.
+# Ensure we're on a feature branch. If on main/master (or a Claude Code
+# auto-generated worktree branch like worktree-adjective-adjective-noun),
+# derive a meaningful branch name instead.
 #
 # Usage: ensure-feature-branch.sh
 # Output: prints the feature branch name to stdout
 # Exit 1: if no changes to create a PR from
 #
-# Handles three scenarios:
+# Handles three scenarios (main/master):
 # a) Unpushed commits on main → infer name, create branch, reset main
 # b) Staged/unstaged changes only → stash, create branch, pop
 # c) Clean state → exit 1 (nothing to PR)
+#
+# worktree-* branches are renamed in place (git branch -m) so the
+# worktree's HEAD follows the new name.
 
 set -euo pipefail
 
 current=$(git branch --show-current)
 
-# Already on a feature branch
-if [ "$current" != "main" ] && [ "$current" != "master" ]; then
+# Treat as "needs renaming" if branch is main/master OR a Claude Code
+# default worktree name (worktree-* is the documented auto-generated
+# prefix from `git worktree add` in Claude Code's harness). Anything
+# else is already a meaningful feature branch name.
+needs_rename=0
+case "$current" in
+  main | master) needs_rename=1 ;;
+  worktree-*) needs_rename=1 ;;
+esac
+
+if [ "$needs_rename" -eq 0 ]; then
   echo "$current"
   exit 0
 fi
@@ -53,6 +67,18 @@ get_unique_branch() {
   done
   echo "$name"
 }
+
+# Claude Code worktree branch: rename in place (commits and working tree
+# changes stay put; the worktree's HEAD follows the renamed branch).
+case "$current" in
+  worktree-*)
+    branch_name=$(get_unique_branch "$(infer_branch_name)")
+    echo "Renaming auto-generated worktree branch '$current' to '$branch_name'" >&2
+    git branch -m "$branch_name"
+    echo "$branch_name"
+    exit 0
+    ;;
+esac
 
 # Scenario a: Unpushed commits on main
 if git rev-list "@{u}..HEAD" 2>/dev/null | head -1 | grep -q .; then
