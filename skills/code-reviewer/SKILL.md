@@ -88,6 +88,7 @@ Check semantic correctness, logic, and type safety.
 - Can the code throw exceptions? Are they handled?
 - Are null/undefined values handled?
 - Is the control flow clear? (No hidden returns, confusing nesting)
+- In doc sweeps, does every "Look up via `<tool>`" (or "see `<endpoint>`") hint reference a tool whose return type actually matches the field? Check each against the tool's signature — copy-pasted hints on structurally similar sibling fields are a common category error.
 
 **Red flags:**
 

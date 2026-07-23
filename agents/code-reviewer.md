@@ -52,6 +52,7 @@ Evaluate each change across six dimensions, then classify findings by severity:
 **Dimensions:**
 
 - **Correctness** — logic errors, data corruption risks, type mismatches, broken imports
+  - *Doc-sweep cross-check:* for every added or edited "Look up via `<tool>`" / "see `<endpoint>`" hint, verify the referenced tool's actual return type matches the field it annotates — copy-pasted hints across structurally similar sibling fields are a common category error
 - **Design** — consistency with existing architecture, proper separation of concerns, package boundaries
 - **Readability** — naming clarity, code structure, comments for non-obvious logic, consistent style
 - **Performance** — unnecessary computation, N+1 queries, missing caching opportunities
