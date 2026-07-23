@@ -39,7 +39,31 @@ git diff --cached                   # Review staged changes
 
 **Never:** `git add -A` or `git add .` — stage intentionally.
 
-### 2. Run Project Validation
+### 2. Auto-Stage Drifted uv.lock (Python+uv Projects Only)
+
+**Skip this step unless** both `pyproject.toml` and `uv.lock` exist (Python+uv stack).
+
+After staging your intended files, check whether `uv.lock` has unstaged changes:
+
+```bash
+git status --porcelain -- uv.lock   # " M" or "MM" = unstaged drift
+```
+
+If it does, stage it alongside the commit:
+
+```bash
+git add uv.lock
+```
+
+**Always warn the user when you do this**, e.g.:
+
+> Staging drifted `uv.lock` alongside this commit: pre-commit hooks that run
+> tools under `uv run` regenerate it, and an unstaged `uv.lock` makes
+> pre-commit's auto-stash/pop cycle conflict and abort the commit.
+
+Then proceed. See DETAIL: uv.lock Drift for the failure mode this prevents.
+
+### 3. Run Project Validation
 
 Discover and run the verification command:
 
@@ -50,7 +74,7 @@ eval "$cmd"
 
 **ALL checks must pass.** No commits that break validation.
 
-### 3. Write Commit Message
+### 4. Write Commit Message
 
 Format: `type(scope): description`
 
@@ -62,7 +86,7 @@ feat(auth): add OAuth2 login flow
 
 See DETAIL: Message Format for all types and examples.
 
-### 4. Create Commit
+### 5. Create Commit
 
 ```bash
 git commit -m "type(scope): description
@@ -91,6 +115,7 @@ EOF
 - [Large changes spanning files] — Read DETAIL: Staging Multiple Files (review each category before committing)
 - [Partial file commits] — Read DETAIL: Staging Hunks (commit part of a file)
 - [Fixing mistakes] — Read DETAIL: Fixing Commit Mistakes (amend, reset, rebase)
+- [Pre-commit aborts with "files were modified by this hook" + uv.lock] — Read DETAIL: uv.lock Drift (stage uv.lock and retry once)
 
 ---
 
@@ -236,6 +261,44 @@ git reset --hard HEAD~1             # Discard all changes in last commit
 ```
 
 **Use with caution** — this is destructive.
+
+---
+
+## DETAIL: uv.lock Drift
+
+### The Failure Mode
+
+In Python+uv projects with pre-commit, an unstaged `uv.lock` triggers an
+auto-stash race that aborts the commit:
+
+1. Pre-commit auto-stashes unstaged changes (including the unstaged `uv.lock` state)
+2. A hook runs a tool under `uv run` (e.g., pytest), which re-syncs `uv.lock`
+3. Pre-commit pops the stash — the stashed `uv.lock` conflicts with the re-synced one
+4. Pre-commit reports "files were modified by this hook" and the commit aborts
+
+Nothing was wrong with the staged content — the abort is purely the stash/pop
+conflict. Staging `uv.lock` before committing eliminates the race.
+
+### Why uv.lock Drifts Without You Touching Dependencies
+
+- A sibling-package release on the base branch bumped a workspace version
+- `uv run` / `uv sync` re-resolved after a `pyproject.toml` change elsewhere
+- A different lockfile revision landed via merge or rebase
+
+The drift is legitimate and belongs in the commit — hiding it just re-triggers
+the race on the next commit.
+
+### Recovery (If the Commit Already Aborted)
+
+If you skipped the pre-flight check and hit the failure:
+
+```bash
+git status --porcelain -- uv.lock   # confirm uv.lock is in the modified list
+git add uv.lock
+git commit ...                      # retry once with the same message
+```
+
+Warn the user that `uv.lock` was staged, same as in the standard path.
 
 ---
 
