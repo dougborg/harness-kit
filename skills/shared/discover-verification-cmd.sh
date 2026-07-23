@@ -27,14 +27,16 @@ elif [ -f pyproject.toml ] && grep -q '\[tool\.poe\.tasks' pyproject.toml; then
   # Scope the recipe lookup to the [tool.poe.tasks] section so an unrelated
   # TOML key named `check` (e.g. a dependency or other table key) doesn't
   # false-positive. Handles both inline (`check = ...`) and sub-table
-  # (`[tool.poe.tasks.check]`) task forms.
+  # (`[tool.poe.tasks.check]`) task forms, with or without TOML quoted keys
+  # (`"check" = ...` / `[tool.poe.tasks."check"]`), which are valid TOML
+  # and would otherwise silently fall through to task=test (issue #20).
   poe_inline_tasks=$(awk '
     /^\[tool\.poe\.tasks\]/ { in_section = 1; next }
     /^\[/                   { in_section = 0 }
     in_section              { print }
   ' pyproject.toml)
-  if grep -qE '^check[[:space:]]*=' <<<"$poe_inline_tasks" \
-    || grep -qE '^\[tool\.poe\.tasks\.check\]' pyproject.toml; then
+  if grep -qE '^"?check"?[[:space:]]*=' <<<"$poe_inline_tasks" \
+    || grep -qE '^\[tool\.poe\.tasks\."?check"?\]' pyproject.toml; then
     task="check"
   else
     task="test"

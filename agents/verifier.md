@@ -40,6 +40,14 @@ allowed-tools:
   - Bash(pytest*)
   - Bash(poe test*)
   - Bash(poe check*)
+  # Deliberately wildcard rather than scoped to `poe check*` / `poe test*`
+  # (all that discover-verification-cmd.sh currently emits), matching the
+  # `Bash(make test*)` precedent and so the allowlist doesn't silently break
+  # if the script learns new task names. Tradeoff (issue #20): a project may
+  # define destructive poe tasks (deploys, db resets) that this scope would
+  # permit — the agent's instructions never invoke them, but the allowlist
+  # alone doesn't forbid them. Narrow these two entries if that matters for
+  # your projects.
   - Bash(uv run poe*)
   - Bash(poetry run poe*)
   - Bash(claude plugin validate*)
