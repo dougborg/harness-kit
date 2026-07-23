@@ -4,15 +4,26 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: write
-  pull-requests: write
+# Release PRs are opened with an installation token minted from the
+# release-please GitHub App instead of GITHUB_TOKEN, so the pull_request
+# workflows behind the required status checks actually run on them
+# (GITHUB_TOKEN-authored events never trigger downstream workflows).
+# The default GITHUB_TOKEN is unused, so it gets no permissions.
+permissions: {}
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+
       - uses: googleapis/release-please-action@v5
         with:
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
