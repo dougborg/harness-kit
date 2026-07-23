@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "SessionStart": {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo event-is-object-not-array"
+        }
+      ]
+    }
+  }
+}

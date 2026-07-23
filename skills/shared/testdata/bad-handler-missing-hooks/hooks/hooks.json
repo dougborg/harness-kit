@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "type": "command",
+        "command": "echo handler-missing-inner-hooks-array"
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "fixture-valid",
+  "description": "Test fixture: valid hooks.json with a manifest that does not declare hooks",
+  "version": "0.0.0"
+}

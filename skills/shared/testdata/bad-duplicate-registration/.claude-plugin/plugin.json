@@ -1,0 +1,6 @@
+{
+  "name": "fixture-bad-duplicate-registration",
+  "description": "Test fixture: manifest declares hooks while hooks.json sits at the auto-discovery path",
+  "version": "0.0.0",
+  "hooks": "./hooks/hooks.json"
+}

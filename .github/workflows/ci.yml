@@ -25,6 +25,9 @@ jobs:
       - name: Validate plugin hooks schema
         run: ./skills/shared/validate-hooks-schema.sh hooks/hooks.json
 
+      - name: Run hooks validator regression tests
+        run: ./skills/shared/test-hooks-schema.sh
+
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest
