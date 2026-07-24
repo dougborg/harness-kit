@@ -33,7 +33,7 @@ The skill runs nine phases. Each phase is short; phase headings below are the na
 1. **Pre-flight** — ensure feature branch, run validation, check for existing PR
 2. **Self-review** — read the full diff, check for bugs/secrets/debug code
 3. **Simplify (optional)** — reuse, dead code, duplication
-4. **Organize commits** — logical commits with conventional format + HEREDOC
+4. **Organize commits** — logical commits; mechanics via `/commit`'s standard path
 5. **Push and create PR** — `gh pr create` with HEREDOC body
 6. **Wait for CI** — `poll-ci.sh`; fix in place if anything fails
 7. **Wait for review** — `poll-review.sh`; never skip with `gh pr view`
@@ -119,20 +119,12 @@ Note: This phase is optional and relies on manual review or the `/simplify` skil
    - If commits exist and are well-organized: just commit remaining changes
    - If messy (WIP, fixup): clean up
 
-3. **Stage specific files** — never use `git add -A` or `git add .`
-
-4. Use conventional commit format with HEREDOC:
-
-   ```bash
-   git commit -m "$(cat <<'EOF'
-   feat(scope): short description
-
-   Optional longer explanation.
-
-   Co-Authored-By: Claude <noreply@anthropic.com>
-   EOF
-   )"
-   ```
+3. **Create each commit via `/commit`'s STANDARD PATH** — it owns the commit
+   mechanics: intentional staging (never `git add -A` or `git add .`), the
+   uv.lock drift check for Python+uv projects (see DETAIL: uv.lock Drift in
+   `skills/commit/SKILL.md`), conventional message format, and HEREDOC commit
+   creation. Validation already ran in Phase 1 — skip `/commit`'s validation
+   step unless code changed since.
 
 ## Phase 5: Push and create PR
 
