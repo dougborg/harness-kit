@@ -53,16 +53,33 @@ heavy agent), glance at the budget first:
 
 ## Manage context
 
-Keep the main context lean so more work fits before compaction:
+Auto-compact is on by default and cannot be disabled — treat compaction as
+routine, not an emergency. The strategy: keep authoritative state **out of the
+context window** so the summary only has to preserve pointers.
 
-- Delegate wide reads/searches to subagents — their tool output stays out of the
-  main context; you keep only the conclusion.
-- Do not re-read files you just edited or re-derive established facts.
-- Finish and close out subtasks rather than leaving many half-open.
-- You **cannot** trigger `/compact` on yourself (not a supported agent action),
-  and a `PreCompact` hook cannot steer compaction. So when context is heavy and
-  work remains, proactively **summarize what is left / still planned** in your
-  own output — that is what survives an auto-compaction and keeps it focused.
+- **Externalize state to the tracking issue/PR (primary).** At milestones —
+  work item finished, decision made, gotcha discovered — bank state to the
+  tracking issue or PR (checkpoint comment or body section, e.g. via
+  `/issue-update`): done / in-flight / next / decisions. The context then only
+  needs "working #N, state is on the issue", which survives any compaction —
+  and a fresh session, or a different agent, can resume from it.
+- **Steer the summary.** A `## Compact instructions` section in CLAUDE.md
+  shapes every compaction (documented); `/compact focus on X` does it one-off.
+  Tell it to preserve issue/PR numbers, decisions, and next steps, and to drop
+  file contents and tool output. (`PreCompact` hooks can only observe or
+  block — they cannot steer content — and blocking auto-compact just hits the
+  context wall, so this plugin ships none.)
+- **Re-ground after compaction.** A `SessionStart` hook with matcher `compact`
+  gets its stdout injected into context right after every compaction
+  (documented); this plugin's `hooks/hooks.json` ships one pointing the agent
+  back at the tracking issue, live `git`/`gh` state, and this budget check.
+- **Keep it lean anyway:** delegate wide reads/searches to subagents (their
+  tool output stays out of the main context), don't re-read files you just
+  edited, and close out subtasks instead of leaving many half-open. You cannot
+  run `/compact` on yourself, so before heavy stretches, state what remains in
+  your own output — it gives the summarizer something crisp to keep. To
+  compact earlier with smaller summaries, `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`
+  exists as an **unofficial** knob — treat it as unstable.
 
 ## Resume after a reset
 
