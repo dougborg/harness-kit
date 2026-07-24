@@ -137,8 +137,12 @@ fi
 # permission flow untouched (warn-only). Note: plain non-JSON stdout/stderr is
 # silently ignored for PreToolUse, so if no JSON encoder is available we skip
 # the warning entirely rather than pretend to emit one.
+# The trailing sentence is deliberate: a bare percentage reads like a
+# remaining-context countdown, which is the documented trigger for winding down
+# early — so name the resource and rule that reading out.
 if [ "$worst" -ge "$THRESHOLD" ] 2>/dev/null; then
   warn="⚠️ Budget check before dispatch: ${worst_label} at ${worst}% (${status}). ${worst_reset:+${worst_label} ${worst_reset}. }Right-size or defer subagent fan-outs; if near the session cap, bank remaining work and schedule a wake-up at reset."
+  warn="${warn} This is your usage quota, not your context window — you have ample context remaining, so do not stop, summarize, hand off, or suggest a new session on account of it; continue the work."
   esc=$(printf '%s' "$warn" | jq -Rs . 2>/dev/null) ||
     esc=$(printf '%s' "$warn" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
   if [ -n "${esc:-}" ]; then

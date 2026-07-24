@@ -45,3 +45,13 @@ claude plugin validate .
 ```
 
 Users then run `/harness bootstrap` in their project to populate `.claude/` with selected skills and agents.
+
+## Compact instructions
+
+When compacting, always preserve: the tracking issue/PR numbers for in-flight
+work, the state of every open PR (draft / awaiting CI / awaiting review /
+approved / blocked) and whether a merge train is in flight, decisions made and
+their rationale, the current task list (done / in-flight / next), and any
+discovered gotchas. Drop file contents, tool output, and exploration dead ends
+— they can be re-derived from git, gh, and the tracking issue's checkpoint
+comment.
