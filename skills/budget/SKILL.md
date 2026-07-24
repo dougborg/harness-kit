@@ -53,6 +53,15 @@ heavy agent), glance at the budget first:
 
 ## Manage context
 
+**Two different resources.** The percentages above are the *usage quota*
+(session and weekly) — how much of your plan's allowance is spent. The *context
+window* is separate: it is per-session and refills with compaction. A high
+quota percentage says nothing about remaining context, so never stop,
+summarize, hand off, or suggest a new session because of it — right-size the
+next dispatch and continue. The `--hook` warning carries the same reminder,
+since a bare percentage in context is easy to misread as a remaining-context
+countdown.
+
 Auto-compact is on by default and cannot be disabled — treat compaction as
 routine, not an emergency. The strategy: keep authoritative state **out of the
 context window** so the summary only has to preserve pointers.
