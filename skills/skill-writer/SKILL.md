@@ -1,305 +1,311 @@
 ---
 name: skill-writer
-description: Create well-structured skills and agents using progressive disclosure pattern
+description: >-
+  Writes and reviews Claude Code skills (SKILL.md) and subagents (agents/*.md)
+  for this plugin and for projects bootstrapped from it. Covers choosing how
+  prescriptive to be, writing the description field that controls when a skill
+  fires, splitting content across reference files, the allowed-tools vs tools
+  frontmatter distinction, and harness-kit's own conventions (shared scripts,
+  plugin.json registration, ${CLAUDE_PLUGIN_ROOT} paths). Use when creating a
+  new skill or agent, editing an existing one, or deciding whether something
+  should be a skill, an agent, a script, or nothing at all.
 allowed-tools: Glob, Grep, Read, Write, Edit
 ---
 
-# /skill-writer — Skill and Agent Creation
+# /skill-writer — Authoring Skills and Agents
 
-Create scannable skills and agents: PURPOSE ≤10 tokens, CRITICAL constraints, STANDARD PATH ≤30 lines, optional DETAIL sections. Works for AI agents with token budgets and humans skimming for relevance.
+Claude already knows the skill format. This skill exists for the judgment calls
+the format does not make for you: how prescriptive to be, what earns a place in
+a file that stays in context all session, and the conventions specific to this
+repo.
 
-## PURPOSE
+## First, decide whether to write one at all
 
-Generate well-structured `.claude/skills/*/SKILL.md` and `.claude/agents/*.md` files with proper PURPOSE/CRITICAL/STANDARD PATH/DETAIL structure.
+A skill is worth writing when the task recurs, and when Claude's default
+behavior on it is wrong or under-informed. If default performance is already
+good, a skill that restates the obvious makes output worse, not better — it
+spends context and over-constrains a capable model.
 
-## CRITICAL
+Prefer the smallest thing that works:
 
-- **Constraint clarity before happy path** — CRITICAL prevents catastrophic mistakes. Don't bury constraints in STANDARD PATH.
-- **Minimum permissions required** — Reviewers should not have Write. Validators need only specific Bash patterns.
-- **One responsibility per skill** — Multiple workflows → split into focused skills and reference each other.
-- **Progressive disclosure always** — PURPOSE ≤10 tokens, CRITICAL ≤20 tokens, STANDARD PATH ≤30 lines, full skill ≤1500 tokens.
+| Need | Reach for |
+| --- | --- |
+| A fixed sequence of commands | A script in `skills/shared/` |
+| Project facts Claude must always know | `CLAUDE.md` |
+| A repeatable multi-step workflow the user invokes | A skill |
+| Wide reads/searches whose output should stay out of the main context | An agent |
+| Something that must happen automatically, every time | A hook |
 
-## ASSUMES
+## Match specificity to fragility
 
-- Skill/agent will be read by agents with token budgets (skim PURPOSE, decide if needed)
-- Both AI and humans are scanning for relevance before full read
-- Catastrophic mistakes belong in CRITICAL; edge cases belong in EDGE CASES/DETAIL
+The central authoring decision is **degrees of freedom** — how much latitude to
+leave. Set it per-instruction, based on how fragile the operation is, not by
+applying one uniform level to a whole file.
 
-## STANDARD PATH
+- **High freedom** — prose, heuristics, a stated goal. Use when several
+  approaches are valid and the right one depends on context. "Summarize what
+  changed and why, in the reviewer's terms."
+- **Medium freedom** — a preferred pattern with room to vary: pseudocode, a
+  parameterized script, a worked example to adapt.
+- **Low freedom** — exact commands, explicit ordering, "do not add flags to
+  this command." Use when the operation is fragile, when consistency across
+  runs matters, or when a specific sequence must hold.
 
-### 1. Determine Type
+The test: a narrow bridge with cliffs on both sides gets guardrails; an open
+field gets a direction to walk in. Over-guardrailing an open field is the more
+common failure here — it reads as thorough and degrades results.
 
-**Skill:** User invokes explicitly (`/commit`). Workflow with steps. STANDARD PATH is a checklist.
+Corollary: skills written for older models are often too prescriptive for
+current ones. When editing an existing skill, actively look for instructions to
+**delete**, and check whether default behavior is already better than what the
+skill mandates.
 
-**Agent:** Answers questions (read-only). No execution. Tool permissions: Read only.
+## Every line is a recurring cost
 
-### 2. Write Frontmatter
+Once a skill loads, its content stays in context for the rest of the session.
+After auto-compaction, Claude Code re-attaches only the **first 5,000 tokens**
+of each invoked skill, inside a **25,000-token** combined budget filled
+most-recent-first — an oversized skill gets truncated mid-file and pushes older
+skills out entirely.
+
+So: state what to do rather than narrating how or why. Challenge each line —
+does it justify its cost? Assume the reader is smart.
+
+The real limits, and the only ones worth quoting:
+
+| Thing | Limit |
+| --- | --- |
+| SKILL.md body | Under 500 lines — split into sibling files past that |
+| `description` | 1,024 characters |
+| `description` + `when_to_use` combined | 1,536 characters in the skill listing |
+| Post-compaction re-attachment | First 5,000 tokens per skill, 25,000 total |
+
+There is no prescribed section schema and no per-section token budget. Use the
+headings the content actually needs.
+
+## Structure: a default, not a contract
+
+A workflow skill usually wants: what this is for, the constraints that would
+cause real damage if violated, the happy path, then the exceptions. That
+ordering is a good default because a reader who stops early still has the
+important parts.
+
+Adapt it freely. Named sections beat generic ones — `## Check the budget` tells
+a skimmer more than `## STANDARD PATH`. A reference skill may be a table and
+nothing else. A skill with one instruction should be one paragraph.
+
+Two things genuinely help on complex tasks and are worth including when they
+apply:
+
+- **A copyable checklist** for multi-step work, so progress is trackable.
+- **A feedback loop** — run the validator, fix what it reports, repeat until
+  clean. Give Claude something to check its own work against.
+
+**Examples are not bloat.** When output quality depends on matching a shape —
+commit messages, review comments, generated files — showing an input/output
+pair is the most token-efficient instruction available.
+
+## Frontmatter
 
 ```yaml
 ---
 name: skill-name
-description: [One-liner, <80 chars]
-allowed-tools: [minimum permissions needed]
+description: >-
+  What it does and when to use it, third person, with the words a user would
+  actually say.
+allowed-tools: Read, Grep, Bash(git log*)
 ---
 ```
 
-Omit `model:` on skills — they execute in the parent conversation context, and pinning a model can break long sessions (e.g. 1M-context Opus). Agents get a fresh context, so specifying `model:` on agent frontmatter is fine.
+### The description decides whether the skill ever fires
 
-### 3. Write Structure
+It is the only part Claude sees before deciding to load the skill, so it must
+carry **what it does** and **when to use it**, written in third person, with
+specific trigger terms a user would actually type. Vague descriptions produce
+skills that never fire; overly narrow ones fire only on exact phrasing.
 
-PURPOSE → CRITICAL → ASSUMES → STANDARD PATH → EDGE CASES → DETAIL
+- Weak: "Helps with commits."
+- Strong: "Creates conventional commits with quality gates — runs validation,
+  stages, and writes the message. Use when committing changes, or when the user
+  asks to commit, stage, or write a commit message."
 
-- **PURPOSE** ≤10 tokens: What + when
-- **CRITICAL** ≤20 tokens: Catastrophic mistakes
-- **STANDARD PATH** ≤30 lines: Happy path
-- **EDGE CASES**: Named links only
-- **DETAIL**: Only if referenced
+An optional `when_to_use` field can carry trigger phrasing separately; keep the
+two together under 1,536 characters.
 
-See DETAIL: Detailed Workflow for step-by-step guide.
+Name in gerund form where it reads naturally (`processing-pdfs`); noun phrases
+and command-style names (`open-pr`) are fine. Avoid vague names.
 
-## EDGE CASES
+Omit `model:` on skills — they execute in the parent conversation's context,
+and pinning a model can break long sessions (e.g. 1M-context Opus). Agents get
+a fresh context, so `model:` on an agent is fine.
 
-- [Skill too large] — read DETAIL: Scope Creep if STANDARD PATH >50 lines or EDGE CASES >5 items
-- [Agent should execute] — read DETAIL: Advisor vs Enforcer if tempted to add Write/Edit tools
-- [Unclear permissions] — read DETAIL: Allowed-Tools if unsure what to grant
+### `allowed-tools` (skills) vs `tools` (agents)
 
----
-
-## DETAIL: Detailed Workflow
-
-### 1. Determine Skill or Agent Type
-
-**Skill (automation workflow):**
-
-- Solves a repetitive task
-- User invokes explicitly (e.g., `/commit`)
-- STANDARD PATH is a workflow with steps
-
-**Agent (answering questions):**
-
-- Reads and analyzes (advisor only)
-- Answers domain questions
-- Does NOT execute or modify files
-- Tool permissions: Read only
-
-### 2. Draft PURPOSE
-
-"What does this do? When do I invoke/use it?" in one sentence.
-
-**Test:** Can someone skim this in 5 seconds and know if they need to read more?
-
-### 3. List CRITICAL Constraints
-
-Non-negotiable rules preventing catastrophic mistakes:
-
-- Destructive operations that can't be undone
-- Security/compliance rules
-- Ordering dependencies ("must run X before Y")
-- Permission boundaries
-
-**Examples:**
-
-- ✅ "Never commit secrets. Always run detect-private-key first."
-- ✅ "Formatters must run before validators. Validators gate commits."
-- ❌ "Consider running tests" → Not critical (nice-to-know)
-
-### 4. Write ASSUMES
-
-What the skill assumes about the environment/codebase:
-
-- Project structure
-- Tool availability
-- Configuration patterns
-
-**Why this matters:** If ASSUMES break, skill needs redesign, not patching.
-
-### 5. Write STANDARD PATH
-
-Happy path covering 80% of uses. Prose + code blocks. ≤30 lines total.
-
-**For skills:**
-
-- User runs `/skill-name`
-- Step-by-step workflow (2-5 steps)
-- Prose explaining each step
-- Code blocks showing commands
-
-**For agents:**
-
-- User asks a question
-- Agent reads files
-- Agent answers in structured format
-- Don't include execution; agents are read-only
-
-### 6. List EDGE CASES
-
-Link to DETAIL sections. Name them and link; don't explain yet.
-
-```markdown
-## EDGE CASES
-
-- [Case name] — read DETAIL: Name if you encounter this
-```
-
-### 7. Write DETAIL Sections (If Needed)
-
-Only for edge cases referenced above. Format: `## DETAIL: Edge Case Name`
-
----
-
-## DETAIL: Scope Creep
-
-Skill is too big if:
-
-- User spends >3 minutes reading
-- STANDARD PATH has many conditionals
-- EDGE CASES has >5 items
-
-**Solution:** Split into focused skills that reference each other.
-
-**Example (bad):** `/commit` covers conventional commits, validate, stage, and push (3 workflows)
-
-**Better:** `/commit` (commit), `/push` (push), `/pre-flight` (validate)
-
----
-
-## DETAIL: Advisor vs Enforcer
-
-Agents should be **advisors** (read-only, guidance), not **enforcers** (check state, gate decisions).
-
-| Bad | Good |
-| --- | --- |
-| Agent enforces a business rule | Should be a unit test |
-| Agent checks product state | Should be a product feature |
-| ✅ Agent answers domain questions | Read-only, provides guidance |
-
----
-
-## DETAIL: Allowed-Tools
-
-Grant minimum permissions needed. **The field name differs by file type** — the wrong
-one is silently ignored:
+**The field name differs by file type, and the wrong one is silently ignored.**
+This is not cosmetic: every "read-only" agent in this repo carried
+`allowed-tools:` for months and ran completely unrestricted, because an agent
+with no `tools:` key **inherits every tool**. Omitting it is not a safe
+default — it is the permissive default.
 
 | File type | Field | Accepts |
 | --- | --- | --- |
 | Skill (`SKILL.md`) | `allowed-tools:` | Tool names **and** `Bash(pattern*)` scoping |
 | Agent (`agents/*.md`) | `tools:` / `disallowedTools:` | Bare tool names only — **no** `Bash(...)` scoping |
 
-An agent with no `tools:` inherits every tool, so omitting it is not a safe default.
-Per-command Bash scoping for agents belongs in settings permissions or a PreToolUse
-hook, not in frontmatter.
+Per-command Bash scoping for an agent belongs in settings permissions or a
+`PreToolUse` hook, not in frontmatter. `Task` is not a tool name — subagent
+dispatch is not granted this way.
 
-Skills — `allowed-tools:`:
+Grant the minimum that works, then test by removing one entry: if it still
+works, leave it out.
 
-| Role | Grant |
+| Role | Typical grant |
 | --- | --- |
-| Validator | Bash with specific patterns: `Bash(nix flake check*)` |
-| Writer | Write for generated files only: `Write(.claude/skills/**)` |
+| Validator skill | `Bash(just check*)` — scoped, not bare `Bash` |
+| Generator skill | `Write(.claude/skills/**)`, `Read`, `Glob` |
+| Advisory agent | `Read, Grep, Glob` |
+| Reviewing agent | `Read, Grep, Glob, Bash` — never `Write` |
 
-Agents — `tools:`:
+## Splitting across files
 
-| Role | Grant |
-| --- | --- |
-| Advisor | `Read, Glob, Grep` only (no execution) |
-| Code reviewer | `Read, Grep, Glob, Bash` (never Write) |
+SKILL.md is the navigation layer. When it outgrows ~500 lines, move depth into
+sibling files and link to them by name and purpose, so Claude can tell whether
+a file is worth opening.
 
-**Test:** Remove one permission. Does it still work? If yes, remove it.
+```text
+skills/my-skill/
+  SKILL.md          Navigation + the path most runs take
+  reference.md      Full detail, loaded on demand
+  scripts/run.sh    Executable steps, not pasted into the body
+```
 
----
+Two rules make this work:
 
-## TEMPLATE: Skill
+- **One level deep.** References from SKILL.md only. Nested references get
+  partially read (`head -100`) and yield incomplete information.
+- **Table of contents past 100 lines.** A partial read of a long reference
+  should still reveal its full scope.
+
+Agent reference docs in this repo live in `agents/references/` and follow the
+same rules.
+
+## Skills and agents: isolation, not read-only
+
+Older guidance in this repo claimed agents are advisors that never execute or
+modify files. That was never true here, and it is not what subagents are for.
+
+The real trade-off is **isolation and context economy**. A subagent gets its
+own context window; its tool output — wide searches, long file reads, verbose
+command output — never enters the parent conversation, only its final report
+does. That is the reason to reach for one.
+
+Restricting an agent's tools is a separate, deliberate choice you make per
+agent, and you make it in `tools:`. `code-reviewer` and `project-manager` are
+advisory by design and should hold no write tools; `verifier` and
+`harness-builder` legitimately run commands. Write down which one you are
+building, and make the frontmatter match — a description promising "read-only"
+over inherited-everything tools is a lie the runtime will not catch.
+
+Subagents also support `memory:`, `isolation: worktree`, and `permissionMode:`
+when the work needs persistence, a scratch checkout, or different prompting
+behavior.
+
+## harness-kit conventions
+
+- **Extract inline bash into `skills/shared/`.** Anything beyond a couple of
+  lines, or reused across skills, becomes a script there — it gets ShellCheck
+  coverage from `just check` and can be tested. Reference it as
+  `${CLAUDE_PLUGIN_ROOT}/skills/shared/name.sh` and add the matching
+  `Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/name.sh*)` entry to `allowed-tools`.
+- **Always use `${CLAUDE_PLUGIN_ROOT}` paths**, never relative or absolute
+  ones. `/harness bootstrap` rewrites them to `.claude/...` when copying skills
+  into a project.
+- **Register new skills and agents in `.claude-plugin/plugin.json`** under
+  `skills` / `agents`. An unregistered file will not load.
+- **Run `just check`** before committing — plugin validation, hook schema
+  checks, ShellCheck, markdownlint, and whitespace hygiene.
+- **Skill directory name must match the frontmatter `name`.**
+
+## Evaluate before you elaborate
+
+Before writing extensive instructions, write three concrete tasks the skill
+should handle and run them **without** the skill. That baseline tells you what
+Claude already does well — which is exactly what the skill should not repeat.
+Then add only the instructions that move a failing case, and re-run.
+
+Test across model tiers when the skill will be used by more than one: what
+reads as over-explaining to Opus can be the necessary detail for Haiku.
+
+## Anti-patterns
+
+- Offering several options with no default. Pick one; mention alternatives only
+  if the choice is genuinely situational.
+- Time-sensitive content ("as of the March release", "the new API"). If old
+  behavior must be documented, put it in an `<details>` block labelled as
+  historical.
+- Inconsistent terminology — one name per concept, throughout.
+- Windows-style paths.
+- Restating general good practice Claude already follows.
+
+## Templates
+
+Starting points, not schemas. Delete any heading the skill does not need.
+
+### Skill
 
 ```markdown
 ---
 name: skill-name
-description: [One-liner, specific, <80 chars]
-allowed-tools: Bash(git add*), Bash(git commit*), Read, Write
+description: >-
+  What it does, and when to use it — third person, with trigger terms.
+allowed-tools: Read, Write, Bash(git add*), Bash(git commit*)
 ---
 
-# [Skill Name]
+# /skill-name — Short Title
 
-## PURPOSE
+One or two sentences: what this is for and when it applies.
 
-[One-liner: What + when, ≤10 tokens]
+## <Constraints that cause real damage if violated>
 
-## CRITICAL
+## <The path most runs take>
 
-- [Non-negotiable constraint]
-- [Catastrophic mistake prevention]
+## <Exceptions, named so a skimmer can tell if they are in one>
 
-## ASSUMES
+## Related
 
-- [Environment assumption]
-- [When this breaks, skill needs rewrite]
-
-## STANDARD PATH
-
-[Prose describing happy path]
-
-\`\`\`bash
-[commands for happy path]
-\`\`\`
-
-## EDGE CASES
-
-- [Case name] — read DETAIL: Name if you encounter this
-
-## DETAIL: Edge Case Name
-
-[Explanation when triggered]
+- `/other-skill` — how it connects
 ```
 
----
-
-## TEMPLATE: Agent
-
-Agents use `tools:` / `disallowedTools:`; skills use `allowed-tools:`. Using the wrong
-one is silently ignored — and an agent with no `tools:` inherits **every** tool. Omit
-`model:` unless the agent genuinely needs a specific one; it defaults to `inherit`.
+### Agent
 
 ```markdown
 ---
 name: agent-name
-description: [One-liner, specific, <80 chars]
-tools: Read, Glob, Grep
+description: >-
+  What this agent analyzes or does, and when to dispatch it. Include
+  <example> blocks showing the invoking exchange.
+tools: Read, Grep, Glob
 ---
 
-# [Agent Name]
+# Agent Name
 
-## PURPOSE
+What this agent is for, and what it returns to its caller.
 
-[What questions does this answer about what domain?]
+## <How it works — checklist, dimensions, or procedure>
 
-## CRITICAL
+## Output format
 
-- [Boundary: "read-only, never execute"]
-- [Domain rule: "all queries must include X context"]
-
-## ASSUMES
-
-- [File structure assumptions]
-- [Domain knowledge assumptions]
-
-## STANDARD QUESTION
-
-[Example question the agent answers well]
-
-[Agent's structured response format]
-
-## RELATED
-
-- [Related agents/skills]
+<The exact shape of the report the caller receives>
 ```
 
----
+## Related
 
-## RELATED
+- `/documentation-writer` — human-facing docs (README, guides, reference)
+- `/harness audit` — audits skills and agents in a project
+- `agents/references/hooks-reference.md` — hooks.json schema, events, gotchas
 
-- `/documentation-writer` — Write scannable docs using progressive disclosure
-- `/harness audit` — Audit skills for structure compliance
-- `agents/references/hooks-reference.md` — Plugin hooks.json schema, events, and gotchas (for plugins that include hooks)
+## Sources
 
-## SOURCES
-
-- [Progressive Disclosure | ixdf.org](https://ixdf.org/literature/topics/progressive-disclosure/)
-- [Agent Skills: Progressive Disclosure](https://www.newsletter.swirlai.com/p/agent-skills-progressive-disclosure)
+- [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
+- [Claude Code skills](https://code.claude.com/docs/en/skills)
+- [Prompting Claude Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5)
