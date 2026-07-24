@@ -346,7 +346,9 @@ eval "$cmd"   # ALL must pass
 
 ### 4. Commit, Rebase, and Push
 
-Use the fixup-and-push script (stages, creates fixup commit, autosquash rebases, force-pushes):
+Use the fixup-and-push script (stages, creates fixup commit, autosquash rebases, force-pushes).
+
+**First, run `/commit`'s uv.lock drift check** (STANDARD PATH step 2 / DETAIL: uv.lock Drift in `skills/commit/SKILL.md`) — the script stages only the files you pass it, so if `uv.lock` has drifted, add it to the file list below and warn the user, exactly as `/commit` prescribes.
 
 ```bash
 # Subject is now optional — inferred from the latest non-merge, non-fixup
