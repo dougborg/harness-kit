@@ -2,7 +2,7 @@
 name: budget
 description: >-
   Check the Claude usage/token budget before dispatching subagents or large
-  fan-outs. Reports session and weekly (all-models + Fable) utilization and
+  fan-outs. Reports session and weekly (all-models + per-model) utilization and
   reset times, warns when near a cap, and guides right-sizing, deferring, and
   scheduling a wake-up to resume after a usage-limit reset. Use before any
   orchestration-scale work; a PreToolUse hook also surfaces this automatically.
@@ -24,11 +24,14 @@ Read the usage panel non-interactively:
 ${CLAUDE_PLUGIN_ROOT}/skills/shared/claude-usage-check.sh
 ```
 
-It runs `claude -p "/usage"` under the hood (a local panel — no model turn),
-parses the session and both weekly lines (all-models and Fable), and prints a
-one-line status plus a warning past the threshold (default 85%; override with
-`CLAUDE_USAGE_WARN_PCT`). Results are cached for `CLAUDE_USAGE_TTL` seconds
-(default 180) so repeated checks stay cheap.
+It runs `claude -p "/usage"` under the hood (a local panel — no model turn;
+undocumented for print mode, so the invocation pins `--model haiku
+--max-turns 1` as a cheap guard and fails open if the panel ever goes away),
+parses the session and weekly lines (all-models plus any per-model line, e.g.
+Fable or Opus depending on plan), and prints a one-line status plus a warning
+past the threshold (default 85%; override with `CLAUDE_USAGE_WARN_PCT`).
+Results are cached for `CLAUDE_USAGE_TTL` seconds (default 180) so repeated
+checks stay cheap.
 
 The `--hook` mode emits a `PreToolUse` JSON envelope and is wired into
 `hooks/hooks.json` (matcher `Task|Agent`) so a warning surfaces automatically
