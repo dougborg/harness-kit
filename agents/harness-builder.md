@@ -142,6 +142,22 @@ if the diagnostic is real.
    reply so the user knows their editor may need a restart.
 ```
 
+#### Baseline Compact Instructions
+
+Include this section in every generated CLAUDE.md — it shapes every compaction
+summary in the project (documented mechanism), keeping the pointers to
+externalized state alive through auto-compact:
+
+```markdown
+## Compact instructions
+
+When compacting, always preserve: the tracking issue/PR numbers for in-flight
+work, decisions made and their rationale, the current task list (done /
+in-flight / next), and any discovered gotchas. Drop file contents, tool
+output, and exploration dead ends — they can be re-derived from git, gh, and
+the tracking issue's checkpoint comment.
+```
+
 ### Recommended Agents
 
 For each, provide:

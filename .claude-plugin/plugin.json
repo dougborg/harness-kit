@@ -21,6 +21,7 @@
     "./agents/project-manager.md"
   ],
   "skills": [
+    "./skills/budget",
     "./skills/code-reviewer",
     "./skills/commit",
     "./skills/documentation-writer",

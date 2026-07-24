@@ -1,5 +1,27 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/skills/shared/claude-usage-check.sh --hook"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🧭 Context was just compacted. Re-ground before continuing: (1) if the current work has a tracking issue or PR, re-read its body/checkpoint comment — that is the authoritative state, not the summary; (2) re-derive in-flight state from git status and gh (open PRs, recent comments) instead of trusting recalled detail; (3) if orchestrating, re-run the budget check before the next subagent fan-out.'"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
