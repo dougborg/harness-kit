@@ -2,6 +2,18 @@
 
 Setting up automated semver releases with [Release Please](https://github.com/googleapis/release-please) — and the gotchas that aren't documented anywhere obvious.
 
+## Contents
+
+- [When to Use](#when-to-use)
+- [Minimal Setup (no `package.json`)](#minimal-setup-no-packagejson)
+- [Three Gotchas Every Project Hits](#-three-gotchas-every-project-hits)
+  - [1. GitHub Actions can't create PRs by default](#1-github-actions-cant-create-prs-by-default)
+  - [2. Release PRs don't trigger CI on first open](#2-release-prs-dont-trigger-ci-on-first-open)
+  - [3. Auto-generated CHANGELOG conflicts with strict markdownlint](#3-auto-generated-changelog-conflicts-with-strict-markdownlint)
+- [Verifying Your Setup](#verifying-your-setup)
+- [Triggering Manually](#triggering-manually)
+- [Related](#related)
+
 ## When to Use
 
 Add Release Please when:

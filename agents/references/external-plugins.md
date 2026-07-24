@@ -1,6 +1,6 @@
 # External Plugins Reference — Official Anthropic Marketplaces
 
-Single source of truth for recommending Anthropic's official plugins during `/harness bootstrap` and `/harness audit`. Referenced by `skills/harness/SKILL.md` (Bootstrap and Audit modes) and `agents/harness-builder.md` — do not duplicate this catalog elsewhere.
+Single source of truth for recommending Anthropic's official plugins during `/harness bootstrap` and `/harness audit`. Referenced by `skills/harness/bootstrap.md`, `skills/harness/audit.md`, and `agents/harness-builder.md` — do not duplicate this catalog elsewhere.
 
 ## The Two Marketplaces
 

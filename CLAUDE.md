@@ -17,6 +17,7 @@ A collection of skills, agents, and shared utilities for Claude Code that provid
 ```text
 .claude-plugin/          Plugin manifest and marketplace config
 skills/                  SKILL.md files (auto-discovered by Claude Code)
+  <skill>/*.md           Reference files, siblings of SKILL.md (one level deep only)
   shared/                Cross-skill shell scripts
 agents/                  Agent .md files
   references/            Reference docs for agents
@@ -30,6 +31,10 @@ This repo dogfoods its own harness. Use `/harness audit` to validate.
 ### Script Path Convention
 
 All script references in skills use `${CLAUDE_PLUGIN_ROOT}/skills/...` paths. When `/harness bootstrap` copies skills to a project's `.claude/`, these paths are rewritten to `.claude/skills/...`.
+
+### Skill Size and Reference Files
+
+Keep each `SKILL.md` under 500 lines. Split deeper material into reference `.md` files that sit **next to** the SKILL.md and are linked directly from it — exactly one level deep. A reference file must never link to another reference file; Claude previews unfamiliar files with `head -100` and would act on incomplete content. Any reference file over 100 lines needs a table of contents at the top.
 
 ### Validation
 
