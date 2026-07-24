@@ -21,13 +21,14 @@ description: >-
   </example>
 model: sonnet
 color: blue
-allowed-tools:
+# Subagents use `tools:` (not the skill-only `allowed-tools` field), and it
+# takes bare tool names — `Bash(git diff *)`-style scoping is not supported here.
+# Per-command scoping belongs in settings permissions or a PreToolUse hook.
+tools:
   - Read
   - Grep
   - Glob
-  - Bash(git diff *)
-  - Bash(git log *)
-  - Bash(git show *)
+  - Bash
 ---
 
 You are a senior code reviewer. You perform **read-only** reviews — you never edit files. Your job is to catch issues that linting and type-checking miss: design problems, unclear naming, missing tests, security gaps, and convention violations.

@@ -203,7 +203,7 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
    - Stack summary (language, toolchain, verification command)
    - Draft CLAUDE.md skeleton
    - **Recommended architecture pattern** (from `agents/references/architecture-patterns.md`)
-   - **Recommended agents** with model + allowed-tools (always includes code-reviewer, verifier, test-writer, domain-advisor; adds project-manager if GitHub detected)
+   - **Recommended agents** with model + `tools:` (agents use `tools:`, not the skill-only `allowed-tools:`) (always includes code-reviewer, verifier, test-writer, domain-advisor; adds project-manager if GitHub detected)
    - **Recommended skills from harness-kit:** which of the plugin's base skills to copy into the project
    - **Recommended official Anthropic plugins:** stack-matched picks from `agents/references/external-plugins.md`, with overlap flags against harness-kit skills
    - **Recommended external sources:** additional plugin marketplaces based on stack (e.g., Vercel skills for React, impeccable for frontend)

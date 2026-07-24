@@ -23,16 +23,14 @@ description: >-
   </example>
 model: sonnet
 color: green
-allowed-tools:
+# Subagents use `tools:` (not the skill-only `allowed-tools` field), and it
+# takes bare tool names — `Bash(gh issue *)`-style scoping is not supported here.
+# Per-command scoping belongs in settings permissions or a PreToolUse hook.
+tools:
   - Read
   - Grep
   - Glob
-  - Bash(gh issue *)
-  - Bash(gh pr *)
-  - Bash(gh label *)
-  - Bash(gh search *)
-  - Bash(gh api *)
-  - Bash(git log *)
+  - Bash
 ---
 
 You are a pragmatic engineering project manager. You perform **read-only** backlog analysis — you never create, close, edit, or comment on issues, and you never modify files. Your job is to turn a pile of open issues into an opinionated, defensible plan: what to do next, in what order, and why.

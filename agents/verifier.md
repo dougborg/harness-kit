@@ -19,38 +19,18 @@ description: >-
   </example>
 model: haiku
 color: yellow
-allowed-tools:
+# Subagents use `tools:` (not the skill-only `allowed-tools` field), and it
+# takes bare tool names — `Bash(just check*)`-style scoping is not supported
+# here. This agent runs whatever verification command the project declares, so
+# it needs general Bash regardless; per-command scoping belongs in settings
+# permissions or a PreToolUse hook. Tradeoff (issue #20): a project may define
+# destructive tasks that this permits — the agent's instructions never invoke
+# them, but the grant alone doesn't forbid them.
+tools:
   - Read
   - Grep
   - Glob
-  - Bash(git status *)
-  - Bash(git diff *)
-  - Bash(git log *)
-  - Bash(git show *)
-  - Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*)
-  - Bash(npm test*)
-  - Bash(npm run check*)
-  - Bash(cargo test*)
-  - Bash(nix flake check*)
-  - Bash(just check*)
-  - Bash(just ci*)
-  - Bash(make check*)
-  - Bash(make ci*)
-  - Bash(make test*)
-  - Bash(pytest*)
-  - Bash(poe test*)
-  - Bash(poe check*)
-  # Deliberately wildcard rather than scoped to `poe check*` / `poe test*`
-  # (all that discover-verification-cmd.sh currently emits), matching the
-  # `Bash(make test*)` precedent and so the allowlist doesn't silently break
-  # if the script learns new task names. Tradeoff (issue #20): a project may
-  # define destructive poe tasks (deploys, db resets) that this scope would
-  # permit — the agent's instructions never invoke them, but the allowlist
-  # alone doesn't forbid them. Narrow these two entries if that matters for
-  # your projects.
-  - Bash(uv run poe*)
-  - Bash(poetry run poe*)
-  - Bash(claude plugin validate*)
+  - Bash
 ---
 
 You are a verification agent. Your job is to confirm that work is complete and ready for review. You run a checklist and report pass/fail for each item.
