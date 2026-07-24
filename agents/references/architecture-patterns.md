@@ -2,6 +2,17 @@
 
 Six patterns for organizing multi-agent coordination. Select based on task structure.
 
+## Contents
+
+- [Decision Criteria (4 Axes)](#decision-criteria-4-axes)
+- [1. Pipeline](#1-pipeline)
+- [2. Fan-out/Fan-in](#2-fan-outfan-in)
+- [3. Expert Pool](#3-expert-pool)
+- [4. Producer-Reviewer](#4-producer-reviewer)
+- [5. Supervisor](#5-supervisor)
+- [6. Hierarchical Delegation](#6-hierarchical-delegation)
+- [Default Recommendation](#default-recommendation)
+
 ## Decision Criteria (4 Axes)
 
 | Axis | Question | High → Pattern |

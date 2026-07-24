@@ -8,6 +8,20 @@ Schema, event types, and patterns for writing Claude Code plugin `hooks.json`.
 >
 > If Claude Code reports `Hook load failed: expected 'record' at path ['hooks'], received undefined` at plugin load time, you're hitting this bug.
 
+## Contents
+
+- [Schema Shape](#schema-shape)
+- [Manifest Registration](#manifest-registration)
+- [Event Types](#event-types)
+- [Matcher Syntax](#matcher-syntax)
+- [Variable Substitution](#variable-substitution)
+- [Exit Code Safety](#exit-code-safety)
+- [The 3-Stage PostToolUse Pattern](#the-3-stage-posttooluse-pattern)
+- [Fully Worked Example](#fully-worked-example)
+- [Local Testing](#local-testing)
+- [Validation in CI](#validation-in-ci)
+- [Related](#related)
+
 ## Schema Shape
 
 Plugin `hooks.json` is a **dedicated file** whose entire root object is `{"hooks": { ... }}`. Inside the `hooks` key, the shape is the same as `settings.json`'s `hooks` value — event types map to arrays of matcher/handler entries.
@@ -101,7 +115,7 @@ Inside a `command` string:
 
 ## Exit Code Safety
 
-Claude Code treats any non-zero exit code from a hook as a failure. Common pitfall: `[ cond ] && action` exits 1 when the condition is false. For the full rundown (common patterns, fixes, audit rule), see `skills/harness/SKILL.md` → `DETAIL: Hook Exit Code Safety`.
+Claude Code treats any non-zero exit code from a hook as a failure. Common pitfall: `[ cond ] && action` exits 1 when the condition is false. For the full rundown (common patterns, fixes, audit rule), see `skills/harness/hooks-patterns.md` → Hook Exit Code Safety.
 
 ## The 3-Stage PostToolUse Pattern
 
@@ -111,7 +125,7 @@ When writing multiple `PostToolUse` hooks, order them as **Formatters → Valida
 2. **Validators** — bounded output (≤30 lines), gated with conditions. Surface real errors only. (e.g. `typecheck`, `test`)
 3. **Guidance** — context reminders (≤20 lines). Nudge the developer with domain info. (e.g. "this touches auth — see domain-advisor")
 
-See `skills/harness/SKILL.md` → `Automation-First Hooks` for the full rationale.
+See `skills/harness/hooks-patterns.md` for the full rationale.
 
 ## Fully Worked Example
 
@@ -171,6 +185,7 @@ This check would have caught both v0.1.0 and v0.2.0 releases before they shipped
 ## Related
 
 - `skills/harness/SKILL.md` — harness audit/update/bootstrap flows reference this doc
+- `skills/harness/hooks-patterns.md` — hook staging philosophy and exit-code safety
 - `agents/harness-builder.md` — stack-detection-driven hook recommendations
 - [Claude Code docs: hooks](https://code.claude.com/docs/en/hooks.md)
 - [Claude Code docs: plugins reference](https://code.claude.com/docs/en/plugins-reference.md)
