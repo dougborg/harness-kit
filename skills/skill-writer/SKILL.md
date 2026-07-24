@@ -177,16 +177,33 @@ Agents should be **advisors** (read-only, guidance), not **enforcers** (check st
 
 ## DETAIL: Allowed-Tools
 
-Grant minimum permissions needed:
+Grant minimum permissions needed. **The field name differs by file type** — the wrong
+one is silently ignored:
 
-| Role | Tools |
+| File type | Field | Accepts |
+| --- | --- | --- |
+| Skill (`SKILL.md`) | `allowed-tools:` | Tool names **and** `Bash(pattern*)` scoping |
+| Agent (`agents/*.md`) | `tools:` / `disallowedTools:` | Bare tool names only — **no** `Bash(...)` scoping |
+
+An agent with no `tools:` inherits every tool, so omitting it is not a safe default.
+Per-command Bash scoping for agents belongs in settings permissions or a PreToolUse
+hook, not in frontmatter.
+
+Skills — `allowed-tools:`:
+
+| Role | Grant |
 | --- | --- |
-| Advisor (agent) | Read, Glob, Grep only (no execution) |
 | Validator | Bash with specific patterns: `Bash(nix flake check*)` |
 | Writer | Write for generated files only: `Write(.claude/skills/**)` |
-| Code reviewer | Read, Bash for output (never Write) |
 
-**Test:** Remove one permission. Does the skill still work? If yes, remove it.
+Agents — `tools:`:
+
+| Role | Grant |
+| --- | --- |
+| Advisor | `Read, Glob, Grep` only (no execution) |
+| Code reviewer | `Read, Grep, Glob, Bash` (never Write) |
+
+**Test:** Remove one permission. Does it still work? If yes, remove it.
 
 ---
 
@@ -236,12 +253,15 @@ allowed-tools: Bash(git add*), Bash(git commit*), Read, Write
 
 ## TEMPLATE: Agent
 
+Agents use `tools:` / `disallowedTools:`; skills use `allowed-tools:`. Using the wrong
+one is silently ignored — and an agent with no `tools:` inherits **every** tool. Omit
+`model:` unless the agent genuinely needs a specific one; it defaults to `inherit`.
+
 ```markdown
 ---
 name: agent-name
 description: [One-liner, specific, <80 chars]
-model: haiku
-allowed-tools: Read, Glob, Grep
+tools: Read, Glob, Grep
 ---
 
 # [Agent Name]

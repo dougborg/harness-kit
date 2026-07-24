@@ -2,7 +2,10 @@
 name: harness-builder
 description: Analyze any codebase and recommend a ChernyCode-style agent harness. Discovers stack, workflows, and domain knowledge to encode.
 model: sonnet
-allowed-tools: Read, Grep, Glob, Bash(git log*), Bash(git status*), Bash(ls*)
+# Subagents use `tools:` (not the skill-only `allowed-tools` field), and it
+# takes bare tool names — `Bash(git log*)`-style scoping is not supported here.
+# Per-command scoping belongs in settings permissions or a PreToolUse hook.
+tools: Read, Grep, Glob, Bash
 ---
 
 # Harness Builder

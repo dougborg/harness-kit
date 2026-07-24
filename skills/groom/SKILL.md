@@ -5,7 +5,7 @@ description: >-
   dependencies, recommend a prioritized 5-10 PR train with rationale, flag
   stale issues, and surface untracked gaps. Read-only analysis via the
   project-manager agent; the user decides what to act on.
-allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh search *), Bash(gh api *), Bash(git log *), Read, Grep, Glob, Task
+allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh search *), Bash(gh api *), Bash(git log *), Read, Grep, Glob, Agent
 ---
 
 # /groom — Backlog Grooming and Prioritization
