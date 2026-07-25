@@ -124,6 +124,10 @@ Flag, at high priority:
 - Non-existent tool names — `Task` is the common one (subagent dispatch is not granted via frontmatter); also flag anything not in the current tool set
 - Skill directory name not matching the frontmatter `name`
 - A skill or agent file missing from `.claude-plugin/plugin.json` (plugin repos only) — it will not load
+- A script referenced as `${CLAUDE_PLUGIN_ROOT}/skills/…`, a relative path, or an absolute path. Scripts are addressed as `${CLAUDE_SKILL_DIR}/<script>.sh`; a shared script is reached through a relative symlink in the consuming skill's directory
+- An `allowed-tools` Bash rule that does not spell the script path **exactly** as the body does. The rule is matched as a literal string after substitution, so any divergence means a permission prompt on every invocation — and the skill still "works", so it never gets noticed
+- A `${CLAUDE_SKILL_DIR}/<script>.sh` reference with no such file or symlink in the skill's directory — a dangling reference fails only at invocation time
+- A snippet that combines an allowed script call with `eval` in one command (`cmd=$(…/script.sh); eval "$cmd"`). Claude Code refuses to statically analyze a command containing `eval`, so no `allowed-tools` rule can match it and every run prompts. Split it: one call runs the script, a second runs what it printed
 
 Then apply the permission review:
 
@@ -156,7 +160,7 @@ The only real limits worth enforcing. There is **no section schema and no per-se
 - Do skills reference file paths rather than inlining code?
 - Is any skill duplicating content from another skill? (creates drift)
 - **Any inline bash block with logic** (conditionals, loops, pipes)? → Extract to a script in the skill's directory
-- **Any inline bash duplicated across skills?** → Extract to `skills/shared/`
+- **Any inline bash duplicated across skills?** → Extract to `skills/shared/` and symlink it into each consumer (`ln -s ../shared/script.sh skills/<skill>/script.sh`)
 - **Any inline command previously fixed for wrong syntax?** → Extract to prevent recurrence
 
 ## 10. Check Internal Consistency

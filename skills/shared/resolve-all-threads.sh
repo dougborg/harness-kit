@@ -19,7 +19,16 @@ PR_NUMBER="$2"
 OWNER="${REPO%%/*}"
 REPO_NAME="${REPO##*/}"
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Resolve $0 through any symlinks — consuming skills reach this script via a
+# relative symlink (e.g. skills/review-pr/resolve-all-threads.sh -> ../shared/…),
+# so a naive dirname would look for its sibling in the wrong directory.
+src="$0"
+while [ -L "$src" ]; do
+  link_dir="$(cd -P "$(dirname "$src")" && pwd)"
+  src="$(readlink "$src")"
+  case "$src" in /*) ;; *) src="$link_dir/$src" ;; esac
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$src")" && pwd)"
 
 # Fetch all unresolved thread IDs
 read -r -d '' query <<'GRAPHQL' || true

@@ -15,9 +15,9 @@ validate-hooks:
 test-hooks:
     ./skills/shared/test-hooks-schema.sh
 
-# Lint shell scripts with ShellCheck
+# Lint shell scripts with ShellCheck (-type f skips the shared-script symlinks)
 lint-shell:
-    find skills -name '*.sh' -exec shellcheck {} +
+    find skills -type f -name '*.sh' -exec shellcheck {} +
 
 # Lint markdown files
 lint-md:

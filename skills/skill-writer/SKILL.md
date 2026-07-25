@@ -6,7 +6,7 @@ description: >-
   prescriptive to be, writing the description field that controls when a skill
   fires, splitting content across reference files, the allowed-tools vs tools
   frontmatter distinction, and harness-kit's own conventions (shared scripts,
-  plugin.json registration, ${CLAUDE_PLUGIN_ROOT} paths). Use when creating a
+  plugin.json registration, ${CLAUDE_SKILL_DIR} paths). Use when creating a
   new skill or agent, editing an existing one, or deciding whether something
   should be a skill, an agent, a script, or nothing at all.
 disable-model-invocation: true
@@ -258,14 +258,28 @@ behavior.
 
 ## harness-kit conventions
 
-- **Extract inline bash into `skills/shared/`.** Anything beyond a couple of
-  lines, or reused across skills, becomes a script there — it gets ShellCheck
-  coverage from `just check` and can be tested. Reference it as
-  `${CLAUDE_PLUGIN_ROOT}/skills/shared/name.sh` and add the matching
-  `Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/name.sh*)` entry to `allowed-tools`.
-- **Always use `${CLAUDE_PLUGIN_ROOT}` paths**, never relative or absolute
-  ones. `/harness bootstrap` rewrites them to `.claude/...` when copying skills
-  into a project.
+- **Extract inline bash into a script.** Anything beyond a couple of lines
+  becomes a script — it gets ShellCheck coverage from `just check` and can be
+  tested. A script used by one skill lives in that skill's directory; anything
+  reused across skills is canonical in `skills/shared/`.
+- **Always address scripts as `${CLAUDE_SKILL_DIR}/name.sh`**, never relative
+  or absolute paths, and never `${CLAUDE_PLUGIN_ROOT}`. Add the matching
+  `Bash(${CLAUDE_SKILL_DIR}/name.sh*)` entry to `allowed-tools` — the
+  frontmatter rule and the body must spell the path **identically**, or the
+  invocation triggers a permission prompt.
+- **Reach a shared script through a relative symlink** in the consuming skill:
+  `ln -s ../shared/name.sh skills/<skill>/name.sh`. That keeps one canonical
+  copy while letting every consumer use `${CLAUDE_SKILL_DIR}/name.sh`, and it
+  resolves both in the plugin checkout and after `/harness bootstrap` copies
+  the tree into `.claude/skills/`.
+- **Never put `eval` in the same command as an allowed script call.** Claude
+  Code cannot statically analyze a command containing `eval`, so no
+  `allowed-tools` rule matches and it prompts on every run. `var=$(script.sh)`
+  and `script.sh --flag arg` both match fine; `cmd=$(script.sh); eval "$cmd"`
+  does not. Split it into two calls.
+- **A shared script that calls a sibling must resolve `$0` through symlinks**
+  before taking its `dirname` — see `skills/shared/resolve-all-threads.sh`.
+  Otherwise it looks for the sibling in the consuming skill's directory.
 - **Register new skills and agents in `.claude-plugin/plugin.json`** under
   `skills` / `agents`. An unregistered file will not load.
 - **Run `just check`** before committing — plugin validation, hook schema

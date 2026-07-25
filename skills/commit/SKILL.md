@@ -8,7 +8,7 @@ when_to_use: >-
   When the user asks to commit, stage, or write a commit message; when another
   skill (/open-pr, /review-pr) needs the commit mechanics or the uv.lock drift
   check.
-allowed-tools: Bash(git add*), Bash(git commit*), Bash(git diff*), Bash(git status*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Read
+allowed-tools: Bash(git add*), Bash(git commit*), Bash(git diff*), Bash(git status*), Bash(${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh*), Read
 ---
 
 # /commit — Quality-Gated Conventional Commits
@@ -72,12 +72,16 @@ Then proceed. See DETAIL: uv.lock Drift for the failure mode this prevents.
 
 ### 3. Run Project Validation
 
-Discover and run the verification command:
+Discover the verification command, then run what it prints as a **separate**
+Bash call:
 
 ```bash
-cmd=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh)
-eval "$cmd"
+${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh
 ```
+
+Do not pipe the discovery into `eval` in the same call — a command containing
+`eval` cannot be statically analyzed, so it falls outside this skill's
+`allowed-tools` and prompts for permission every time.
 
 **ALL checks must pass.** No commits that break validation.
 

@@ -46,7 +46,7 @@ Add skills from another plugin marketplace into the project's `.claude/`.
 
 3. **User selects** which skills to install into `.claude/`.
 
-4. **Copy selected skills** to `.claude/skills/` — whole directories, including reference files and scripts.
+4. **Copy selected skills** to `.claude/skills/` — whole directories, including reference files and scripts. Use `cp -R` (never `cp -RL`) so relative symlinks to `shared/` are preserved rather than expanded into duplicate files, and do not rewrite paths in the copied files.
 
 5. **Update `.harness-lock.json`** with new source and file entries.
 

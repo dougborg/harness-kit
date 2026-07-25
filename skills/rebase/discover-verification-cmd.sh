@@ -1,0 +1,1 @@
+../shared/discover-verification-cmd.sh

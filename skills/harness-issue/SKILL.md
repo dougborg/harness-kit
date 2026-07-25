@@ -6,7 +6,7 @@ description: >-
   Two modes: open an Issue, or open a PR with a draft fix. Searches for
   duplicates first and always shows the proposed content before filing.
 argument-hint: "[issue|pr]"
-allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh api *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/harness-issue/*), Read, Edit, Write
+allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh api *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(${CLAUDE_SKILL_DIR}/*), Read, Edit, Write
 ---
 
 # /harness-issue — File feedback or a fix on the upstream harness
@@ -36,7 +36,7 @@ Close the loop between projects that consume harness-kit and the harness itself.
 ### 1. Resolve upstream
 
 ```bash
-upstream=$(${CLAUDE_PLUGIN_ROOT}/skills/harness-issue/resolve-upstream.sh)
+upstream=$(${CLAUDE_SKILL_DIR}/resolve-upstream.sh)
 echo "Filing against $upstream"
 ```
 
@@ -114,7 +114,7 @@ Print the resulting issue URL.
 2. **Prepare the upstream workspace**:
 
    ```bash
-   workspace=$(${CLAUDE_PLUGIN_ROOT}/skills/harness-issue/prepare-pr-workspace.sh "$upstream" "<branch>")
+   workspace=$(${CLAUDE_SKILL_DIR}/prepare-pr-workspace.sh "$upstream" "<branch>")
    cd "$workspace"
    ```
 

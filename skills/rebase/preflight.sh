@@ -10,8 +10,9 @@
 
 set -euo pipefail
 
+# Shared scripts are reachable as symlinks inside this skill's own directory,
+# so they resolve both in the plugin checkout and after /harness bootstrap.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SHARED_DIR="${SCRIPT_DIR}/../shared"
 
 # Confirm not on main
 current=$(git branch --show-current)
@@ -28,8 +29,8 @@ remote="${target%%/*}"
 git fetch "$remote"
 
 # Check for collaboration (other authors)
-if [ -x "$SHARED_DIR/is-branch-shared.sh" ]; then
-  "$SHARED_DIR/is-branch-shared.sh"
+if [ -x "$SCRIPT_DIR/is-branch-shared.sh" ]; then
+  "$SCRIPT_DIR/is-branch-shared.sh"
 fi
 
 # Stash uncommitted changes if needed

@@ -38,11 +38,11 @@ Skill content stays in context for the whole session once loaded, and after comp
 
 **Inline bash in skills is a smell.** It costs tokens on every invocation, drifts between skills, and is untestable. Extract it into scripts.
 
-- Scripts go in the skill's directory (alongside SKILL.md) or `skills/shared/` for cross-skill use
+- Scripts go in the skill's directory (alongside SKILL.md); cross-skill scripts are canonical in `skills/shared/` and reached from each consumer through a relative symlink (`ln -s ../shared/script.sh skills/<skill>/script.sh`), so every reference is `${CLAUDE_SKILL_DIR}/script.sh`
 - **Extract if:** block has conditionals, loops, pipes, arithmetic, multi-step sequences, or error-prone syntax
 - **Leave inline if:** single straightforward command (e.g., `git status`, `nix flake check`)
 - When fixing a bug in inline bash, always extract to a script rather than patching in place
-- Add scripts to the skill's `allowed-tools` frontmatter: `Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/script.sh*)`
+- Add scripts to the skill's `allowed-tools` frontmatter: `Bash(${CLAUDE_SKILL_DIR}/script.sh*)`
 
 ## User Prompts: Only Ask When Necessary
 
