@@ -14,8 +14,8 @@ Establish quality gates on agent harnesses — skills, agents, hooks, and docume
 
 ## CRITICAL
 
-- **Never ship a skill without /harness audit passing** — Audit gates on PURPOSE/CRITICAL/STANDARD PATH structure and tool correctness
-- **Audit gates prevent silent failures** — Missing agents, duplicate skills, broken hooks, wrong models — audit finds them
+- **Run `/harness audit` before shipping a skill** — it catches the failures nothing else does: invalid frontmatter, unrestricted "read-only" agents, oversized or vague skills. Audit is advisory, not a gate; weigh its judgment calls rather than obeying them
+- **Fix audit defects, weigh audit recommendations** — a frontmatter field that is silently ignored is a defect; a description that reads vague is a call you make
 - **Harness quality === agent quality** — Skills teach and guide; if skills are poorly structured or out-of-date, agents will follow bad patterns
 
 ## ASSUMES
@@ -31,7 +31,7 @@ Auto-detect and run the appropriate mode:
 
 ```bash
 /harness              # Auto-detect: bootstrap if no harness, audit if exists
-/harness audit        # Run 10-step audit on current harness
+/harness audit        # Audit the current harness (delegates setup health to /doctor)
 /harness bootstrap    # Analyze project, install skills/agents from plugin, generate project-specific additions
 /harness update       # Pull latest from upstream sources, smart-merge with local changes
 /harness add <repo>   # Add skills from another plugin marketplace
@@ -45,7 +45,7 @@ If no `.claude/` → runs `bootstrap` (generates harness). If `.claude/` exists 
 
 | Mode | Read | What it covers |
 | --- | --- | --- |
-| `audit` | `${CLAUDE_PLUGIN_ROOT}/skills/harness/audit.md` | 10-step audit protocol, gap classification, output format |
+| `audit` | `${CLAUDE_PLUGIN_ROOT}/skills/harness/audit.md` | Audit protocol, `/doctor` division of labor, gap classification, output format |
 | `bootstrap` | `${CLAUDE_PLUGIN_ROOT}/skills/harness/bootstrap.md` | harness-builder handoff, approval gate, install steps, `.harness-lock.json` creation |
 | `update` | `${CLAUDE_PLUGIN_ROOT}/skills/harness/update.md` | Smart-merge with upstream using lock-file provenance |
 | `add` | `${CLAUDE_PLUGIN_ROOT}/skills/harness/update.md` | Installing skills from another marketplace (second half of the file) |
@@ -133,4 +133,5 @@ Lightweight in-flight signal that feeds the next audit. Don't stop work — just
 - `harness-builder` agent — Used by bootstrap mode to analyze codebases and recommend harness setup
 - `/session-retro` — Session-side retrospective (documents the work, not the harness); run alongside retro mode
 - `/documentation-writer` — Write scannable, progressive-disclosure docs
-- `/skill-writer` — Create well-structured skills with PURPOSE/CRITICAL/STANDARD PATH
+- `/skill-writer` — Authoring guidance for skills and agents; audit checks against what it teaches
+- `/doctor` (bundled with Claude Code, alias `/checkup`) — Generic setup health: installation, PATH, unused skills, slow hooks, CLAUDE.md bloat. Audit invokes it rather than duplicating it
