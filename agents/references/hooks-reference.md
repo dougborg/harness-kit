@@ -115,7 +115,9 @@ Inside a `command` string:
 
 ## Exit Code Safety
 
-Claude Code treats any non-zero exit code from a hook as a failure. Common pitfall: `[ cond ] && action` exits 1 when the condition is false. For the full rundown (common patterns, fixes, audit rule), see `skills/harness/hooks-patterns.md` → Hook Exit Code Safety.
+Claude Code treats any non-zero exit code from a hook as a failure. Common pitfall: `[ cond ] && action` exits 1 when the condition is false. Use `if [ cond ]; then action; fi` instead, or append `|| true`.
+
+Audit rule: for every hook command, ask "what happens when this has nothing to do?" If the answer is "it exits non-zero," it needs fixing.
 
 ## The 3-Stage PostToolUse Pattern
 

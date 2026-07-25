@@ -144,5 +144,4 @@ gh workflow run release-please.yml
 ## Related
 
 - [Release Please docs](https://github.com/googleapis/release-please)
-- `agents/references/hooks-reference.md` — same authority + gotcha pattern, different domain
 - `/harness-builder` — recommends adding Release Please when conventional commits + GitHub are detected

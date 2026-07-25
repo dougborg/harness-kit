@@ -76,7 +76,7 @@ Adapt recommendations based on detected stack:
 - **GitHub used?** → Recommend: `project-manager` agent + `feature-spec`, `issue-triage`, `standup` skills
 - **Frontend present?** → Recommend: design harness (`.impeccable.md` seed) + `ui-review` skill
 - **Preferred component library?** → Note target in `.impeccable.md` — do NOT encode existing design; let `/impeccable:init` guide new direction
-- **Any stack detected** → Match against `agents/references/external-plugins.md` for official Anthropic plugin recommendations (language → LSP plugin, MCP server → `mcp-server-dev`, Agent SDK → `agent-sdk-dev`, legacy code → `code-modernization`, ...)
+- **Any stack detected** → Match against `agents/references/external-plugins.md`, bundled skills first (already available, no install: `/verify` and `/run-skill-generator` for build/launch, `/code-review` and `/security-review` for review, `/batch` for fan-out), then official Anthropic plugin recommendations (language → LSP plugin, MCP server → `mcp-server-dev`, Agent SDK → `agent-sdk-dev`, legacy code → `code-modernization`, ...)
 
 ### 6. Domain Knowledge
 
@@ -219,19 +219,24 @@ Always recommend these universal skills:
 
 Add domain-specific skills for frequent workflows discovered in step 5.
 
-### Recommended Official Anthropic Plugins (optional)
+### Bundled Skills and Recommended Official Anthropic Plugins (optional)
 
-Match the detected stack against the catalog in `agents/references/external-plugins.md` (the single source of truth — do not restate its tables here) and output a section like:
+Match the detected stack against the catalogs in `agents/references/external-plugins.md` (the single source of truth — do not restate its tables here). Work the bundled-skills table first; never propose installing or generating something a bundled skill already covers. Output a section like:
 
 ```markdown
+## Already available (bundled with Claude Code, no install)
+
+- /run-skill-generator — record this project's build/launch recipe once, so /run and /verify follow it
+- /code-review, /security-review — diff review; harness-kit's code-reviewer adds the 6-dimension rubric
+
 ## Recommended Anthropic plugins (optional)
 
 Based on your stack (Python + MCP server + pyright):
 
 - pyright-lsp@claude-plugins-official — type-aware code intelligence (no overlap)
 - mcp-server-dev@claude-plugins-official — MCP server design skills (no overlap)
-- code-review@claude-plugins-official — multi-agent PR review
-  ⚠ overlaps harness-kit `code-reviewer` — pick one (see catalog for comparison)
+- commit-commands@claude-plugins-official — commit/push/PR commands
+  ⚠ overlaps harness-kit `/commit` — pick one (see catalog for comparison)
 
 To install: /plugin marketplace add anthropics/claude-plugins-official
             /plugin install <name>@claude-plugins-official
@@ -240,6 +245,7 @@ To install: /plugin marketplace add anthropics/claude-plugins-official
 Rules:
 
 - Only recommend plugins whose stack trigger matches the detected stack — no generic dumps
+- Bundled skills go in their own list with no install command, and are never presented as optional installs. Note that `disableBundledSkills` can turn them off (all but `/doctor`), so the recommendation should degrade rather than assume
 - Every entry gets a one-line rationale and an explicit overlap flag: **no overlap**, **composes with `<skill>`**, or **pick one vs `<skill>`**
 - Never preselect overlapping plugins — the user decides which side of an overlap stays active
 - Output styles (`learning-output-style`, `explanatory-output-style`) are pure preference: mention at most, never preselect

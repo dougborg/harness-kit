@@ -83,8 +83,9 @@ ChernyCode principle: "If you do something more than once a day, make it a skill
 - If GitHub is used: `project-manager` agent? + `/feature-spec`, `/issue-triage`, `/standup` skills?
 - If frontend present: design harness (`.impeccable.md`) + `/ui-review` skill?
 
-**Official plugin coverage** (catalog: `agents/references/external-plugins.md`):
+**Bundled-skill and official plugin coverage** (catalog: `agents/references/external-plugins.md`):
 
+- Is a local skill, agent, or script reimplementing something a bundled skill already does (beyond `/doctor` — e.g. `/verify`, `/code-review`, `/security-review`, `/batch`, `/run-skill-generator`)? Recommend delegating. Check the bundled-skills table before any install recommendation
 - Would an official Anthropic plugin cover a detected gap? (e.g., Python without `pyright-lsp`, an MCP server without `mcp-server-dev`, a legacy codebase without `code-modernization`) — recommend the install command, don't generate a local equivalent
 - Check installed plugins (`claude plugin list`) for **double-coverage**: is both a harness-kit skill and an overlapping official plugin active (e.g., `code-reviewer` + `code-review`, `/commit` + `commit-commands`)? Recommend picking one — with a one-line comparison — or documenting the composition in CLAUDE.md
 - Does CLAUDE.md's "External plugins" section reflect what's actually installed?
