@@ -5,6 +5,8 @@ description: >-
   Pre-flights body + comments, migrates substance before destroying context,
   cross-links both directions.
 argument-hint: "<#> | supersede <closing#> <canonical#> | dedupe <dup#> <keeper#>"
+disable-model-invocation: true
+effort: low
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---
 

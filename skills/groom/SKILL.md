@@ -3,9 +3,16 @@ name: groom
 description: >-
   Groom the GitHub backlog: bucket open issues by theme, survey umbrellas and
   dependencies, recommend a prioritized 5-10 PR train with rationale, flag
-  stale issues, and surface untracked gaps. Read-only analysis via the
-  project-manager agent; the user decides what to act on.
-allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh search *), Bash(gh api *), Bash(git log *), Read, Grep, Glob, Agent
+  stale issues, and surface untracked gaps. Read-only analysis run in a forked
+  project-manager context; the user decides what to act on.
+when_to_use: >-
+  When the user asks what to work on next, wants the backlog groomed or
+  prioritized, or asks for a PR train from open issues.
+disable-model-invocation: true
+context: fork
+agent: harness-kit:project-manager
+background: false
+allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh search *), Bash(gh api *), Bash(git log *), Read, Grep, Glob
 ---
 
 # /groom — Backlog Grooming and Prioritization
@@ -27,7 +34,8 @@ Answer "what should we work on next?" from the whole backlog.
 
 - `gh` CLI authenticated; repo accessible with issues enabled.
 - Backlog is large enough to need grooming (roughly 15+ open issues — below that, just read them).
-- The `project-manager` agent is available (harness-kit plugin or `.claude/agents/project-manager.md`); the skill degrades to inline analysis without it.
+- The `project-manager` agent is available (harness-kit plugin or `.claude/agents/project-manager.md`); without it, follow DETAIL: Inline Fallback.
+- **No conversation history** — the fork sees only this file and what `gh` returns. Derive everything from the backlog; never assume prior discussion.
 
 ## STANDARD PATH
 
@@ -41,17 +49,23 @@ gh pr list --state open --json number,title,labels,isDraft
 
 Note the issue count and whether the 100-issue limit truncated the list (see EDGE CASES).
 
-### 2. Delegate to the project-manager agent
+### 2. Run the grooming analysis
 
-Launch the `project-manager` agent with this brief (fill the brackets):
+This skill forks into the `project-manager` agent, so you *are* the project
+manager — run your survey process against the backlog, covering:
 
-> Groom the backlog of [owner/repo] ([N] open issues, [M] open PRs). Read CLAUDE.md for project conventions. Then: (1) bucket open issues by theme using labels and title patterns; (2) identify umbrella/tracking issues and per-umbrella progress; (3) recommend a prioritized train of 5-10 PRs, ordered by leverage, with ~2 sentences of rationale each covering user-visible value, effort (S/M/L), risk if deferred, and dependencies unblocked; (4) flag stale issues (>90 days inactive with no open PR), duplicates, and superseded issues, each with evidence and a disposition; (5) identify gaps — work the project should be tracking but isn't. Return the grooming brief in your standard format, capped at ~1500 words.
+1. Bucket open issues by theme using labels and title patterns.
+2. Identify umbrella/tracking issues and per-umbrella progress.
+3. Recommend a prioritized train of 5-10 PRs ordered by leverage, with ~2 sentences of rationale each covering user-visible value, effort (S/M/L), risk if deferred, and dependencies unblocked.
+4. Flag stale issues (>90 days inactive with no open PR), duplicates, and superseded issues, each with evidence and a disposition.
+5. Identify gaps — work the project should be tracking but isn't.
 
-The agent's instructions define the output contract (top-line state, umbrella table, PR train, stale list, gaps).
+Your agent instructions define the output contract (top-line state, umbrella
+table, PR train, stale list, gaps). Cap the brief at ~1500 words.
 
-### 3. Present the brief
+### 3. Close with next actions
 
-Relay the agent's brief verbatim, then add a short next-actions footer mapping recommendations to skills:
+End the brief with a short next-actions footer mapping recommendations to skills:
 
 - Close stale/duplicate/superseded → `/issue-close` per issue
 - Split or merge tangled issues → `/issue-restructure`
@@ -76,13 +90,13 @@ Do not execute any of these automatically.
 gh api 'repos/{owner}/{repo}/issues?state=open&per_page=1' --include 2>/dev/null | grep -i '^link:'
 ```
 
-If the backlog exceeds 100, page through with `--limit 100` plus `--search "sort:updated-desc"` and `sort:updated-asc` passes, or pull per-label slices. Tell the agent the full count and how the sample was drawn — a brief that silently analyzed 100 of 240 issues is misleading.
+If the backlog exceeds 100, page through with `--limit 100` plus `--search "sort:updated-desc"` and `sort:updated-asc` passes, or pull per-label slices. State the full count and how the sample was drawn in the brief — a brief that silently analyzed 100 of 240 issues is misleading.
 
 ---
 
 ## DETAIL: Inline Fallback
 
-If the `project-manager` agent is not installed, run the same protocol inline in the parent conversation: follow steps 1–7 of the agent's survey process (context, backlog pull, theme buckets, umbrellas, scored PR train, stale flags, gaps) and emit the same output format under the same ~1500-word cap. The contract is identical; only the execution context differs.
+If the `project-manager` agent is not installed, the fork cannot start. Drop `context: fork` and `agent:` from this file's frontmatter and run the same protocol inline in the parent conversation: context, backlog pull, theme buckets, umbrellas, scored PR train, stale flags, gaps — same output format, same ~1500-word cap. The contract is identical; only the execution context differs.
 
 ---
 
@@ -92,7 +106,7 @@ Posting the brief as a comment on a tracking issue is deliberately out of scope 
 
 ## RELATED
 
-- `project-manager` agent — runs the analysis; this skill enforces the prompt shape and output contract
+- `project-manager` agent — the forked context this skill runs in; it owns the output contract, this skill owns the scope and next-actions footer
 - `/standup` — daily-shaped (what changed since yesterday); `/groom` is roadmap-shaped (what should change next)
 - `/feature-spec` — spec one feature; `/groom` operates over the whole backlog
 - `/issue-close`, `/issue-update`, `/issue-restructure`, `/issue-create` — act on grooming recommendations

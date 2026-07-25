@@ -5,6 +5,7 @@ description: >-
   replacements, or merge multiple into one keeper. Migrates substance and
   cross-links before closing anything.
 argument-hint: "split <#> | merge <#> <#> [#...]"
+disable-model-invocation: true
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh repo *), Bash(gh label *), Read, Edit, Write
 ---
 

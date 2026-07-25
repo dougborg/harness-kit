@@ -4,8 +4,11 @@ description: >-
   Check the Claude usage/token budget before dispatching subagents or large
   fan-outs. Reports session and weekly (all-models + per-model) utilization and
   reset times, warns when near a cap, and guides right-sizing, deferring, and
-  scheduling a wake-up to resume after a usage-limit reset. Use before any
-  orchestration-scale work; a PreToolUse hook also surfaces this automatically.
+  scheduling a wake-up to resume after a usage-limit reset.
+when_to_use: >-
+  Before any orchestration-scale work — dispatching subagents, large fan-outs,
+  long-running batches — or when the user asks about usage, quota, limits, or
+  when the budget resets. A PreToolUse hook also surfaces this automatically.
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/claude-usage-check.sh*), Bash(claude -p*), Read
 ---
 

@@ -1,6 +1,11 @@
 ---
 name: review-pr
-description: Review and address PR feedback using 6-dimensional code review
+description: >-
+  Reviews a pull request across six dimensions, or works through unresolved
+  review feedback on an existing PR — fix, commit, push, and reply in thread.
+when_to_use: >-
+  When the user asks to review a PR or address review comments, and whenever
+  /open-pr reaches its review-comment phase or finds an open PR already exists.
 argument-hint: "[PR number or URL]"
 allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status), Bash(git rev-parse *), Bash(git switch *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/review-pr/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh*), Read
 ---

@@ -1,6 +1,17 @@
 ---
 name: code-reviewer
-description: Structured code review using 6 dimensions. Works with or without the code-reviewer agent.
+description: >-
+  Reviews a diff across six dimensions — correctness, design, readability,
+  performance, testing, security — and returns findings classified BLOCKING /
+  SUGGESTION / NITPICK. Runs in a forked context so the diff reading stays out
+  of the main conversation.
+when_to_use: >-
+  When the user asks for a code review, feedback on changes, or a pre-PR check
+  of the working diff.
+context: fork
+agent: harness-kit:code-reviewer
+background: false
+effort: high
 allowed-tools: Read, Grep, Glob, Bash(git diff*), Bash(git log*)
 ---
 
@@ -22,8 +33,8 @@ Review code systematically to catch bugs, improve design, and enforce quality st
 ## ASSUMES
 
 - Code to review is available (via `git diff`, file paths, or PR context)
-- Reviewer has domain knowledge of the system being changed
-- If a code-reviewer agent is available, this skill guides using it; otherwise, apply the dimensions manually
+- **No conversation history** — this skill runs in a forked context, so gather everything you need from `git diff`, `git log`, and the files themselves. Never assume you know what "the change we just discussed" is.
+- Edits are out of scope: report findings, do not fix them
 
 ## STANDARD PATH
 
@@ -389,5 +400,5 @@ Similar functionality in `tiny-validator` or as 10-line utility function.
 ## RELATED
 
 - `/review-pr` — Full PR review lifecycle with feedback loop
-- `code-reviewer` agent — Run 6D review automatically (provided by harness-kit plugin or project `.claude/agents/code-reviewer.md`)
+- `code-reviewer` agent — the forked context this skill runs in (harness-kit plugin, or project `.claude/agents/code-reviewer.md`). If it is unavailable, drop `context: fork` and `agent:` from this file's frontmatter and apply the dimensions inline.
 - `CLAUDE.md` — Project-specific review standards
