@@ -1,6 +1,36 @@
-# External Plugins Reference — Official Anthropic Marketplaces
+# External Capabilities Reference — Bundled Skills and Official Anthropic Marketplaces
 
-Single source of truth for recommending Anthropic's official plugins during `/harness bootstrap` and `/harness audit`. Referenced by `skills/harness/bootstrap.md`, `skills/harness/audit.md`, and `agents/harness-builder.md` — do not duplicate this catalog elsewhere.
+Single source of truth for recommending capabilities that live outside harness-kit during `/harness bootstrap` and `/harness audit`. Referenced by `skills/harness/bootstrap.md`, `skills/harness/audit.md`, and `agents/harness-builder.md` — do not duplicate these catalogs elsewhere.
+
+Read top to bottom. Bundled skills come first: nothing should be installed to solve a problem the built-ins already cover.
+
+## Already in the Box: Bundled Skills
+
+Claude Code ships a set of **bundled skills** — available in every session, with no marketplace, no `/plugin install`, and no `.harness-lock.json` entry. Several do work harness-kit would otherwise implement itself. Recommend *delegation* to these before recommending anything be installed or built.
+
+Invoke them by typing `/` plus the name. Claude invokes some automatically; `/verify` and `/code-review` are user-invocable only as of Claude Code v2.1.215.
+
+| Bundled skill | Overlaps | Guidance |
+| --- | --- | --- |
+| `/doctor` (alias `/checkup`) | `/harness audit` | Delegate. Setup health, unused skills and MCP servers, slow hooks, CLAUDE.md optimization. Audit layers harness-specific checks on top. |
+| `/code-review` | `code-reviewer` skill + agent | Runs as a forked subagent; effort levels `low`–`ultra`, `--fix` to apply findings, `--comment` to post GitHub PR inline comments. harness-kit's differentiator is the 6-dimension rubric and project conventions — preload that as a skill rather than reimplement the review harness. |
+| `/security-review` | code-reviewer's security dimension | Delegate for diff-level security review. |
+| `/verify` | `verifier` agent | Builds and *runs* the app to confirm a change works, rather than falling back to tests or type checks. Genuinely complementary to harness-kit's "validation passed + git clean" gate. |
+| `/run` | — | Launches and drives the app so a change can be seen working. |
+| `/run-skill-generator` | `skills/shared/discover-verification-cmd.sh` | Records the actual build/launch recipe as a per-project skill at `.claude/skills/run-<name>/`. Strictly more capable than script-based command discovery. Bootstrap should recommend running it once per project. |
+| `/batch` | ad-hoc worktree fan-out | Decomposes work into 5–30 independent units and spawns subagents in isolated git worktrees. The merge-train / migration orchestration pattern, built in. |
+| `/simplify` | `/open-pr` self-review cleanup | Reuse, simplification, and altitude cleanups on the working diff — quality only, no bug hunting. Compose: run it before the review step. |
+| `/loop` (alias `/proactive`) | polling patterns in `/open-pr` | Runs a prompt repeatedly, on an interval or self-paced. |
+| `/goal` | verification gating | Sets a condition a separate evaluator re-checks after every turn until it holds. |
+| `/context` | `/budget` | Visualizes real context usage with optimization suggestions — the actual measurement `/budget` approximates. |
+| `/btw` | `/budget` | Side questions that never enter conversation history. Worth naming wherever context spend is discussed. |
+| `/fewer-permission-prompts` | — | Scans transcripts and allowlists common read-only calls. |
+| `/debug` | — | Enables debug logging and troubleshoots runtime issues from the session debug log. |
+| `/dataviz`, `/design-sync`, `/claude-api` | — | Mention only where the stack matches (charts and dashboards, a React design system, Claude API code). |
+
+`/run`, `/verify`, and `/run-skill-generator` require Claude Code v2.1.145 or later.
+
+**Degrade gracefully.** Bundled skills can be turned off with the `disableBundledSkills` setting, which disables every bundled skill except `/doctor`. Never assume availability: if a recommended bundled skill is missing in the current session, say so and fall back explicitly rather than silently substituting a hand-rolled equivalent.
 
 ## The Two Marketplaces
 
@@ -16,7 +46,7 @@ Add a marketplace before installing from it:
 /plugin install <name>@claude-plugins-official
 ```
 
-The Anthropic dev-workflow plugins appear in both marketplaces; prefer `@claude-plugins-official` since it is the superset directory. Both marketplaces evolve — treat the catalog below as a curated snapshot (verified 2026-07-23) and check the live `marketplace.json` when in doubt:
+The Anthropic dev-workflow plugins appear in both marketplaces; prefer `@claude-plugins-official` since it is the superset directory. Both marketplaces evolve — treat the catalog below as a curated snapshot (verified 2026-07-24, 273 plugins listed) and check the live `marketplace.json` when in doubt:
 
 ```bash
 gh api repos/anthropics/claude-plugins-official/contents/.claude-plugin/marketplace.json --jq '.content' | base64 -d
@@ -60,9 +90,10 @@ LSP plugins have **no harness-kit overlap** — always safe to recommend alongsi
 
 ### Workflow plugins with harness-kit overlap (pick one, or document composition)
 
+A `code-review` plugin still exists in the marketplace, but the bundled `/code-review` skill covers the same ground with no install — recommend the bundled skill instead. `skill-creator` remains marketplace-only; there is no bundled equivalent (`/run-skill-generator` writes run recipes, not general skills).
+
 | Plugin | What it does | Overlapping harness-kit skill | Guidance |
 | --- | --- | --- | --- |
-| `code-review` | Multi-agent PR review with confidence-based false-positive filtering | `code-reviewer` agent + skill | Pick one active reviewer. harness-kit: 6-dimension structured review, project conventions. Anthropic: parallel agents + confidence scoring. Running both doubles review noise. |
 | `pr-review-toolkit` | Specialized review agents (comments, tests, error handling, type design) | `/review-pr`, `/pr-comments` | Pick one. harness-kit's `/review-pr` handles the full feedback-response loop; the toolkit adds per-dimension specialists. |
 | `commit-commands` | Commit, push, and PR creation commands | `/commit`, `/open-pr` | Pick one, or compose: harness-kit `/commit` adds project quality gates; `commit-commands` is a lighter generic flow. |
 | `code-simplifier` | Simplifies recently modified code while preserving behavior | `/simplify`-style cleanup in `/open-pr` self-review | Compose freely — same goal, invoked at different times. |
@@ -77,6 +108,7 @@ LSP plugins have **no harness-kit overlap** — always safe to recommend alongsi
 
 ## Composition Principles
 
+- **Check the built-ins first** — never recommend installing a plugin or building a skill for something a bundled skill already does. Work the bundled-skills table above before the marketplace catalog; only reach for a plugin when no built-in covers the job, or when the built-in is genuinely insufficient (say why in one line).
 - **Avoid double-installs** — never leave two active tools covering the same job (e.g. harness-kit `code-reviewer` AND Anthropic `code-review`). Recommend one and record the choice.
 - **Overlap is not always conflict** — some pairs compose (quality-gate commit + AI messages; spec writing + feature workflow). When recommending both, state the division of labor in one line.
 - **Record decisions in CLAUDE.md** — bootstrap should add an "External plugins" section listing what was installed or deliberately skipped, with rationale, so audit can check it later.

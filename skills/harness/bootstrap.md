@@ -10,7 +10,8 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
    - **Recommended architecture pattern** (from `agents/references/architecture-patterns.md`)
    - **Recommended agents** with model + `tools:` (agents use `tools:`, not the skill-only `allowed-tools:`) (always includes code-reviewer, verifier, test-writer, domain-advisor; adds project-manager if GitHub detected)
    - **Recommended skills from harness-kit:** which of the plugin's base skills to copy into the project
-   - **Recommended official Anthropic plugins:** stack-matched picks from `agents/references/external-plugins.md`, with overlap flags against harness-kit skills
+   - **Bundled skills to delegate to:** matches from the bundled-skills table in `agents/references/external-plugins.md` — no install required
+   - **Recommended official Anthropic plugins:** stack-matched picks from the marketplace catalog in `agents/references/external-plugins.md`, with overlap flags against harness-kit skills
    - **Recommended external sources:** additional plugin marketplaces based on stack (e.g., Vercel skills for React, impeccable for frontend)
    - **Project-specific skills** to generate (domain workflows, custom checks)
    - Recommended hooks (PostToolUse: formatters → validators → guidance; Stop: session-end guidance)
@@ -19,6 +20,7 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
 2. **Present recommendations for approval:**
    - **Stack:** one-line summary + architecture pattern
    - **Skills from harness-kit to install:** table with name, purpose, why this project needs it
+   - **Bundled skills already available (no install):** the matching rows from the bundled-skills table in `agents/references/external-plugins.md`, one line each. Present these *before* anything installable — never propose installing a plugin or generating a project skill for a job a bundled skill already does
    - **Official Anthropic plugins to install (optional):** for each stack-matched plugin from `agents/references/external-plugins.md`, show one-line rationale plus the install command (`/plugin install <name>@claude-plugins-official`). Where a plugin overlaps a harness-kit skill (e.g., `code-review` vs `code-reviewer`, `commit-commands` vs `/commit`), flag the overlap and ask the user to pick one or accept the documented composition — never install both sides of an overlap silently
    - **External sources to add:** marketplace repos with rationale
    - **Project-specific skills to generate:** table with name, purpose
@@ -47,6 +49,8 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
 6. **Tell the user how to keep it healthy.** Two complementary tools, named in the closing summary:
    - `/doctor` (bundled with Claude Code, alias `/checkup`) — ongoing setup hygiene: installation and PATH problems, unused skills and MCP servers, slow hooks, CLAUDE.md bloat. Run it periodically; no install needed.
    - `/harness audit` — harness-kit structure, frontmatter validity, and provenance. Advisory, not a gate.
+
+   Also recommend running `/run-skill-generator` once, to record this project's real build/launch recipe as a `run-<name>` skill that `/run` and `/verify` then follow. See the bundled-skills table in `agents/references/external-plugins.md` for the rest.
 
 ## Lock File Creation
 

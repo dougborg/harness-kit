@@ -58,7 +58,7 @@ Topic references, read as needed from any mode (all reachable in one hop from he
 | --- | --- | --- |
 | Skill/agent design patterns | `${CLAUDE_PLUGIN_ROOT}/skills/harness/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
 | Hook staging and exit codes | `${CLAUDE_PLUGIN_ROOT}/skills/harness/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks, exit-code safety) |
-| Official Anthropic plugin catalog | `${CLAUDE_PLUGIN_ROOT}/agents/references/external-plugins.md` | Bootstrap or audit needs stack-matched plugin recommendations and overlap flags |
+| Bundled skills + official plugin catalog | `${CLAUDE_PLUGIN_ROOT}/agents/references/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
 | Multi-agent architecture patterns | `${CLAUDE_PLUGIN_ROOT}/agents/references/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
 | Plugin `hooks.json` schema | `${CLAUDE_PLUGIN_ROOT}/agents/references/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
 
