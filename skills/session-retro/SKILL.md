@@ -1,6 +1,7 @@
 ---
 name: session-retro
 description: Capture a work session as a structured retro doc in docs/sessions/
+disable-model-invocation: true
 allowed-tools: Bash(git log*), Bash(git config*), Bash(gh issue*), Bash(gh pr*), Bash(gh search*), Bash(ls*), Read, Glob, Write
 ---
 

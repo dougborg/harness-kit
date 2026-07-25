@@ -1,6 +1,7 @@
 ---
 name: harness-builder
 description: Analyze codebase and recommend AI agent harness (agents, skills, hooks)
+disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash(git log*), Bash(git status*), Bash(ls*)
 ---
 

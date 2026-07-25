@@ -1,6 +1,13 @@
 ---
 name: harness
-description: Self-improving meta-harness for auditing, bootstrapping, and improving agent harnesses
+description: >-
+  Self-improving meta-harness for agent harnesses. Modes: audit, bootstrap,
+  update, add, retro, hoist — each reads its own protocol reference.
+when_to_use: >-
+  When the user asks to audit, bootstrap, update, or retro a harness; when
+  setting up .claude/ in a new project; and when a /harness mode hands off to
+  another mode (retro to hoist).
+argument-hint: "[audit|bootstrap|update|add|retro|hoist]"
 allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Read, Glob, Write, Edit
 ---
 

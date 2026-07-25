@@ -5,6 +5,7 @@ description: >-
   reopen. Pre-flights body + comments; acknowledges stale framing instead of
   silently rewriting.
 argument-hint: "<#> | reopen <#>"
+disable-model-invocation: true
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---
 

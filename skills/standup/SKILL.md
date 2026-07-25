@@ -1,6 +1,12 @@
 ---
 name: standup
-description: Generate a daily standup report from git history and GitHub activity
+description: >-
+  Generates a daily standup report from git history and GitHub activity —
+  what changed since yesterday, what's in flight, what's blocked.
+when_to_use: >-
+  When the user asks for a standup, a daily summary, "what did I do
+  yesterday", or a recap of recent activity.
+effort: low
 allowed-tools: Bash(git log*), Bash(git config*), Bash(gh pr*), Bash(gh issue*), Read
 ---
 

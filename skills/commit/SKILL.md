@@ -1,6 +1,13 @@
 ---
 name: commit
-description: Create conventional commits with quality gates and validation
+description: >-
+  Creates conventional commits with quality gates — runs the project's
+  verification command, stages intentionally, checks for lockfile drift, and
+  writes the message. Owns commit mechanics for the PR workflow skills.
+when_to_use: >-
+  When the user asks to commit, stage, or write a commit message; when another
+  skill (/open-pr, /review-pr) needs the commit mechanics or the uv.lock drift
+  check.
 allowed-tools: Bash(git add*), Bash(git commit*), Bash(git diff*), Bash(git status*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Read
 ---
 
