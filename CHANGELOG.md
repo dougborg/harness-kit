@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.7.0](https://github.com/dougborg/harness-kit/compare/v0.6.0...v0.7.0) (2026-07-25)
+
+
+### Features
+
+* budget-aware coordination (usage check, /budget skill, pre-dispatch hook) ([#64](https://github.com/dougborg/harness-kit/issues/64)) ([ed6907f](https://github.com/dougborg/harness-kit/commit/ed6907fc61cb0155050a1cddb534ef388e22d60b))
+* **ci:** add test harness for validate-hooks-schema.sh ([#56](https://github.com/dougborg/harness-kit/issues/56)) ([eb081f5](https://github.com/dougborg/harness-kit/commit/eb081f5884a63bfaf918d6967bf0d9c73ebb3d45)), closes [#16](https://github.com/dougborg/harness-kit/issues/16)
+* **commit:** auto-stage drifted uv.lock in Python+uv projects ([#52](https://github.com/dougborg/harness-kit/issues/52)) ([4c5696c](https://github.com/dougborg/harness-kit/commit/4c5696c784f08d89320568b8a2d0237c1b54a724)), closes [#29](https://github.com/dougborg/harness-kit/issues/29)
+* **harness:** recommend official Anthropic plugins in bootstrap and audit ([#59](https://github.com/dougborg/harness-kit/issues/59)) ([6fc2361](https://github.com/dougborg/harness-kit/commit/6fc236104f03df7fd2c5743b322775ae2ce14577)), closes [#31](https://github.com/dougborg/harness-kit/issues/31)
+* **skill:** add /groom backlog-grooming skill + project-manager agent ([#57](https://github.com/dougborg/harness-kit/issues/57)) ([727077b](https://github.com/dougborg/harness-kit/commit/727077b614aa201e3f2f3b32f749a7694352ec1c)), closes [#26](https://github.com/dougborg/harness-kit/issues/26)
+* **skill:** add /session-retro for structured session retrospectives ([#55](https://github.com/dougborg/harness-kit/issues/55)) ([6cac969](https://github.com/dougborg/harness-kit/commit/6cac969c69920460c1b553de92150a0ecfaa18e9)), closes [#30](https://github.com/dougborg/harness-kit/issues/30)
+* **skills:** adopt disable-model-invocation, context fork, when_to_use, effort ([#81](https://github.com/dougborg/harness-kit/issues/81)) ([0ef8f94](https://github.com/dougborg/harness-kit/commit/0ef8f947793d1672e8264b2813339fb1e6ea03a3)), closes [#67](https://github.com/dougborg/harness-kit/issues/67)
+
+
+### Bug Fixes
+
+* **budget:** distinguish usage quota from context window in hook warning ([#76](https://github.com/dougborg/harness-kit/issues/76)) ([f338dc0](https://github.com/dougborg/harness-kit/commit/f338dc0d657050755382bf3f69fb2dbfea3bb8c8)), closes [#73](https://github.com/dougborg/harness-kit/issues/73)
+* **ci:** mint release-please token via GitHub App so required checks run ([#53](https://github.com/dougborg/harness-kit/issues/53)) ([f3d644d](https://github.com/dougborg/harness-kit/commit/f3d644d04aa4d7ee93a2a939d00894cc0e0c3a41)), closes [#23](https://github.com/dougborg/harness-kit/issues/23)
+* **frontmatter:** agents use tools: not allowed-tools:, Task is not a tool ([#77](https://github.com/dougborg/harness-kit/issues/77)) ([4c58de9](https://github.com/dougborg/harness-kit/commit/4c58de946a9095d60e9853baafd936a49839693e)), closes [#65](https://github.com/dougborg/harness-kit/issues/65)
+* **open-pr:** redesign poll-review.sh signal contract (closes [#39](https://github.com/dougborg/harness-kit/issues/39), [#28](https://github.com/dougborg/harness-kit/issues/28), [#24](https://github.com/dougborg/harness-kit/issues/24)) ([#58](https://github.com/dougborg/harness-kit/issues/58)) ([9dbc32b](https://github.com/dougborg/harness-kit/commit/9dbc32b5dddd64c424c98173d48709600845ddad))
+* **open-pr:** survive Bash 120s timeout during CI polls and add wakeup resume pattern ([#50](https://github.com/dougborg/harness-kit/issues/50)) ([76e0bfe](https://github.com/dougborg/harness-kit/commit/76e0bfed9de9995a39f5e7931c0237f3e2a7693c)), closes [#38](https://github.com/dougborg/harness-kit/issues/38) [#35](https://github.com/dougborg/harness-kit/issues/35)
+* **pr-workflow:** review-pr branch guard + worktree branch-name inference ([#51](https://github.com/dougborg/harness-kit/issues/51)) ([5202a7e](https://github.com/dougborg/harness-kit/commit/5202a7eba60370e46a52742a9750a0f9ec84237d)), closes [#32](https://github.com/dougborg/harness-kit/issues/32) [#34](https://github.com/dougborg/harness-kit/issues/34)
+* **pr-workflow:** route open-pr/review-pr commits through /commit's uv.lock drift check ([#63](https://github.com/dougborg/harness-kit/issues/63)) ([8500dd9](https://github.com/dougborg/harness-kit/commit/8500dd9e3565fbd46802ef3f042f9a5b0e8f437e)), closes [#62](https://github.com/dougborg/harness-kit/issues/62)
+* **shared:** pagination, TOML quoted keys, verifier allowlist polish ([#60](https://github.com/dougborg/harness-kit/issues/60)) ([f310503](https://github.com/dougborg/harness-kit/commit/f3105030027f5633408afd4731d32e6fca8de5dd)), closes [#20](https://github.com/dougborg/harness-kit/issues/20)
+
 ## [0.6.0](https://github.com/dougborg/harness-kit/compare/v0.5.1...v0.6.0) (2026-06-03)
 
 
