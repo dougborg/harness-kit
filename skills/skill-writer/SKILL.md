@@ -9,6 +9,7 @@ description: >-
   plugin.json registration, ${CLAUDE_PLUGIN_ROOT} paths). Use when creating a
   new skill or agent, editing an existing one, or deciding whether something
   should be a skill, an agent, a script, or nothing at all.
+disable-model-invocation: true
 allowed-tools: Glob, Grep, Read, Write, Edit
 ---
 
@@ -131,6 +132,51 @@ skills that never fire; overly narrow ones fire only on exact phrasing.
 
 An optional `when_to_use` field can carry trigger phrasing separately; keep the
 two together under 1,536 characters.
+
+### Control who invokes the skill
+
+`description` (and `when_to_use`) load into context on **every request** so
+Claude can decide whether to invoke the skill. `disable-model-invocation: true`
+hides the skill from Claude entirely until the user types `/name` — dropping
+its context cost to zero. It stays in the `/` menu; `user-invocable: false` is
+the field that hides it from the menu.
+
+Default to setting it on any skill with side effects that the user should time
+deliberately — filing issues, writing docs, generating files. **Before you set
+it, grep for the skill name across `skills/` and `agents/`.** If another skill
+tells Claude to invoke this one mid-workflow, restricting it breaks that chain
+silently — `just check` validates schema, not behavior. In this repo `/commit`,
+`/open-pr`, `/review-pr`, `/harness-issue`, and `/harness` are all invoked by
+other skills and must stay model-invocable. A restricted skill also cannot be
+preloaded into a subagent via an agent's `skills:` field.
+
+`paths:` scopes auto-activation to matching globs — the opposite lever from
+`disable-model-invocation`, so pick one per skill. Measured caveat: a skill
+carrying `paths:` stops registering as a slash command, so the user loses
+`/name`. Only worth it for a skill nobody invokes by name.
+
+### `context: fork` — run the skill in a subagent
+
+```yaml
+context: fork
+agent: harness-kit:code-reviewer   # optional: which agent to fork into
+background: false
+```
+
+Right for skills that read widely and return a report. Four constraints:
+
+- The fork sees **no conversation history**. A skill that depends on "what we
+  were just doing" is not a candidate — say so in its ASSUMES.
+- Only works for skills with **explicit instructions**. Guidelines without a
+  task give the subagent no actionable prompt.
+- A backgrounded fork runs with the **narrower background-subagent tool set** —
+  set `background: false` when the skill needs more.
+- Forked edits land outside session checkpoints (`/rewind` won't undo them),
+  and a forked skill ends skill-stacking: `/a /b` chains stop there.
+
+`effort:` (`low`…`max`) overrides per-skill reasoning depth. Use it where the
+work is genuinely mechanical (`low`) or genuinely deep (`high`); otherwise
+inherit.
 
 Name in gerund form where it reads naturally (`processing-pdfs`); noun phrases
 and command-style names (`open-pr`) are fine. Avoid vague names.

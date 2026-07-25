@@ -3,7 +3,10 @@ name: open-pr
 description: >-
   Open a PR for the current feature branch — validate, self-review, simplify,
   organize commits, push, create the PR, wait for CI and review, then address
-  feedback. Use when implementation is complete and ready for review.
+  feedback.
+when_to_use: >-
+  When implementation is complete and ready for review — the user asks to open,
+  raise, or submit a PR — and when /harness-issue hands off in PR mode.
 argument-hint: "[base branch]"
 allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git reset *), Bash(git rev-list *), Bash(git rev-parse *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/open-pr/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh*), Read
 ---

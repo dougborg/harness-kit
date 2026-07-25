@@ -112,7 +112,7 @@ The field name differs by file type and **the wrong one is silently ignored** â€
 
 | File | Valid | Invalid |
 | --- | --- | --- |
-| `skills/*/SKILL.md` | `name`, `description`, `allowed-tools`, `when_to_use`, `disable-model-invocation` | `tools:`, `disallowedTools:`, `model:` |
+| `skills/*/SKILL.md` | `name`, `description`, `when_to_use`, `allowed-tools`, `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`, `context`, `agent`, `background`, `effort`, `paths` | `tools:`, `disallowedTools:`, `model:` |
 | `agents/*.md` | `name`, `description`, `tools`, `disallowedTools`, `model`, `memory`, `isolation`, `permissionMode` | `allowed-tools:` |
 
 Flag, at high priority:
@@ -128,6 +128,8 @@ Then apply the permission review:
 
 - Do agents have only the tools they need? A reviewer should not have `Write`; a verifier should not have `Write` or `Edit`
 - Is a side-effecting skill (one that writes files, pushes, comments, or opens PRs) missing `disable-model-invocation`? Skills that must only run when the user asks for them should not be model-invocable
+- Conversely: does a skill carry `disable-model-invocation` while **another skill instructs Claude to invoke it** (`grep -rn '/skill-name' skills/ agents/`)? That chain is silently broken â€” either drop the field or reword the caller to hand off to the user. Same for a restricted skill named in an agent's `skills:` field, which cannot preload it
+- Does a `context: fork` skill depend on conversation history, or run `background: true` while needing tools outside the background-subagent set? Both fail silently
 
 ## 8. Check Description Signal Quality
 

@@ -2,7 +2,7 @@
 
 Post-session retrospective to identify gaps and improvements in the harness. **Run after significant sessions to capture learnings.**
 
-Scope: this mode audits the *harness* (skills, agents, hooks). To document the *session's work* — goal, narrative, issues filed, lessons — run `/session-retro`; the two compose and are best run back-to-back at end-of-session.
+Scope: this mode audits the *harness* (skills, agents, hooks). To document the *session's work* — goal, narrative, issues filed, lessons — point the user at `/session-retro`; the two compose and are best run back-to-back at end-of-session.
 
 ## Procedure
 

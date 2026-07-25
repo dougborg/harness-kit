@@ -1,6 +1,11 @@
 ---
 name: ui-review
-description: Accessibility and UX audit based on WCAG 2.1 AA guidelines
+description: >-
+  Audits web UI for accessibility and UX against WCAG 2.1 AA, reporting
+  violations as `[CRITICAL|IMPORTANT|MINOR] file:line`.
+when_to_use: >-
+  When the user asks about accessibility, a11y, WCAG, screen readers, keyboard
+  navigation, color contrast, or wants a UX pass over components.
 allowed-tools: Read, Grep, Glob
 ---
 
