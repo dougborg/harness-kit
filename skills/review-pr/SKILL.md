@@ -7,7 +7,7 @@ when_to_use: >-
   When the user asks to review a PR or address review comments, and whenever
   /open-pr reaches its review-comment phase or finds an open PR already exists.
 argument-hint: "[PR number or URL]"
-allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status), Bash(git rev-parse *), Bash(git switch *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(${CLAUDE_PLUGIN_ROOT}/skills/review-pr/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/*), Bash(${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh*), Read
+allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status), Bash(git rev-parse *), Bash(git switch *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(${CLAUDE_SKILL_DIR}/*), Read
 ---
 
 # /review-pr — Structured PR Review
@@ -243,9 +243,9 @@ Initial PR review (no comments yet).
 ### 1. Fetch PR Context
 
 ```bash
-ctx=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh <PR#>)
+ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_PLUGIN_ROOT}/skills/shared/fetch-pr-context.sh "$owner_repo" <PR#>
+${CLAUDE_SKILL_DIR}/fetch-pr-context.sh "$owner_repo" <PR#>
 ```
 
 ### 2. Invoke code-reviewer Agent
@@ -314,9 +314,9 @@ current=$(git rev-parse --abbrev-ref HEAD)
 ### 1. Fetch Unresolved Comments
 
 ```bash
-ctx=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-github-context.sh {number})
+ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh {number})
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fetch-unresolved-comments.sh "$owner_repo" {number}
+${CLAUDE_SKILL_DIR}/fetch-unresolved-comments.sh "$owner_repo" {number}
 ```
 
 Returns JSON array of unresolved comments with id, path, line, body, author. Resolved threads are already filtered out.
@@ -345,9 +345,11 @@ Read affected code. Classify:
 Make code changes. Validate:
 
 ```bash
-cmd=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/discover-verification-cmd.sh)
-eval "$cmd"   # ALL must pass
+${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh
 ```
+
+Run the command it prints as a **separate** Bash call — ALL must pass. Never
+`eval` it in the same call; that defeats `allowed-tools` matching and prompts.
 
 ### 4. Commit, Rebase, and Push
 
@@ -358,9 +360,9 @@ Use the fixup-and-push script (stages, creates fixup commit, autosquash rebases,
 ```bash
 # Subject is now optional — inferred from the latest non-merge, non-fixup
 # commit in `origin/<baseRefName>..HEAD`. Pass `--subject "..."` to override.
-${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> <file1> <file2> ...
+${CLAUDE_SKILL_DIR}/fixup-and-push.sh <baseRefName> <file1> <file2> ...
 # or explicit:
-${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> --subject "fix(scope): description" <file1> <file2> ...
+${CLAUDE_SKILL_DIR}/fixup-and-push.sh <baseRefName> --subject "fix(scope): description" <file1> <file2> ...
 ```
 
 (If autosquash silently fails to squash — leaving a dangling `fixup!` commit on the branch — see [DETAIL: Manual Recovery from Autosquash No-op](#detail-manual-recovery-from-autosquash-no-op) below.)
@@ -372,7 +374,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/review-pr/fixup-and-push.sh <baseRefName> --subject
 Use the reply script — it validates the comment belongs to the correct PR before posting:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
+${CLAUDE_SKILL_DIR}/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
 ```
 
 **Never reply before pushing** — replies confirm fix is live.
@@ -382,7 +384,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/pr-comments/reply-to-comment.sh {owner}/{repo} {num
 After replying to all comments, resolve all review threads to clear the "changes requested" status:
 
 ```bash
-resolved=$(${CLAUDE_PLUGIN_ROOT}/skills/shared/resolve-all-threads.sh {owner}/{repo} {number})
+resolved=$(${CLAUDE_SKILL_DIR}/resolve-all-threads.sh {owner}/{repo} {number})
 echo "Resolved $resolved review threads"
 ```
 

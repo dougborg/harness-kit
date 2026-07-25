@@ -32,9 +32,10 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
 
 4. **After approval, install and generate:**
    - Copy approved skills from `${CLAUDE_PLUGIN_ROOT}/skills/` to `.claude/skills/` — copy each skill's **whole directory**, including sibling reference `.md` files and scripts, not just `SKILL.md`
-   - Copy approved agents from `${CLAUDE_PLUGIN_ROOT}/agents/` to `.claude/agents/`
+   - Copy approved agents from `${CLAUDE_PLUGIN_ROOT}/agents/` to `.claude/agents/`, including the `references/` subdirectory
    - Copy `skills/shared/` scripts to `.claude/skills/shared/`
-   - Rewrite `${CLAUDE_PLUGIN_ROOT}` references to `.claude` in copied files
+   - **Copy with `cp -R`, never `cp -RL`.** Skills reach shared scripts through relative symlinks (`.claude/skills/commit/discover-verification-cmd.sh -> ../shared/discover-verification-cmd.sh`). `cp -R` preserves them and they resolve in the copied tree because the layout is preserved; `-L` dereferences each one into a duplicate file that then drifts from the canonical copy.
+   - **Do not rewrite any paths in copied files.** Skills address their own files as `${CLAUDE_SKILL_DIR}/…`, which the runtime resolves to wherever the skill actually lives — plugin cache or `.claude/skills/` alike. Rewriting would also corrupt the deliberate `${CLAUDE_PLUGIN_ROOT}` references in this file and in `update.md`, which mean the plugin tree and nothing else.
    - Generate project-specific agents (domain-advisor, etc.) in `.claude/agents/`
    - Generate project-specific skills in `.claude/skills/`
    - Write `CLAUDE.md` with all sections filled in, including an "External plugins" section recording which official plugins were installed or deliberately skipped, with rationale (external plugins are installed via `/plugin install`, not copied — they are NOT tracked in `.harness-lock.json`)

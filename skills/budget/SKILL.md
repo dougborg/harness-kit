@@ -9,7 +9,7 @@ when_to_use: >-
   Before any orchestration-scale work — dispatching subagents, large fan-outs,
   long-running batches — or when the user asks about usage, quota, limits, or
   when the budget resets. A PreToolUse hook also surfaces this automatically.
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/skills/shared/claude-usage-check.sh*), Bash(claude -p*), Read
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/claude-usage-check.sh*), Bash(claude -p*), Read
 ---
 
 # /budget — Budget-Aware Coordination
@@ -24,7 +24,7 @@ quick one-shot conversational turns; it is for orchestration-scale work.
 Read the usage panel non-interactively:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/shared/claude-usage-check.sh
+${CLAUDE_SKILL_DIR}/claude-usage-check.sh
 ```
 
 It runs `claude -p "/usage"` under the hood (a local panel — no model turn;

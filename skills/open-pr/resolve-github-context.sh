@@ -1,0 +1,1 @@
+../shared/resolve-github-context.sh
