@@ -61,7 +61,7 @@ Adjust recommendations:
 After approval, agent generates:
 
 - `.claude/agents/*.md` (one per agent, with tool permissions and domain context)
-- `.claude/skills/*/SKILL.md` (one per skill, with PURPOSE/CRITICAL/STANDARD PATH)
+- `.claude/skills/*/SKILL.md` (one per skill, with `allowed-tools` and a description saying what and when)
 - `CLAUDE.md` (harness documentation)
 - `.gitignore` updates
 
@@ -276,7 +276,7 @@ Use these answers to customize recommendations before finalizing.
 
 ## RELATED
 
-- `/harness` — Audit harness quality (gates on PURPOSE/CRITICAL/STANDARD PATH)
+- `/harness` — Audit harness quality (frontmatter validity, size limits, description signal)
 - `CLAUDE.md` — Generated harness documentation (customize after generation)
 - `/documentation-writer` — Write scannable docs
 - `/skill-writer` — Create well-structured skills

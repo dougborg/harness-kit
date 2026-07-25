@@ -44,6 +44,10 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
 
 5. **Run verification command** to confirm nothing broke.
 
+6. **Tell the user how to keep it healthy.** Two complementary tools, named in the closing summary:
+   - `/doctor` (bundled with Claude Code, alias `/checkup`) — ongoing setup hygiene: installation and PATH problems, unused skills and MCP servers, slow hooks, CLAUDE.md bloat. Run it periodically; no install needed.
+   - `/harness audit` — harness-kit structure, frontmatter validity, and provenance. Advisory, not a gate.
+
 ## Lock File Creation
 
 The `.harness-lock.json` file is created during bootstrap and tracks every file's provenance:
