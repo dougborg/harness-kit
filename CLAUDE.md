@@ -8,6 +8,7 @@ A collection of skills, agents, and shared utilities for Claude Code that provid
 
 - **Meta-harness** (`/harness`) — audit, bootstrap, update, retro, and hoist modes
 - **PR workflows** — `/open-pr`, `/review-pr`, `/pr-comments`, `/rebase`
+- **Multi-agent coordination** — `/agent-standup` reconciles ownership, handoffs, and merge order across agents and operators
 - **Code review** — 6-dimension structured review (code-reviewer agent + skill)
 - **Skill authoring** — `/skill-writer`, `/documentation-writer`
 - **Validation** — Stack-agnostic verifier agent with auto-discovered verification command

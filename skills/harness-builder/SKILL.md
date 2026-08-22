@@ -136,6 +136,7 @@ If GitHub is detected:
 - **`/feature-spec`** — Write feature specs before implementation
 - **`/issue-triage`** — Categorize and prioritize issues
 - **`/standup`** — Generate daily standup from git + GitHub activity
+- **`/agent-standup`** — Reconcile ownership and handoffs across agents and operators
 
 ### Frontend Projects
 

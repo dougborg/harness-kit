@@ -14,6 +14,9 @@ allowed-tools: Bash(git log*), Bash(git config*), Bash(gh pr*), Bash(gh issue*),
 
 Generate a standup report summarizing what changed since yesterday.
 
+For shared ownership, handoffs, dependency collisions, or merge coordination
+across multiple agents or operators, use `/agent-standup` instead.
+
 ## PURPOSE
 
 Create a daily standup summary: yesterday's work, today's plans, blockers.
@@ -57,3 +60,7 @@ gh issue list --assignee="@me" --state=open
 ### 3. Output
 
 Present the report. Infer "Today" from open PRs and issues.
+
+## Related
+
+- `/agent-standup` — reconcile multi-agent and multi-operator work.
