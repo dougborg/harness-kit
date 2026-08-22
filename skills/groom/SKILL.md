@@ -107,6 +107,7 @@ Posting the brief as a comment on a tracking issue is deliberately out of scope 
 ## RELATED
 
 - `project-manager` agent — the forked context this skill runs in; it owns the output contract, this skill owns the scope and next-actions footer
-- `/standup` — daily-shaped (what changed since yesterday); `/groom` is roadmap-shaped (what should change next)
+- `/standup` — personal daily activity; `/agent-standup` — shared ownership and
+  handoffs; `/groom` — roadmap-shaped (what should change next)
 - `/feature-spec` — spec one feature; `/groom` operates over the whole backlog
 - `/issue-close`, `/issue-update`, `/issue-restructure`, `/issue-create` — act on grooming recommendations

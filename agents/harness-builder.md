@@ -74,6 +74,7 @@ Identify what a developer does repeatedly:
 Adapt recommendations based on detected stack:
 
 - **GitHub used?** → Recommend: `project-manager` agent + `feature-spec`, `issue-triage`, `standup` skills
+- **Multiple agents or operators?** → Recommend: `agent-standup` skill
 - **Frontend present?** → Recommend: design harness (`.impeccable.md` seed) + `ui-review` skill
 - **Preferred component library?** → Note target in `.impeccable.md` — do NOT encode existing design; let `/impeccable:init` guide new direction
 - **Any stack detected** → Match against `agents/references/external-plugins.md`, bundled skills first (already available, no install: `/verify` and `/run-skill-generator` for build/launch, `/code-review` and `/security-review` for review, `/batch` for fan-out), then official Anthropic plugin recommendations (language → LSP plugin, MCP server → `mcp-server-dev`, Agent SDK → `agent-sdk-dev`, legacy code → `code-modernization`, ...)

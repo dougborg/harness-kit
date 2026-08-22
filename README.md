@@ -13,7 +13,7 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 - `retro` — Post-session gap identification (Type A/B/C/D classification)
 - `hoist` — Propose upstream PRs for generic improvements
 
-**15 skills:**
+**Selected skills:**
 
 | Skill | Purpose |
 | --- | --- |
@@ -29,6 +29,7 @@ A self-improving agent harness for [Claude Code](https://code.claude.com), distr
 | `/harness-builder` | Analyze codebases and recommend harness setup |
 | `/feature-spec` | Write feature specifications before implementation |
 | `/standup` | Generate daily standup from git history |
+| `/agent-standup` | Reconcile ownership, handoffs, and merge order across agents and operators |
 | `/groom` | Backlog grooming: theme buckets, PR train, stale flags, gaps |
 | `/ui-review` | Accessibility and UX audit (WCAG 2.1 AA) |
 | `/svg-logo-designer` | Generate SVG logos |
@@ -80,7 +81,7 @@ The lock file tracks all sources.
 
 ## Philosophy
 
-- **Quality over quantity** — 15 skills, not 150. Each one is well-structured with progressive disclosure.
+- **Quality over quantity** — a focused catalog, not a sprawling one. Each skill is well-structured with progressive disclosure.
 - **Self-improving** — `/harness retro` identifies gaps after sessions; `/harness hoist` proposes upstream improvements.
 - **Scripts over inline bash** — Shell logic is extracted to testable scripts, not inlined in skills.
 - **Composition over duplication** — Project-local skills extend upstream skills with project-specific flavor.
