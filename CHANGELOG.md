@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/dougborg/harness-kit/compare/v0.7.0...v0.8.0) (2026-08-22)
+
+
+### Features
+
+* add multi-agent standup workflow ([#95](https://github.com/dougborg/harness-kit/issues/95)) ([d1417a4](https://github.com/dougborg/harness-kit/commit/d1417a497aad5767434d0dfce5ed668fa0ccf36b))
+
 ## [0.7.0](https://github.com/dougborg/harness-kit/compare/v0.6.0...v0.7.0) (2026-07-25)
 
 
