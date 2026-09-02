@@ -19,8 +19,8 @@ PR_NUMBER="$2"
 OWNER="${REPO%%/*}"
 REPO_NAME="${REPO##*/}"
 
-# Resolve $0 through any symlinks — consuming skills reach this script via a
-# the canonical shared-scripts directory,
+# Resolve $0 through any symlinks — consuming skills reach this script via the
+# canonical shared-scripts directory,
 # so a naive dirname would look for its sibling in the wrong directory.
 src="$0"
 while [ -L "$src" ]; do

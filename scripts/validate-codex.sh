@@ -7,6 +7,10 @@ python3 - "$repo_root" <<'PY'
 import json
 import pathlib
 import sys
+
+if sys.version_info < (3, 11):
+    raise SystemExit("validate-codex.sh requires Python 3.11 or newer (for tomllib)")
+
 import tomllib
 
 root = pathlib.Path(sys.argv[1])

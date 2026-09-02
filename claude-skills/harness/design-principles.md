@@ -39,8 +39,10 @@ Skill content stays in context for the whole session once loaded, and after comp
 **Inline bash in skills is a smell.** It costs tokens on every invocation, drifts between skills, and is untestable. Extract it into scripts.
 
 - Scripts go in the skill's directory; cross-skill scripts remain canonical in
-  `scripts/shared/` and use `${CLAUDE_SKILL_DIR}/script.sh`. Do not distribute
-  shared helpers through skill symlinks because Codex packaging omits them.
+  `scripts/shared/` and use `${CLAUDE_SKILL_DIR}/script.sh`. The generated
+  Claude projection copies required helpers into each consuming skill, while
+  Codex resolves them from the shared directory. Do not use skill symlinks
+  because Codex packaging omits them.
 - **Extract if:** block has conditionals, loops, pipes, arithmetic, multi-step sequences, or error-prone syntax
 - **Leave inline if:** single straightforward command (e.g., `git status`, `nix flake check`)
 - When fixing a bug in inline bash, always extract to a script rather than patching in place
