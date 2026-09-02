@@ -1,0 +1,5 @@
+interface:
+  display_name: "Skill Writer"
+  short_description: "Run the skill-writer workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

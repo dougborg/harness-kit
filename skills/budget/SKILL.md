@@ -9,10 +9,13 @@ when_to_use: >-
   Before any orchestration-scale work — dispatching subagents, large fan-outs,
   long-running batches — or when the user asks about usage, quota, limits, or
   when the budget resets. A PreToolUse hook also surfaces this automatically.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/claude-usage-check.sh*), Bash(claude -p*), Read
+allowed-tools: Bash(<shared-scripts-dir>/claude-usage-check.sh*), Bash(claude -p*), Read
 ---
 
 # /budget — Budget-Aware Coordination
+
+> **Claude Code only.** Codex must stop and report that this workflow is not
+> supported; never invoke `claude -p` from a Codex session.
 
 Treat the token budget as a managed resource when acting as a
 **work-coordination / orchestrator session** — anything that dispatches
@@ -24,7 +27,7 @@ quick one-shot conversational turns; it is for orchestration-scale work.
 Read the usage panel non-interactively:
 
 ```bash
-${CLAUDE_SKILL_DIR}/claude-usage-check.sh
+<shared-scripts-dir>/claude-usage-check.sh
 ```
 
 It runs `claude -p "/usage"` under the hood (a local panel — no model turn;

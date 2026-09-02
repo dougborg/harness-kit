@@ -8,7 +8,7 @@ when_to_use: >-
   When implementation is complete and ready for review — the user asks to open,
   raise, or submit a PR — and when /harness-issue hands off in PR mode.
 argument-hint: "[base branch]"
-allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git reset *), Bash(git rev-list *), Bash(git rev-parse *), Bash(${CLAUDE_SKILL_DIR}/*), Read
+allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git reset *), Bash(git rev-list *), Bash(git rev-parse *), Bash(<skill-dir>/*), Bash(<shared-scripts-dir>/*), Read
 ---
 
 # /open-pr — Open a Pull Request
@@ -48,7 +48,7 @@ The skill runs nine phases. Each phase is short; phase headings below are the na
 1. **Ensure feature branch** — auto-create if on `main`:
 
    ```bash
-   branch=$(${CLAUDE_SKILL_DIR}/ensure-feature-branch.sh)
+   branch=$(<skill-dir>/ensure-feature-branch.sh)
    ```
 
    The script handles three scenarios automatically:
@@ -61,7 +61,7 @@ The skill runs nine phases. Each phase is short; phase headings below are the na
 3. **Discover and run validation:**
 
    ```bash
-   ${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh
+   <shared-scripts-dir>/discover-verification-cmd.sh
    ```
 
    Then run the command it prints as a **separate** Bash call — never `eval` it
@@ -159,7 +159,7 @@ Note: This phase is optional and relies on manual review or the `/simplify` skil
 ## Phase 6: Wait for CI
 
 ```bash
-${CLAUDE_SKILL_DIR}/poll-ci.sh <number> [timeout-seconds]
+<skill-dir>/poll-ci.sh <number> [timeout-seconds]
 ```
 
 Exit 0 = passed, exit 1 = failed (fix, commit, push, re-poll), exit 2 = script timeout — CI is **still running**, not done; re-poll.
@@ -196,9 +196,9 @@ When scheduling a wakeup, phrase the prompt as the **goal**, not a task referenc
 **Always use the polling script** — never check for review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. The polling script uses the correct APIs (GraphQL review threads + review states).
 
 ```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <number>)
+ctx=$(<shared-scripts-dir>/resolve-github-context.sh <number>)
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/poll-review.sh "$owner_repo" <number>
+<skill-dir>/poll-review.sh "$owner_repo" <number>
 ```
 
 The Bash-timeout and wakeup-resume rules from Phase 6 apply here too — `poll-review.sh` waits even longer than `poll-ci.sh`, so it MUST also run with an explicit Bash `timeout` above the script's own, or with `run_in_background: true`.

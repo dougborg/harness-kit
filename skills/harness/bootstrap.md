@@ -1,6 +1,8 @@
 # Bootstrap Mode
 
-Analyze the project, install skills/agents from the harness-kit plugin, and generate project-specific additions. **Auto-triggers when `.claude/` doesn't exist or is empty.**
+Analyze the project, install skills/agents from harness-kit for both Claude Code
+and Codex, and generate project-specific additions. Auto-trigger only when
+`.claude/`, `.agents/`, and `.codex/` contain no harness content.
 
 ## Workflow
 
@@ -30,18 +32,31 @@ Analyze the project, install skills/agents from the harness-kit plugin, and gene
 
 3. **Do NOT write any files until the user approves.**
 
-4. **After approval, install and generate:**
-   - Copy approved skills from `${CLAUDE_PLUGIN_ROOT}/skills/` to `.claude/skills/` — copy each skill's **whole directory**, including sibling reference `.md` files and scripts, not just `SKILL.md`
-   - Copy approved agents from `${CLAUDE_PLUGIN_ROOT}/agents/` to `.claude/agents/`, including the `references/` subdirectory
-   - Copy `skills/shared/` scripts to `.claude/skills/shared/`
-   - **Copy with `cp -R`, never `cp -RL`.** Skills reach shared scripts through relative symlinks (`.claude/skills/commit/discover-verification-cmd.sh -> ../shared/discover-verification-cmd.sh`). `cp -R` preserves them and they resolve in the copied tree because the layout is preserved; `-L` dereferences each one into a duplicate file that then drifts from the canonical copy.
-   - **Do not rewrite any paths in copied files.** Skills address their own files as `${CLAUDE_SKILL_DIR}/…`, which the runtime resolves to wherever the skill actually lives — plugin cache or `.claude/skills/` alike. Rewriting would also corrupt the deliberate `${CLAUDE_PLUGIN_ROOT}` references in this file and in `update.md`, which mean the plugin tree and nothing else.
-   - Generate project-specific agents (domain-advisor, etc.) in `.claude/agents/`
-   - Generate project-specific skills in `.claude/skills/`
-   - Write `CLAUDE.md` with all sections filled in, including an "External plugins" section recording which official plugins were installed or deliberately skipped, with rationale (external plugins are installed via `/plugin install`, not copied — they are NOT tracked in `.harness-lock.json`)
-   - Configure hooks in `.claude/settings.local.json`
+4. **After approval, install and generate for both hosts:**
+   - Copy approved skills from `<plugin-root>/claude-skills/` to `.claude/skills/` — copy each skill's **whole directory**, including sibling reference `.md` files and scripts, not just `SKILL.md`
+   - Copy approved agents from `<plugin-root>/agents/` to `.claude/agents/`, including the `references/` subdirectory
+   - Copy the same canonical skills to `.agents/skills/` for Codex CLI and IDE
+     repository discovery, preserving each `agents/openai.yaml`.
+   - Copy shared scripts to `.agents/scripts/shared/`; installed canonical
+     skills resolve `<shared-scripts-dir>` from their loaded location.
+   - Copy Codex agent TOMLs from `<plugin-root>/.codex/agents/` to
+     `.codex/agents/` and merge the project defaults into `.codex/config.toml`.
+   - **Copy whole skill directories with `cp -R`.** Claude's generated
+     projection includes regular copies of the helpers each skill needs. Codex
+     keeps shared helpers canonical in the host's shared-script directory.
+   - Resolve `<skill-dir>` and `<plugin-root>` from the loaded Codex skill path.
+     Claude copies already contain runtime `${CLAUDE_SKILL_DIR}` and
+     `${CLAUDE_PLUGIN_ROOT}` substitutions; do not rewrite them at install time.
+   - Generate project-specific agents for both `.claude/agents/` and
+     `.codex/agents/`; use Claude Markdown frontmatter and Codex standalone TOML.
+   - Generate project-specific open-format skills and install them in both host trees.
+   - Write shared rules to `AGENTS.md`; write Claude-only additions and an
+     `@AGENTS.md` import to `CLAUDE.md`.
+   - Configure hooks in `.claude/settings.local.json` and `.codex/hooks.json`,
+     sharing invoked scripts where semantics match.
    - Create `.harness-lock.json` tracking provenance of every installed file
-   - Write `.claude/harness-upstream` (one line: `owner/repo`) so `/harness-issue` knows where to file feedback. Use the source repo from the lock file (default `dougborg/harness-kit`).
+   - Write `.harness-upstream` as the shared routing file and retain
+     `.claude/harness-upstream` as a compatibility copy.
    - Update `.gitignore` (add `.claude/settings.local.json` if it contains secrets)
    - Never generate `.claude/commands/` — commands are legacy
 
@@ -59,18 +74,31 @@ The `.harness-lock.json` file is created during bootstrap and tracks every file'
 
 ```json
 {
+  "schemaVersion": 2,
+  "hosts": ["claude", "codex"],
   "sources": {
     "harness-kit": { "version": "0.1.0", "installed": "2026-04-04", "repo": "dougborg/harness-kit" }
   },
   "files": {
-    ".claude/skills/commit/SKILL.md": { "source": "harness-kit", "modified": false },
-    ".claude/agents/code-reviewer.md": { "source": "harness-kit", "modified": false },
-    ".claude/agents/domain-advisor.md": { "source": "local" }
+    ".claude/skills/commit/SKILL.md": {
+      "source": "harness-kit", "modified": false,
+      "host": "claude", "component": "skill"
+    },
+    ".agents/skills/commit/SKILL.md": {
+      "source": "harness-kit", "modified": false,
+      "host": "codex", "component": "skill"
+    },
+    ".codex/agents/code-reviewer.toml": {
+      "source": "harness-kit", "modified": false,
+      "host": "codex", "component": "agent"
+    }
   }
 }
 ```
 
-Track every copied file, including a skill's sibling reference files (e.g. `.claude/skills/harness/audit.md`), so `/harness update` can refresh them.
+Track every copied file in both host trees. A lock without `schemaVersion` is
+legacy v1 and Claude-only; migrate it to v2 on the next write by inferring
+`host` and `component` from each path without changing content or modified flags.
 
 The `repo` field on each source records the GitHub upstream so `/harness-issue` and `/harness hoist` can route feedback and proposed changes to the right place. Omit `repo` for purely local sources.
 

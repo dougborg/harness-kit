@@ -1,1 +1,0 @@
-../shared/resolve-all-threads.sh

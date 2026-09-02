@@ -1,0 +1,5 @@
+interface:
+  display_name: "Svg Logo Designer"
+  short_description: "Run the svg-logo-designer workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

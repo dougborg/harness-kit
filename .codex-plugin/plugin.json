@@ -1,0 +1,37 @@
+{
+  "name": "harness-kit",
+  "version": "0.8.0",
+  "description": "Self-improving agent harness for audit, bootstrap, review, and project workflows",
+  "author": {
+    "name": "Doug Borg",
+    "url": "https://github.com/dougborg"
+  },
+  "homepage": "https://github.com/dougborg/harness-kit",
+  "repository": "https://github.com/dougborg/harness-kit",
+  "license": "Apache-2.0",
+  "keywords": [
+    "harness",
+    "skills",
+    "code-review",
+    "pr-workflow",
+    "agent-harness"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "harness-kit",
+    "shortDescription": "Reusable engineering and harness workflows",
+    "longDescription": "Bootstrap, audit, review, and evolve project agent harnesses with reusable engineering workflows.",
+    "developerName": "Doug Borg",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/dougborg/harness-kit",
+    "defaultPrompt": [
+      "Audit this project's agent harness.",
+      "Review the current changes before a PR.",
+      "Bootstrap a shared Claude and Codex harness."
+    ]
+  }
+}

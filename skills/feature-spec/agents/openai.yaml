@@ -1,0 +1,5 @@
+interface:
+  display_name: "Feature Spec"
+  short_description: "Run the feature-spec workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

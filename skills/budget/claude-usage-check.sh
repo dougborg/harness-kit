@@ -1,1 +1,0 @@
-../shared/claude-usage-check.sh

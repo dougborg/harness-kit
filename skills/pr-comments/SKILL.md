@@ -1,8 +1,7 @@
 ---
 name: pr-comments
 description: Respond to PR review comments systematically in thread context
-disable-model-invocation: true
-allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(git *), Bash(${CLAUDE_SKILL_DIR}/reply-to-comment.sh*), Bash(${CLAUDE_SKILL_DIR}/resolve-github-context.sh*), Bash(${CLAUDE_SKILL_DIR}/fetch-pr-context.sh*), Read
+allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(git *), Bash(<shared-scripts-dir>/reply-to-comment.sh*), Bash(<shared-scripts-dir>/resolve-github-context.sh*), Bash(<shared-scripts-dir>/fetch-pr-context.sh*), Read
 ---
 
 # /pr-comments — Respond to PR Comments
@@ -15,7 +14,7 @@ Reply to every unresolved PR comment with appropriate responses (fixed, already-
 
 ## CRITICAL
 
-- **ALWAYS use the reply script** — `${CLAUDE_SKILL_DIR}/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'body'`. The script validates the comment belongs to the correct PR before posting. Never use standalone `gh pr comment {number}` (loses thread context) or raw `gh api` (easy to get the endpoint wrong).
+- **ALWAYS use the reply script** — `<shared-scripts-dir>/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'body'`. The script validates the comment belongs to the correct PR before posting. Never use standalone `gh pr comment {number}` (loses thread context) or raw `gh api` (easy to get the endpoint wrong).
 - **Reply to EVERY comment** — Nothing left unaddressed or hanging
 - **Only reply after code is live** — Wait for push to complete before responding. Replies confirm fix is deployed.
 - **Batch replies per commenter when appropriate** — Multiple small changes from same reviewer can be batched into one multi-item reply
@@ -31,9 +30,9 @@ Reply to every unresolved PR comment with appropriate responses (fixed, already-
 ### 1. Fetch All Unresolved Comments
 
 ```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh {number})
+ctx=$(<shared-scripts-dir>/resolve-github-context.sh {number})
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/fetch-pr-context.sh "$owner_repo" {number}
+<shared-scripts-dir>/fetch-pr-context.sh "$owner_repo" {number}
 ```
 
 The script returns comments with resolved status. Filter to unresolved only.
@@ -51,7 +50,7 @@ For each unresolved comment:
 Use comment ID to reply in-thread via GitHub API:
 
 ```bash
-${CLAUDE_SKILL_DIR}/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
+<shared-scripts-dir>/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
 ```
 
 **Never:** `gh pr comment {number} --body='...'` (loses thread context)
@@ -246,7 +245,7 @@ See discussion in #789 for performance trade-off analysis.
 
 ## IMPORTANT RULES
 
-- **ALWAYS use the reply script** — `${CLAUDE_SKILL_DIR}/reply-to-comment.sh` validates correct PR before posting
+- **ALWAYS use the reply script** — `<shared-scripts-dir>/reply-to-comment.sh` validates correct PR before posting
 - **NEVER use standalone `gh pr comment`** (loses thread context)
 - **NEVER use raw `gh api` for replies** — the script prevents wrong-PR and wrong-endpoint mistakes
 - **NEVER use `/pulls/comments/{id}/replies`** — this endpoint does not exist (404)

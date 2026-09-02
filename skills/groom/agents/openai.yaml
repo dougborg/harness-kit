@@ -1,0 +1,5 @@
+interface:
+  display_name: "Groom"
+  short_description: "Run the groom workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

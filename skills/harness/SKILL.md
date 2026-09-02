@@ -5,10 +5,10 @@ description: >-
   update, add, retro, hoist — each reads its own protocol reference.
 when_to_use: >-
   When the user asks to audit, bootstrap, update, or retro a harness; when
-  setting up .claude/ in a new project; and when a /harness mode hands off to
+  setting up Claude Code and Codex project harnesses; and when a harness mode hands off to
   another mode (retro to hoist).
 argument-hint: "[audit|bootstrap|update|add|retro|hoist]"
-allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh*), Read, Glob, Write, Edit
+allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(<shared-scripts-dir>/discover-verification-cmd.sh*), Read, Glob, Write, Edit
 ---
 
 # /harness — Self-Improving Meta-Harness
@@ -27,7 +27,7 @@ Establish quality gates on agent harnesses — skills, agents, hooks, and docume
 
 ## ASSUMES
 
-- You have `.claude/` directory with agents, skills, or both (or you're bootstrapping a new project)
+- You have `.claude/`, `.agents/`, or `.codex/` harness content (or you are bootstrapping a new project)
 - You can run the verification command for your project stack (cargo test, npm test, nix flake check, etc.)
 - The harness-kit plugin is installed (provides base skills/agents and this `/harness` skill)
 - `.harness-lock.json` tracks which files came from upstream vs project-local
@@ -46,38 +46,39 @@ Auto-detect and run the appropriate mode:
 /harness hoist        # Propose upstream PR for generic improvements
 ```
 
-If no `.claude/` → runs `bootstrap` (generates harness). If `.claude/` exists → runs `audit` (validates quality).
+If none of `.claude/`, `.agents/`, or `.codex/` contains harness content, run
+`bootstrap`. Otherwise run `audit`.
 
 **Read the file for the selected mode before doing any work.** Each is self-contained; do not read the others.
 
 | Mode | Read | What it covers |
 | --- | --- | --- |
-| `audit` | `${CLAUDE_SKILL_DIR}/audit.md` | Audit protocol, `/doctor` division of labor, gap classification, output format |
-| `bootstrap` | `${CLAUDE_SKILL_DIR}/bootstrap.md` | harness-builder handoff, approval gate, install steps, `.harness-lock.json` creation |
-| `update` | `${CLAUDE_SKILL_DIR}/update.md` | Smart-merge with upstream using lock-file provenance |
-| `add` | `${CLAUDE_SKILL_DIR}/update.md` | Installing skills from another marketplace (second half of the file) |
-| `retro` | `${CLAUDE_SKILL_DIR}/retro.md` | Gap classification A/B/C/D, upstream promotion pass |
-| `hoist` | `${CLAUDE_SKILL_DIR}/hoist.md` | Proposing project-local improvements back upstream |
+| `audit` | `<skill-dir>/audit.md` | Audit protocol, `/doctor` division of labor, gap classification, output format |
+| `bootstrap` | `<skill-dir>/bootstrap.md` | harness-builder handoff, approval gate, install steps, `.harness-lock.json` creation |
+| `update` | `<skill-dir>/update.md` | Smart-merge with upstream using lock-file provenance |
+| `add` | `<skill-dir>/update.md` | Installing skills from another marketplace (second half of the file) |
+| `retro` | `<skill-dir>/retro.md` | Gap classification A/B/C/D, upstream promotion pass |
+| `hoist` | `<skill-dir>/hoist.md` | Proposing project-local improvements back upstream |
 
 Topic references, read as needed from any mode (all reachable in one hop from here — no reference file links to another):
 
 | Topic | Read | When |
 | --- | --- | --- |
-| Skill/agent design patterns | `${CLAUDE_SKILL_DIR}/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
-| Hook staging and exit codes | `${CLAUDE_SKILL_DIR}/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks, exit-code safety) |
-| Bundled skills + official plugin catalog | `${CLAUDE_SKILL_DIR}/../../agents/references/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
-| Multi-agent architecture patterns | `${CLAUDE_SKILL_DIR}/../../agents/references/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
-| Plugin `hooks.json` schema | `${CLAUDE_SKILL_DIR}/../../agents/references/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
+| Skill/agent design patterns | `<skill-dir>/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
+| Hook staging and exit codes | `<skill-dir>/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks, exit-code safety) |
+| Bundled skills + official plugin catalog | `<skill-dir>/../../agents/references/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
+| Multi-agent architecture patterns | `<skill-dir>/../../agents/references/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
+| Plugin `hooks.json` schema | `<skill-dir>/../../agents/references/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
 
 ## EDGE CASES
 
-- [Auditing existing harness] — Read `${CLAUDE_SKILL_DIR}/audit.md`
-- [Setting up new project] — Read `${CLAUDE_SKILL_DIR}/bootstrap.md`
-- [Syncing with upstream, or adding external skills] — Read `${CLAUDE_SKILL_DIR}/update.md`
-- [Session reflection] — Read `${CLAUDE_SKILL_DIR}/retro.md`
-- [Sharing generic tools upstream] — Read `${CLAUDE_SKILL_DIR}/hoist.md`
-- [Design guidance for skills/agents] — Read `${CLAUDE_SKILL_DIR}/design-principles.md`
-- [Hook exits non-zero on no-op] — Read `${CLAUDE_SKILL_DIR}/hooks-patterns.md` → Hook Exit Code Safety
+- [Auditing existing harness] — Read `<skill-dir>/audit.md`
+- [Setting up new project] — Read `<skill-dir>/bootstrap.md`
+- [Syncing with upstream, or adding external skills] — Read `<skill-dir>/update.md`
+- [Session reflection] — Read `<skill-dir>/retro.md`
+- [Sharing generic tools upstream] — Read `<skill-dir>/hoist.md`
+- [Design guidance for skills/agents] — Read `<skill-dir>/design-principles.md`
+- [Hook exits non-zero on no-op] — Read `<skill-dir>/hooks-patterns.md` → Hook Exit Code Safety
 
 ---
 
@@ -116,7 +117,8 @@ Agent(
 )
 ```
 
-**Project-local fix** — fix `.claude/{skills,agents}/` directly in the current repo, commit normally. Mark the file as `modified: true` in `.harness-lock.json`.
+**Project-local fix** — fix the host-specific file tracked in
+`.harness-lock.json`, commit normally, and mark it `modified: true`.
 
 **Continue working** — the upstream PR will be reviewed and merged separately. After merge, `/harness update` will pull the fix into all projects.
 
@@ -136,7 +138,7 @@ Lightweight in-flight signal that feeds the next audit. Don't stop work — just
 
 ## RELATED
 
-- Siblings of this file in `${CLAUDE_SKILL_DIR}/`: `audit.md`, `bootstrap.md`, `update.md`, `retro.md`, `hoist.md` (mode protocols); `design-principles.md`, `hooks-patterns.md` (cross-mode topics). All are one level deep — none of them link to each other.
+- Siblings of this file in `<skill-dir>/`: `audit.md`, `bootstrap.md`, `update.md`, `retro.md`, `hoist.md` (mode protocols); `design-principles.md`, `hooks-patterns.md` (cross-mode topics). All are one level deep — none of them link to each other.
 - `harness-builder` agent — Used by bootstrap mode to analyze codebases and recommend harness setup
 - `/session-retro` — Session-side retrospective (documents the work, not the harness); run alongside retro mode
 - `/documentation-writer` — Write scannable, progressive-disclosure docs

@@ -8,7 +8,7 @@ when_to_use: >-
   When the user asks to commit, stage, or write a commit message; when another
   skill (/open-pr, /review-pr) needs the commit mechanics or the uv.lock drift
   check.
-allowed-tools: Bash(git add*), Bash(git commit*), Bash(git diff*), Bash(git status*), Bash(${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh*), Read
+allowed-tools: Bash(git add*), Bash(git commit*), Bash(git diff*), Bash(git status*), Bash(<shared-scripts-dir>/discover-verification-cmd.sh*), Read
 ---
 
 # /commit — Quality-Gated Conventional Commits
@@ -76,7 +76,7 @@ Discover the verification command, then run what it prints as a **separate**
 Bash call:
 
 ```bash
-${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh
+<shared-scripts-dir>/discover-verification-cmd.sh
 ```
 
 Do not pipe the discovery into `eval` in the same call — a command containing

@@ -1,6 +1,7 @@
 # Audit Mode
 
-The audit protocol for `/harness audit`. Run it on the current project's harness — skills, agents, hooks, and CLAUDE.md.
+The audit protocol for `harness audit`. Run it across Claude Code and Codex
+instructions, skills, agents, hooks, and provenance.
 
 ## Division of labor with `/doctor`
 
@@ -46,18 +47,21 @@ Find the verification command for this project:
 
 ## 3. Read All Harness Content
 
-- List and read every file in `.claude/agents/` and `.claude/skills/`
+- List and read every file in `.claude/agents/`, `.claude/skills/`,
+  `.agents/skills/`, and `.codex/agents/`
 - Check for legacy `.claude/commands/` directory — flag for migration to skills
-- Check `CLAUDE.md` for harness documentation
+- Check shared rules in `AGENTS.md` and Claude-only additions in `CLAUDE.md`
 
 ## 4. Check Alignment
 
 - Do agent instructions reference the correct verification command?
 - Do tool references match what's actually installed?
 - Do agents reference correct paths and conventions from CLAUDE.md?
-- Is CLAUDE.md present and does it document all agents and skills?
+- Do `AGENTS.md` and `CLAUDE.md` contain only non-derivable shared and
+  Claude-specific conventions? Do not require a reconstructable inventory.
 - Does CLAUDE.md include the `<new-diagnostics>` protocol (verify LSP diagnostics with the project's type-check CLI before dismissing as stale)? See the baseline section in `agents/harness-builder.md`.
-- Does every skill and agent file appear in `.harness-lock.json`, and does every lock-file entry still exist on disk?
+- Does every managed file in both host trees appear in lock schema v2, and
+  does every entry still exist with the correct host and component?
 
 ## 5. Check Model Tiering
 
@@ -66,6 +70,8 @@ Find the verification command for this project:
 - `opus` only for deep architectural decisions
 - Skills should carry no `model:` at all — they run in the parent conversation
 - Flag any mismatch
+- For Codex TOML agents, prefer inherited models unless a role has a measured
+  need; verify every read-only promise has `sandbox_mode = "read-only"`.
 
 ## 6. Check Gaps
 
@@ -114,8 +120,10 @@ The field name differs by file type and **the wrong one is silently ignored** �
 
 | File | Valid | Invalid |
 | --- | --- | --- |
-| `skills/*/SKILL.md` | `name`, `description`, `when_to_use`, `allowed-tools`, `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`, `context`, `agent`, `background`, `effort`, `paths` | `tools:`, `disallowedTools:`, `model:` |
+| `skills/*/SKILL.md` | Open skill fields plus Claude adapter fields tolerated by Codex | `disable-model-invocation: true` in the canonical Codex catalog |
+| `claude-skills/*/SKILL.md` | Generated Claude fields, including `allowed-tools` and `disable-model-invocation` | Manual edits or projection drift |
 | `agents/*.md` | `name`, `description`, `tools`, `disallowedTools`, `model`, `memory`, `isolation`, `permissionMode` | `allowed-tools:` |
+| `.codex/agents/*.toml` | `name`, `description`, `developer_instructions`, optional sandbox/model settings | A read-only description without `sandbox_mode = "read-only"` |
 
 Flag, at high priority:
 
@@ -124,10 +132,11 @@ Flag, at high priority:
 - `Bash(pattern*)` scoping inside an agent's `tools:` — agents accept bare tool names only; the scoped entry does not match and the grant silently fails
 - Non-existent tool names — `Task` is the common one (subagent dispatch is not granted via frontmatter); also flag anything not in the current tool set
 - Skill directory name not matching the frontmatter `name`
-- A skill or agent file missing from `.claude-plugin/plugin.json` (plugin repos only) — it will not load
-- A script referenced as `${CLAUDE_PLUGIN_ROOT}/skills/…`, a relative path, or an absolute path. Scripts are addressed as `${CLAUDE_SKILL_DIR}/<script>.sh`; a shared script is reached through a relative symlink in the consuming skill's directory
+- A Claude skill or agent missing from `.claude-plugin/plugin.json`, or a
+  canonical skill missing from `.codex-plugin/plugin.json`
+- A skill-local script referenced outside `<skill-dir>` or a shared helper referenced outside `<shared-scripts-dir>`
 - An `allowed-tools` Bash rule that does not spell the script path **exactly** as the body does. The rule is matched as a literal string after substitution, so any divergence means a permission prompt on every invocation — and the skill still "works", so it never gets noticed
-- A `${CLAUDE_SKILL_DIR}/<script>.sh` reference with no such file or symlink in the skill's directory — a dangling reference fails only at invocation time
+- A `<skill-dir>/<script>.sh` reference with no regular script in the skill directory, or a `<shared-scripts-dir>/<script>.sh` reference with no canonical helper — a dangling reference fails only at invocation time
 - A snippet that combines an allowed script call with `eval` in one command (`cmd=$(…/script.sh); eval "$cmd"`). Claude Code refuses to statically analyze a command containing `eval`, so no `allowed-tools` rule can match it and every run prompts. Split it: one call runs the script, a second runs what it printed
 
 Then apply the permission review:
@@ -161,7 +170,8 @@ The only real limits worth enforcing. There is **no section schema and no per-se
 - Do skills reference file paths rather than inlining code?
 - Is any skill duplicating content from another skill? (creates drift)
 - **Any inline bash block with logic** (conditionals, loops, pipes)? → Extract to a script in the skill's directory
-- **Any inline bash duplicated across skills?** → Extract to `skills/shared/` and symlink it into each consumer (`ln -s ../shared/script.sh skills/<skill>/script.sh`)
+- **Any inline bash duplicated across skills?** → Extract it to
+  `scripts/shared/` and reference `<shared-scripts-dir>/script.sh`.
 - **Any inline command previously fixed for wrong syntax?** → Extract to prevent recurrence
 
 ## 10. Check Internal Consistency

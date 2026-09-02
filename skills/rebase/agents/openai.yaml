@@ -1,0 +1,5 @@
+interface:
+  display_name: "Rebase"
+  short_description: "Run the rebase workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

@@ -8,7 +8,6 @@ description: >-
   keeping docs from going stale. Use when creating or rewriting docs, when a
   README has drifted from the code, or when deciding where a piece of
   information belongs. For SKILL.md and agent files, use /skill-writer instead.
-disable-model-invocation: true
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 

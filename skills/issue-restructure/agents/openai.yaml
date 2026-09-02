@@ -1,0 +1,5 @@
+interface:
+  display_name: "Issue Restructure"
+  short_description: "Run the issue-restructure workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false
