@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/dougborg/harness-kit/compare/v0.8.0...v0.9.0) (2026-09-02)
+
+
+### Features
+
+* support Claude Code and Codex ([#104](https://github.com/dougborg/harness-kit/issues/104)) ([a51af7e](https://github.com/dougborg/harness-kit/commit/a51af7e1269f8210fbdfd98a5c441090ee25b7a7))
+
 ## [0.8.0](https://github.com/dougborg/harness-kit/compare/v0.7.0...v0.8.0) (2026-08-22)
 
 
