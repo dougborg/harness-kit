@@ -4,7 +4,6 @@ description: >-
   File a new GitHub issue with duplicate search, scope decision, label
   discovery, and preview before posting. Prevents fragmented or silently-filed
   issues.
-disable-model-invocation: true
 allowed-tools: Bash(gh issue *), Bash(gh search *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---
 

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pr Comments"
+  short_description: "Run the pr-comments workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

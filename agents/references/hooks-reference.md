@@ -142,7 +142,7 @@ This is the correct shape of `hooks/hooks.json` for a plugin with a formatter ho
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/skills/shared/markdownlint-fix.sh {file_path}"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/shared/markdownlint-fix.sh"
           }
         ]
       }
@@ -180,7 +180,7 @@ If hooks fail to load, `claude --debug` surfaces the exact error, including the 
 
 ## Validation in CI
 
-harness-kit ships `skills/shared/validate-hooks-schema.sh` — a minimal `jq`-based check that enforces the top-level `hooks` object shape and ensures each event value is an array. Run it via `just validate-hooks` or as part of `just check`.
+harness-kit ships `scripts/shared/validate-hooks-schema.sh` — a minimal `jq`-based check that enforces the top-level `hooks` object shape and ensures each event value is an array. Run it via `just validate-hooks` or as part of `just check`.
 
 This check would have caught both v0.1.0 and v0.2.0 releases before they shipped.
 

@@ -19,14 +19,26 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Install Codex
+        run: npm install -g @openai/codex
+
       - name: Validate plugin manifest
         run: claude plugin validate .
 
+      - name: Validate Codex packaging and projections
+        run: ./scripts/validate-codex.sh
+
       - name: Validate plugin hooks schema
-        run: ./skills/shared/validate-hooks-schema.sh hooks/hooks.json
+        run: ./scripts/shared/validate-hooks-schema.sh hooks/hooks.json
 
       - name: Run hooks validator regression tests
-        run: ./skills/shared/test-hooks-schema.sh
+        run: ./scripts/shared/test-hooks-schema.sh
+
+      - name: Run cross-host hook tests
+        run: ./scripts/test-cross-host-hooks.sh
+
+      - name: Smoke-test Codex marketplace installation
+        run: ./scripts/test-codex-plugin-install.sh
 
   shellcheck:
     name: ShellCheck
@@ -37,7 +49,7 @@ jobs:
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
         with:
-          scandir: skills
+          scandir: .
 
   markdownlint:
     name: Markdown lint

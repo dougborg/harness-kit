@@ -1,0 +1,5 @@
+interface:
+  display_name: "Claude Usage Budget"
+  short_description: "Claude Code-only quota check; unavailable in Codex."
+policy:
+  allow_implicit_invocation: false

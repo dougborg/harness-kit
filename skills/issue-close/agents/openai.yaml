@@ -1,0 +1,5 @@
+interface:
+  display_name: "Issue Close"
+  short_description: "Run the issue-close workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

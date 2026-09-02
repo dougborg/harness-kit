@@ -10,7 +10,8 @@ tools: Read, Grep, Glob, Bash
 
 # Harness Builder
 
-Deep-read a codebase and produce structured recommendations for a ChernyCode-style agent harness.
+Deep-read a codebase and produce structured recommendations for a shared
+Claude Code and Codex agent harness.
 
 ## Discovery Checklist
 
@@ -103,9 +104,10 @@ Test runner:   pytest
 Verify cmd:    just check
 ```
 
-### Recommended CLAUDE.md Skeleton
+### Recommended Shared Instructions
 
-Output a draft CLAUDE.md with sections filled in from discovery. Include:
+Output a draft `AGENTS.md` with shared sections filled in from discovery and a
+small `CLAUDE.md` adapter importing it with `@AGENTS.md`. Include:
 
 - Stack, Project Structure, Coding Standards, Verification, Known Pitfalls, Self-Improvement
 
@@ -126,7 +128,8 @@ Seed the Known Pitfalls section with discovered project-specific gotchas **plus*
 
 #### Baseline `<new-diagnostics>` Protocol
 
-Include this section in every generated CLAUDE.md so downstream agents verify LSP diagnostics instead of waving them off:
+Include this section in generated shared instructions so downstream agents
+verify LSP diagnostics instead of waving them off:
 
 ```markdown
 ### Handling `<new-diagnostics>` system reminders
@@ -148,7 +151,7 @@ if the diagnostic is real.
 
 #### Baseline Compact Instructions
 
-Include this section in every generated CLAUDE.md — it shapes every compaction
+Include this section in every generated `AGENTS.md` — it shapes compaction
 summary in the project (documented mechanism), keeping the pointers to
 externalized state alive through auto-compact:
 
@@ -164,12 +167,12 @@ the tracking issue's checkpoint comment.
 
 ### Recommended Agents
 
-For each, provide:
+For each, provide a Claude Markdown definition and a Codex TOML definition:
 
 - **Name** and one-line description
 - **Why** — what problem it solves for this specific project
-- **Model** — haiku (fast validation), sonnet (generation/analysis), opus (deep review)
-- **Allowed tools** — minimal set needed
+- **Model** — Claude tier when needed; prefer Codex inheritance unless measured
+- **Permissions** — minimal Claude tools and explicit Codex read-only sandbox where promised
 
 Always recommend these universal agents (adapted to the project):
 

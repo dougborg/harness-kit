@@ -1,15 +1,14 @@
 ---
 name: skill-writer
 description: >-
-  Writes and reviews Claude Code skills (SKILL.md) and subagents (agents/*.md)
-  for this plugin and for projects bootstrapped from it. Covers choosing how
+  Writes and reviews shared agent skills plus Claude Code Markdown and Codex
+  TOML subagents for this plugin and bootstrapped projects. Covers choosing how
   prescriptive to be, writing the description field that controls when a skill
   fires, splitting content across reference files, the allowed-tools vs tools
   frontmatter distinction, and harness-kit's own conventions (shared scripts,
-  plugin.json registration, ${CLAUDE_SKILL_DIR} paths). Use when creating a
+  dual plugin registration and host-specific script paths). Use when creating a
   new skill or agent, editing an existing one, or deciding whether something
   should be a skill, an agent, a script, or nothing at all.
-disable-model-invocation: true
 allowed-tools: Glob, Grep, Read, Write, Edit
 ---
 
@@ -31,7 +30,7 @@ Prefer the smallest thing that works:
 
 | Need | Reach for |
 | --- | --- |
-| A fixed sequence of commands | A script in `skills/shared/` |
+| A fixed sequence of commands | A script in `scripts/shared/` |
 | Project facts Claude must always know | `CLAUDE.md` |
 | A repeatable multi-step workflow the user invokes | A skill |
 | Wide reads/searches whose output should stay out of the main context | An agent |
@@ -261,27 +260,23 @@ behavior.
 - **Extract inline bash into a script.** Anything beyond a couple of lines
   becomes a script — it gets ShellCheck coverage from `just check` and can be
   tested. A script used by one skill lives in that skill's directory; anything
-  reused across skills is canonical in `skills/shared/`.
-- **Always address scripts as `${CLAUDE_SKILL_DIR}/name.sh`**, never relative
-  or absolute paths, and never `${CLAUDE_PLUGIN_ROOT}`. Add the matching
-  `Bash(${CLAUDE_SKILL_DIR}/name.sh*)` entry to `allowed-tools` — the
-  frontmatter rule and the body must spell the path **identically**, or the
-  invocation triggers a permission prompt.
-- **Reach a shared script through a relative symlink** in the consuming skill:
-  `ln -s ../shared/name.sh skills/<skill>/name.sh`. That keeps one canonical
-  copy while letting every consumer use `${CLAUDE_SKILL_DIR}/name.sh`, and it
-  resolves both in the plugin checkout and after `/harness bootstrap` copies
-  the tree into `.claude/skills/`.
+  reused across skills is canonical in `scripts/shared/`.
+- Address skill-local scripts as `<skill-dir>/name.sh`. Address scripts reused
+  by multiple skills as `<shared-scripts-dir>/name.sh`; they stay canonical in
+  `scripts/shared/`. The Claude projection adds matching runtime paths to
+  `allowed-tools`. Codex plugin packaging omits skill symlinks, so do not use
+  symlinks as the distribution mechanism.
 - **Never put `eval` in the same command as an allowed script call.** Claude
   Code cannot statically analyze a command containing `eval`, so no
   `allowed-tools` rule matches and it prompts on every run. `var=$(script.sh)`
   and `script.sh --flag arg` both match fine; `cmd=$(script.sh); eval "$cmd"`
   does not. Split it into two calls.
-- **A shared script that calls a sibling must resolve `$0` through symlinks**
-  before taking its `dirname` — see `skills/shared/resolve-all-threads.sh`.
-  Otherwise it looks for the sibling in the consuming skill's directory.
-- **Register new skills and agents in `.claude-plugin/plugin.json`** under
-  `skills` / `agents`. An unregistered file will not load.
+- A shared script that calls a sibling resolves it beside the canonical script;
+  see `scripts/shared/resolve-all-threads.sh`.
+- Register canonical skills through `.codex-plugin/plugin.json`, regenerate
+  `claude-skills/`, and register the projection in
+  `.claude-plugin/plugin.json`. Claude agents use the Claude manifest; Codex
+  agents are project TOMLs installed by bootstrap.
 - **Run `just check`** before committing — plugin validation, hook schema
   checks, ShellCheck, markdownlint, and whitespace hygiene.
 - **Skill directory name must match the frontmatter `name`.**

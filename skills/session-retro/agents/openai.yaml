@@ -1,0 +1,5 @@
+interface:
+  display_name: "Session Retro"
+  short_description: "Run the session-retro workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

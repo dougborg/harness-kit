@@ -4,8 +4,7 @@ description: >-
   Rebase a feature branch onto a target branch, resolving conflicts
   intelligently. Use when a branch is behind and needs updating.
 argument-hint: "[target branch]"
-disable-model-invocation: true
-allowed-tools: Bash(git rebase*), Bash(git fetch*), Bash(git status*), Bash(git diff*), Bash(git log*), Bash(git add*), Bash(git stash*), Bash(git branch*), Bash(git rev-parse*), Bash(git merge-base*), Bash(git show*), Bash(git checkout*), Bash(GIT_SEQUENCE_EDITOR*), Bash(${CLAUDE_SKILL_DIR}/*), Read, Grep, Glob
+allowed-tools: Bash(git rebase*), Bash(git fetch*), Bash(git status*), Bash(git diff*), Bash(git log*), Bash(git add*), Bash(git stash*), Bash(git branch*), Bash(git rev-parse*), Bash(git merge-base*), Bash(git show*), Bash(git checkout*), Bash(GIT_SEQUENCE_EDITOR*), Bash(<skill-dir>/*), Bash(<shared-scripts-dir>/*), Read, Grep, Glob
 ---
 
 # /rebase — Rebase Branch onto Target
@@ -38,7 +37,7 @@ Update a feature branch by replaying its commits onto a target branch (default: 
 Run the pre-flight script (validates branch, fetches remote, checks for collaboration, stashes if needed):
 
 ```bash
-target=$(${CLAUDE_SKILL_DIR}/preflight.sh "${ARGUMENTS:-origin/main}")
+target=$(<skill-dir>/preflight.sh "${ARGUMENTS:-origin/main}")
 ```
 
 The script exits 1 if on main/master or if other authors are detected on a published branch. It prints the target branch to stdout and stash info to stderr.
@@ -46,7 +45,7 @@ The script exits 1 if on main/master or if other authors are detected on a publi
 ### 2. Assess the rebase
 
 ```bash
-${CLAUDE_SKILL_DIR}/assess.sh "$target"
+<skill-dir>/assess.sh "$target"
 ```
 
 Shows commits to replay, files that may conflict, and the merge base.
@@ -89,7 +88,7 @@ git log --oneline $target..HEAD
 Run the project's validation command:
 
 ```bash
-${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh
+<shared-scripts-dir>/discover-verification-cmd.sh
 ```
 
 Then run the command it prints as a **separate** Bash call — never `eval` it in
@@ -208,13 +207,13 @@ Use the squash script for non-interactive operations:
 
 ```bash
 # Squash all commits into one
-${CLAUDE_SKILL_DIR}/squash.sh squash $target
+<skill-dir>/squash.sh squash $target
 
 # Drop a specific commit by SHA
-${CLAUDE_SKILL_DIR}/squash.sh drop $target <short-sha>
+<skill-dir>/squash.sh drop $target <short-sha>
 
 # Reword a commit
-${CLAUDE_SKILL_DIR}/squash.sh reword $target <short-sha>
+<skill-dir>/squash.sh reword $target <short-sha>
 ```
 
 The script automatically detects your sed flavor (GNU or BSD) and applies the correct `sed -i` syntax.

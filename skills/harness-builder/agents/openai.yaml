@@ -1,0 +1,5 @@
+interface:
+  display_name: "Harness Builder"
+  short_description: "Run the harness-builder workflow when explicitly requested."
+policy:
+  allow_implicit_invocation: false

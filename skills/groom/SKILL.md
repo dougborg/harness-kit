@@ -8,7 +8,6 @@ description: >-
 when_to_use: >-
   When the user asks what to work on next, wants the backlog groomed or
   prioritized, or asks for a PR train from open issues.
-disable-model-invocation: true
 context: fork
 agent: harness-kit:project-manager
 background: false

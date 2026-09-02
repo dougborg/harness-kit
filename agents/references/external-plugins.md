@@ -17,7 +17,7 @@ Invoke them by typing `/` plus the name. Claude invokes some automatically; `/ve
 | `/security-review` | code-reviewer's security dimension | Delegate for diff-level security review. |
 | `/verify` | `verifier` agent | Builds and *runs* the app to confirm a change works, rather than falling back to tests or type checks. Genuinely complementary to harness-kit's "validation passed + git clean" gate. |
 | `/run` | — | Launches and drives the app so a change can be seen working. |
-| `/run-skill-generator` | `skills/shared/discover-verification-cmd.sh` | Records the actual build/launch recipe as a per-project skill at `.claude/skills/run-<name>/`. Strictly more capable than script-based command discovery. Bootstrap should recommend running it once per project. |
+| `/run-skill-generator` | `scripts/shared/discover-verification-cmd.sh` | Records the actual build/launch recipe as a per-project skill at `.claude/skills/run-<name>/`. Strictly more capable than script-based command discovery. Bootstrap should recommend running it once per project. |
 | `/batch` | ad-hoc worktree fan-out | Decomposes work into 5–30 independent units and spawns subagents in isolated git worktrees. The merge-train / migration orchestration pattern, built in. |
 | `/simplify` | `/open-pr` self-review cleanup | Reuse, simplification, and altitude cleanups on the working diff — quality only, no bug hunting. Compose: run it before the review step. |
 | `/loop` (alias `/proactive`) | polling patterns in `/open-pr` | Runs a prompt repeatedly, on an interval or self-paced. |

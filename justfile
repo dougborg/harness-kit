@@ -1,23 +1,35 @@
 # harness-kit development recipes
 
 # Run local validation and lint checks
-check: validate validate-hooks test-hooks lint-shell lint-md hygiene
+check: validate validate-codex validate-hooks test-hooks test-cross-host-hooks test-codex-install lint-shell lint-md hygiene
 
 # Validate plugin manifest and structure
 validate:
     claude plugin validate .
 
+# Validate Codex packaging, agents, and generated Claude projection
+validate-codex:
+    ./scripts/validate-codex.sh
+
 # Validate plugin hooks.json schema shape (minimal, catches missing top-level hooks key)
 validate-hooks:
-    ./skills/shared/validate-hooks-schema.sh hooks/hooks.json
+    ./scripts/shared/validate-hooks-schema.sh hooks/hooks.json
 
-# Run validate-hooks-schema.sh regression tests against fixtures in skills/shared/testdata/
+# Run validate-hooks-schema.sh regression tests against fixtures in scripts/shared/testdata/
 test-hooks:
-    ./skills/shared/test-hooks-schema.sh
+    ./scripts/shared/test-hooks-schema.sh
+
+# Exercise host-specific hook semantics
+test-cross-host-hooks:
+    ./scripts/test-cross-host-hooks.sh
+
+# Install the repository through an isolated Codex marketplace/profile
+test-codex-install:
+    ./scripts/test-codex-plugin-install.sh
 
 # Lint shell scripts with ShellCheck (-type f skips the shared-script symlinks)
 lint-shell:
-    find skills -type f -name '*.sh' -exec shellcheck {} +
+    find skills scripts -type f -name '*.sh' -exec shellcheck {} +
 
 # Lint markdown files
 lint-md:

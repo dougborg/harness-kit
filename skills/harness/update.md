@@ -1,16 +1,20 @@
 # Update and Add Modes
 
-Both modes install content from upstream sources into the project's `.claude/` and record it in `.harness-lock.json`. `update` refreshes what's already installed; `add` pulls in skills from another marketplace.
+Both modes install content into the host destinations recorded in
+`.harness-lock.json`. `update` syncs from upstream; `add` pulls skills from
+another marketplace.
 
 ## Update Mode
 
 Pull latest changes from upstream sources and smart-merge with local modifications. **Run after the harness-kit plugin is updated.**
 
-1. **Read `.harness-lock.json`** — Get current source versions and file provenance.
+1. **Read and migrate `.harness-lock.json`** — Missing `schemaVersion` means
+   v1 Claude-only. Upgrade in memory while preserving every source, path, and
+   modified flag; write only after the normal confirmation gate.
 
 2. **Check for upstream updates:**
-   - Compare plugin version (`${CLAUDE_PLUGIN_ROOT}` has the latest) vs lock file version
-   - List files that differ between plugin and project `.claude/`
+   - Compare plugin version (`<plugin-root>` has the latest) vs lock file version
+   - List files that differ in each recorded Claude or Codex destination
 
 3. **For each upstream file:**
    - `modified: false` → **Overwrite** with latest from plugin. Silent.
@@ -25,6 +29,10 @@ Pull latest changes from upstream sources and smart-merge with local modificatio
 5. **Update `.harness-lock.json`** — New version, updated timestamps, modified flags.
 
 6. **Show changelog** — Summary of what was updated, what was skipped, what's new.
+
+If versions match and every tracked file is local, report that there is
+nothing to sync from upstream and point session-learning improvements to
+`harness retro` (issue #90).
 
 ## Add Mode
 
@@ -46,7 +54,7 @@ Add skills from another plugin marketplace into the project's `.claude/`.
 
 3. **User selects** which skills to install into `.claude/`.
 
-4. **Copy selected skills** to `.claude/skills/` — whole directories, including reference files and scripts. Use `cp -R` (never `cp -RL`) so relative symlinks to `shared/` are preserved rather than expanded into duplicate files, and do not rewrite paths in the copied files.
+4. **Copy selected skills** from `claude-skills/` to `.claude/skills/` — whole directories, including reference files and scripts. The generated projection contains the host-specific paths and regular helper files needed by project-local skills; do not rewrite paths in the copied files.
 
 5. **Update `.harness-lock.json`** with new source and file entries.
 
