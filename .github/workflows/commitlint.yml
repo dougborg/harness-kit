@@ -27,6 +27,7 @@ jobs:
             build
             perf
             style
+            revert
           requireScope: false
           subjectPattern: ^(?![A-Z]).+$
           subjectPatternError: |
