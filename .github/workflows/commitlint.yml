@@ -32,3 +32,28 @@ jobs:
           subjectPatternError: |
             The subject "{subject}" found in the pull request title "{title}"
             should start with a lowercase character.
+
+  # Rebase merges land every commit on main as written, and release-please reads
+  # each one, so every commit in the pull request must be Conventional too.
+  lint-commits:
+    name: Conventional commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Lint every commit in the pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: >-
+          npx --yes --package=@commitlint/cli@21.2.3
+          --package=@commitlint/config-conventional@21.2.3
+          -- commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
