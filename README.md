@@ -138,7 +138,7 @@ The `release-please.yml` workflow does not use the default `GITHUB_TOKEN` — PR
 
 One-time setup (repo owner):
 
-1. Create a GitHub App (e.g. `harness-kit-release-bot`) under your account: <https://github.com/settings/apps/new>. Disable webhooks. Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**, **Metadata: Read-only**.
+1. Create a GitHub App (e.g. `harness-kit-release-bot`) under your account: <https://github.com/settings/apps/new>. Disable webhooks. Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**, **Issues: Read and write** (release-please's autorelease labels), **Metadata: Read-only**. The workflow scopes each minted token to exactly those write permissions.
 2. Install the App on this repository (App settings → Install App).
 3. Generate a private key for the App (App settings → Private keys) and note the App ID.
 4. Store both in the repo:
@@ -148,7 +148,7 @@ One-time setup (repo owner):
    gh secret set RELEASE_PLEASE_APP_PRIVATE_KEY < private-key.pem
    ```
 
-Until these are set, the Release Please workflow fails loudly at the token-mint step on every push to `main` — it never silently falls back to `GITHUB_TOKEN`.
+Until these are set, the Release Please workflow fails loudly at its credential check, before the token-mint step, on every push to `main` — it never silently falls back to `GITHUB_TOKEN`.
 
 ## License
 
