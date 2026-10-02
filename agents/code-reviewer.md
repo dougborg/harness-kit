@@ -63,6 +63,10 @@ git log main..HEAD --oneline
 
 Read every changed file. Understand what the change does and why.
 
+For dependency updates, apply the "Vendor and dependency changes" guidance in
+the code-reviewer skill's `special-cases.md`, including migration defaults and
+combined lockfile resolution.
+
 ### 2. Review Categories
 
 Evaluate each change across six dimensions, then classify findings by severity:

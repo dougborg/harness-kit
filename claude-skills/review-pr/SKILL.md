@@ -176,7 +176,8 @@ commit, autosquash-rebases onto the base, and force-pushes with a lease that
 survives a GitHub "Update branch" merge. That keeps history clean, with no
 "address review" commits. First apply the commit skill's uv.lock drift check:
 if `uv.lock` has drifted, add it to the file list and warn the user, as that
-skill prescribes.
+skill prescribes. Prefer the inferred subject; a PR title may differ from the
+commit subject.
 
 ```bash
 # subject inferred from the latest non-merge, non-fixup commit in origin/<base>..HEAD
