@@ -45,6 +45,9 @@ These hold for every step:
 
 ## 1. Pre-flight
 
+Several dependency PRs requested: decide whether to consolidate before
+validating each one. See [dependency-batches.md](dependency-batches.md).
+
 1. Make sure you're on a feature branch:
 
    ```bash
@@ -250,6 +253,10 @@ Report the PR URL, the number of commits, CI status, the agent review's
 findings by severity with their outcomes, the outside-review state and any
 comments addressed, and the current PR state. Done when the report is
 printed.
+
+If the authorized task also includes merging to a branch that deploys
+automatically, follow [deployment-closeout.md](deployment-closeout.md).
+Opening a PR does not authorize merging or deploying it.
 
 ## Related
 

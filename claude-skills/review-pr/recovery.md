@@ -52,7 +52,9 @@ commit is already on the base, or the subject collides with a base-branch
 commit, the rebase reports success and leaves the `fixup!` commit dangling
 on the branch, where CI and history readers see the noise. The script checks
 for this after the rebase, prints the recovery below, and exits non-zero
-without pushing (dougborg/harness-kit#40, #42).
+without pushing (dougborg/harness-kit#40, #42). A PR title passed as
+`--subject` that differs from the commit subject causes the same no-op; prefer
+the inferred subject.
 
 Squash it by hand. The script's printed recovery writes the editor to
 `/tmp`; put it in the repository's git directory instead, where no other
@@ -69,6 +71,9 @@ SH
 chmod +x <git-dir>/squash-fixup.sh
 env GIT_SEQUENCE_EDITOR=<git-dir>/squash-fixup.sh git rebase -i origin/<base>
 ```
+
+The recipe assumes each fixup directly follows its target. With several
+targets, reorder the todo first so each fixup sits under its own target.
 
 Two details matter:
 
