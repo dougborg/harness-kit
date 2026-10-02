@@ -46,6 +46,11 @@ git log main..HEAD --oneline
 
 Read every changed file. Understand what the change does and why.
 
+For dependency updates, apply the Vendor and Dependency Review guidance in
+`skills/code-reviewer/SKILL.md`, including migration defaults and combined
+lockfile resolution. Resolve that skill relative to this plugin when reviewing
+a downstream project.
+
 ### 2. Review Categories
 
 Evaluate each change across six dimensions, then classify findings by severity:
