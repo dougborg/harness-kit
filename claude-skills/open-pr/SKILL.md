@@ -45,6 +45,9 @@ The skill runs nine phases. Each phase is short; phase headings below are the na
 
 ## Phase 1: Pre-flight
 
+For a request covering several dependency PRs, choose whether to consolidate
+before validating them individually. Read [Dependency batches](dependency-batches.md).
+
 1. **Ensure feature branch** — auto-create if on `main`:
 
    ```bash
@@ -240,6 +243,10 @@ Print:
 - CI status
 - Review comments addressed (if any)
 - Current PR state
+
+If the authorized task also includes merging to an environment that deploys
+automatically, follow [Deployment closeout](deployment-closeout.md). Opening a
+PR does not authorize merging or deploying it.
 
 ## Important Rules
 

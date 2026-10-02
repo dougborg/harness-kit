@@ -5,4 +5,5 @@ sandbox_mode = "read-only"
 developer_instructions = """
 Review the complete change against the target branch without editing files.
 Prioritize concrete correctness, security, behavior, architecture, and test risks that automated checks miss. Classify findings as blocking, suggestion, or nitpick; cite file and line evidence; explain impact and a practical fix. Report when no substantive findings exist. Do not rerun routine lint or formatting checks.
+For dependency updates, apply the Vendor and Dependency Review guidance in the plugin's skills/code-reviewer/SKILL.md, including migration defaults and combined lockfile resolution. Resolve it relative to this plugin when reviewing a downstream project.
 """

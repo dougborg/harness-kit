@@ -360,6 +360,7 @@ Use the fixup-and-push script (stages, creates fixup commit, autosquash rebases,
 ```bash
 # Subject is now optional — inferred from the latest non-merge, non-fixup
 # commit in `origin/<baseRefName>..HEAD`. Pass `--subject "..."` to override.
+# Prefer inference: a PR title can differ from the actual commit subject.
 <skill-dir>/fixup-and-push.sh <baseRefName> <file1> <file2> ...
 # or explicit:
 <skill-dir>/fixup-and-push.sh <baseRefName> --subject "fix(scope): description" <file1> <file2> ...
@@ -405,9 +406,16 @@ Print results:
 
 ### When This Happens
 
-`fixup-and-push.sh` creates a `fixup! <subject>` commit and then runs `git rebase --autosquash origin/<base>`. Autosquash only squashes when a commit matching `<subject>` exists **within the rebase range** (i.e., on the feature branch, not yet on the base). If the matching commit was already merged to base — or the subject collides with a base-branch commit — autosquash silently does nothing: the rebase reports success, but the `fixup!` commit remains as a dangling commit on the branch. CI sees an unsquashed `fixup!` commit and history reviewers see noise.
+Autosquash needs a matching target **within the rebase range**. A copied PR
+title that differs from the actual commit subject, or a target already merged
+to base, can leave a dangling `fixup!` commit even when `git rebase` exits zero.
+Prefer `fixup-and-push.sh`'s inferred subject over copying the PR title.
 
-Tracked as dougborg/harness-kit#40 (detect-and-infer fix coming to `fixup-and-push.sh`); the companion `fetch-unresolved-comments.sh` thread-selection bug was #41 (already fixed).
+The #40 fix is shipped: `fixup-and-push.sh` detects remaining fixups and stops
+before pushing. Direct git commands still need that check. The recovery below
+applies to an intended fixup immediately following its target; for multiple
+targets, inspect the todo and place each fixup after its actual target instead
+of squashing into an unrelated preceding commit.
 
 ### Recovery Procedure
 

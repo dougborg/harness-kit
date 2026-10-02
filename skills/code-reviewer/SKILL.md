@@ -380,10 +380,24 @@ dropped. Consider adding a comment explaining the performance trade-off.
 When reviewing changes to external code or dependencies:
 
 1. **Audit supply chain** — Is this package from a known, trusted maintainer?
-2. **Check version** — Is this the latest stable release?
+2. **Check version** — Does it match the intended update and pinned runtimes?
 3. **Security scan** — Any known CVEs in this version?
 4. **Minimal surface area** — Import only what you need
 5. **Evaluate necessity** — Does this add value or complexity?
+
+Read target release notes for updates affecting persistence, authentication,
+serialization, or telemetry. For major upgrades or documented behavior-changing
+minor releases, consult the upstream migration guide and compare changed
+defaults with the application's existing behavior. Successful installation and
+typechecking do not prove that
+database type inference, serialization, authentication, or telemetry/privacy
+defaults are preserved. Verify the relevant runtime behavior and add regression
+coverage for any compatibility fix; use migration drift checks for ORM inference
+changes and explicit collection-policy checks for telemetry SDKs where applicable.
+
+For consolidated updates, review the combined dependency graph and lockfile
+peer contexts, including transitive changes. The original PRs' separate passing
+checks do not cover their interactions.
 
 **Example:**
 
