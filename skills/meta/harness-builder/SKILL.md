@@ -38,6 +38,8 @@ Or manually:
 [Invoke harness-builder agent on current codebase]
 ```
 
+Pass the agent the absolute paths of the harness skill's catalogs so it recommends from them rather than from memory: `external-plugins.md`, `architecture-patterns.md`, `hooks-reference.md`, and `release-please-reference.md`. The harness skill sits beside this one, in `<skill-dir>/../harness/`, in the plugin and in project copies alike.
+
 ### 2. Review Recommendations
 
 The agent returns:

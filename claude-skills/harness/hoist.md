@@ -24,7 +24,7 @@ Propose improvements to the upstream harness-kit plugin (or other upstream sourc
    - New upstream skills only when nothing existing covers the area
    - Project-local files to simplify after upstream accepts the improvement
 
-6. **After approval**: Clone the upstream repo, create a branch, apply changes, open a PR via `gh`.
+6. **After approval**: Clone the upstream repo, create a branch, apply changes, open a PR via `gh`. For harness-kit, edit the canonical skill under `skills/<area>/<skill>/` (find it with `ls skills/*/<skill>`), never `claude-skills/`, and run `scripts/generate-claude-skills.sh`. A new skill goes in a topic-area folder and gets a line in that area's `README.md`.
 
 ## Principles
 

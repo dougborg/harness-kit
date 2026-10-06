@@ -27,18 +27,37 @@ assert entry["policy"] == {"installation": "AVAILABLE", "authentication": "ON_IN
 # skills/<area>/<skill>/: areas hold only skill directories and a README.md.
 # Codex discovers SKILL.md recursively, so a stray SKILL.md anywhere would ship.
 skills = []
-for area in sorted((root / "skills").iterdir()):
+def visible(path):
+    return sorted(p for p in path.iterdir() if not p.name.startswith("."))
+
+for area in visible(root / "skills"):
     assert area.is_dir(), f"{area}: only topic-area folders belong directly under skills/"
     assert not (area / "SKILL.md").exists(), f"{area}: skills live one level down, in skills/<area>/<skill>/"
-    for entry in sorted(area.iterdir()):
+    for entry in visible(area):
         if entry.name == "README.md":
             continue
         assert entry.is_dir(), f"{entry}: areas hold only skill folders and README.md"
         skills.append(entry)
-for skill in skills:
-    readme = skill.parent / "README.md"
-    assert readme.is_file(), f"{skill.parent}: missing README.md listing the area's skills"
-    assert f"](./{skill.name}/SKILL.md)" in readme.read_text(), f"{readme}: does not list {skill.name}"
+# Each area README lists exactly its skills, under the section matching the
+# invocation policy. Claude-only skills (the generator's claude_only set) are
+# hidden from Codex for host availability but model-invoked on Claude.
+generator = (root / "scripts/generate-claude-skills.sh").read_text()
+claude_only = set(re.search(r'^claude_only="([^"]*)"', generator, re.M).group(1).split())
+for area in {skill.parent for skill in skills}:
+    readme = area / "README.md"
+    assert readme.is_file(), f"{area}: missing README.md listing the area's skills"
+    section, listed = None, {}
+    for line in readme.read_text().splitlines():
+        if line.startswith("## "):
+            section = line[3:].strip()
+        for name in re.findall(r"\]\(\./([^/]+)/SKILL\.md\)", line):
+            listed[name] = section
+    present = {skill.name for skill in skills if skill.parent == area}
+    assert set(listed) == present, f"{readme}: lists {sorted(set(listed) - present)} missing {sorted(present - set(listed))}"
+    for name, section in listed.items():
+        gated = "allow_implicit_invocation: false" in (area / name / "agents/openai.yaml").read_text()
+        want = "User-invoked" if gated and name not in claude_only else "Model-invoked"
+        assert section == want, f"{readme}: {name} belongs under '## {want}'"
 names = [skill.name for skill in skills]
 duplicates = sorted({name for name in names if names.count(name) > 1})
 assert not duplicates, f"skill names must be unique across areas: {duplicates}"

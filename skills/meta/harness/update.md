@@ -14,7 +14,12 @@ Pull latest changes from upstream sources and smart-merge with local modificatio
 
 2. **Check for upstream updates:**
    - Compare plugin version (`<plugin-root>` has the latest) vs lock file version
-   - List files that differ in each recorded Claude or Codex destination
+   - List files that differ in each recorded Claude or Codex destination.
+     Projects install skills flat by name, but the plugin groups them by
+     topic area. Map each installed skill to its upstream by name: Claude
+     copies come from `<plugin-root>/claude-skills/<skill>/`, Codex copies
+     from `<plugin-root>/skills/<area>/<skill>/` (find the area with
+     `ls <plugin-root>/skills/*/<skill>`).
 
 3. **For each upstream file:**
    - `modified: false` → **Overwrite** with latest from plugin. Silent.
@@ -26,9 +31,11 @@ Pull latest changes from upstream sources and smart-merge with local modificatio
 
 4. **Check for new upstream files** — Files in the plugin that aren't in the lock file yet. Offer to install them. This includes new sibling reference files inside an already-installed skill directory (e.g. a skill that grew an `audit.md`) — a stale copy that's missing them will send Claude looking for content that isn't there.
 
-5. **Update `.harness-lock.json`** — New version, updated timestamps, modified flags.
+5. **Check for removed upstream files** — Lock entries with `source` set to an upstream whose file no longer exists there. Offer to delete each unmodified one, and show modified ones for the user to keep as `source: "local"` or delete. Example: harness-kit #118 moved `agents/references/*.md` into the harness skill, so older installs carry stale `.claude/agents/references/` copies.
 
-6. **Show changelog** — Summary of what was updated, what was skipped, what's new.
+6. **Update `.harness-lock.json`** — New version, updated timestamps, modified flags, removed entries dropped.
+
+7. **Show changelog** — Summary of what was updated, what was skipped, what's new.
 
 If versions match and every tracked file is local, report that there is
 nothing to sync from upstream and point session-learning improvements to

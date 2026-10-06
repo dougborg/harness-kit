@@ -267,9 +267,9 @@ Two rules make this work:
 - **Table of contents past 100 lines.** A partial read of a long reference
   should still reveal its full scope.
 
-Reference docs an agent needs live beside the skill that dispatches it (the
-`harness-builder` catalogs sit in the harness skill), and that skill passes
-their paths in the agent's prompt.
+Reference docs an agent needs live in one skill (the `harness-builder`
+catalogs sit in the harness skill), and every skill that dispatches the agent
+passes their paths in its prompt.
 
 ## harness-kit conventions
 
