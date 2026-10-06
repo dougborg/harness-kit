@@ -19,6 +19,12 @@ License. Adapted material so far:
 - The two-axis review in `review-pr` and `code-reviewer` (a standards pass
   and a separate spec pass, reported side by side) and the Fowler smell
   baseline, from `code-review`.
+- The environment categories in `/harness retro` (navigation, automated
+  checks, mechanical vs judgement standards, steering files, tool economy,
+  information access), from `retro`.
+- The `pr-body` skill, from `pr`. Its menu of summary visuals comes, through
+  `pr`, from Dex Horthy's `show-me` skill
+  ([humanlayer](https://github.com/humanlayer/humanlayer)).
 
 Tracking issue: [#111](https://github.com/dougborg/harness-kit/issues/111).
 

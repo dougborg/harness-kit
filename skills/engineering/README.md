@@ -19,6 +19,7 @@ You can type them, and the agent also reaches for them when a task fits.
 - **[diagnosing-bugs](./diagnosing-bugs/SKILL.md)**: Build a red feedback loop first, then find and fix the root cause.
 - **[minimal-change](./minimal-change/SKILL.md)**: Find the smallest change that solves the problem.
 - **[open-pr](./open-pr/SKILL.md)**: Validate, push, and open a pull request, then shepherd CI and review.
+- **[pr-body](./pr-body/SKILL.md)**: Write a PR description: visual summary, evidence, merge danger.
 - **[review-pr](./review-pr/SKILL.md)**: Review a pull request or work through its feedback.
 - **[tdd](./tdd/SKILL.md)**: Red-green test-driven development, one vertical slice at a time.
 - **[ui-review](./ui-review/SKILL.md)**: Audit web UI for WCAG 2.1 AA accessibility and UX.
