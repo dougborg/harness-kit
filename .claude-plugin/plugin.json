@@ -43,6 +43,7 @@
     "./claude-skills/issue-update",
     "./claude-skills/minimal-change",
     "./claude-skills/open-pr",
+    "./claude-skills/pr-body",
     "./claude-skills/pr-comments",
     "./claude-skills/rebase",
     "./claude-skills/review-pr",

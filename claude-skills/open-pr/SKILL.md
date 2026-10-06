@@ -137,24 +137,21 @@ when every addition in the diff has been checked against the ladder.
    git push -u origin <branch>
    ```
 
-2. Create PR with HEREDOC body:
+2. Write the body: call the Skill tool with "pr-body" for its shape (a
+   visual summary, before-and-after evidence, merge danger, test plan). Link
+   the issue the branch implements with `Closes #<issue>` (or `Refs #<issue>`
+   when it only partly addresses it): Phase 7's spec pass reviews the diff
+   against the closing issues, and without one it can only use the PR
+   description. Then create the PR with a HEREDOC body:
 
    ```bash
    gh pr create --base <base> --title "feat(scope): short description" --body "$(cat <<'EOF'
-   ## Summary
-   - Bullet points describing what this PR does
-
-   ## Test plan
-   - [ ] How to verify the changes work
-
-   Closes #<issue>
+   <body in the pr-body shape, ending with the Closes line>
 
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
    EOF
    )"
    ```
-
-   Link the issue the branch implements with `Closes #<issue>` (or `Refs #<issue>` when it only partly addresses it). Phase 7's agent review uses the closing issues as its spec; without one it can only check the diff against the PR description.
 
 3. Print the PR URL.
 
@@ -264,3 +261,4 @@ Print:
 - `/review-pr` — Agent review (Mode A) and addressing review feedback (Mode B)
 - `/commit` — Quality-gated conventional commits
 - `/minimal-change` — The ladder Phase 3 applies
+- `/pr-body` — The PR description shape Phase 5 uses
