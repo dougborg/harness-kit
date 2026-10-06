@@ -38,9 +38,7 @@ for area in visible(root / "skills"):
             continue
         assert entry.is_dir(), f"{entry}: areas hold only skill folders and README.md"
         skills.append(entry)
-# Each area README lists exactly its skills, under the section matching the
-# invocation policy. Claude-only skills (the generator's claude_only set) are
-# hidden from Codex for host availability but model-invoked on Claude.
+# The Claude manifest names each generated claude-skills/<skill> explicitly.
 claude_manifest = json.loads((root / ".claude-plugin/plugin.json").read_text())
 projected = sorted(f"./claude-skills/{name}" for name in {skill.name for skill in skills})
 assert sorted(claude_manifest["skills"]) == projected, (
@@ -49,6 +47,9 @@ assert sorted(claude_manifest["skills"]) == projected, (
     f"extra {sorted(set(claude_manifest['skills']) - set(projected))}"
 )
 
+# Each area README lists exactly its skills, under the section matching the
+# invocation policy. Claude-only skills (the generator's claude_only set) are
+# hidden from Codex for host availability but model-invoked on Claude.
 generator = (root / "scripts/generate-claude-skills.sh").read_text()
 claude_only = set(re.search(r'^claude_only="([^"]*)"', generator, re.M).group(1).split())
 for area in {skill.parent for skill in skills}:
