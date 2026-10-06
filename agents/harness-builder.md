@@ -258,40 +258,16 @@ Rules:
 
 A skill is warranted when: a competent developer would need to look this up more than once per week AND it cannot be found quickly by reading the code. Put it in docs/ if monthly. Encode in agent prompt if every session.
 
-#### Recommended Skill Template
+#### Recommended Skill Shape
 
-Every generated skill should follow the scannable contract structure:
+Generated skills follow the house style taught by the `skill-writer` skill: short plain prose, no fixed section template. Recommend for each skill:
 
-```markdown
-# [Skill Name]
+- Its **invocation**: user-invoked (a workflow the human times) or model-invoked (reusable discipline the agent reaches for mid-task).
+- A description that front-loads the trigger, and a body that states what to do, with each step ending on a checkable completion criterion.
+- Exact numbered commands only for fragile operations; prose everywhere else.
+- Depth pushed into sibling reference files, linked one level deep from `SKILL.md`.
 
-## PURPOSE
-[1 line: what this does + when to invoke it — answerable in ≤10 tokens]
-
-## CRITICAL
-- [Non-negotiable constraint or failure mode]
-- [Non-negotiable constraint or failure mode]
-
-## ASSUMES
-- [What this skill assumes is true about the codebase/workflow]
-- [When these assumptions break, the skill needs redesign, not patching]
-
-## STANDARD PATH
-[Step-by-step happy path]
-
-## EDGE CASES
-- [Named edge case] — read DETAIL:[Name] if you encounter this
-- [Named edge case] — read DETAIL:[Name] if you encounter this
-
-## DETAIL: [Edge Case Name]
-[Only read when triggered above]
-```
-
-This structure degrades gracefully: PURPOSE + CRITICAL prevents catastrophic mistakes. STANDARD PATH covers 80% of uses. DETAIL is opt-in.
-
-**To create skills with this structure, use the global `/skill-writer` skill.** It guides the process of building scannable, token-efficient skills for both AI agents (reading with context budgets) and humans (skimming for what matters).
-
-**To create documentation with progressive disclosure, use the global `/documentation-writer` skill.** It teaches the pattern of PURPOSE ≤10 tokens, CRITICAL ≤20 tokens, STANDARD PATH ≤30 lines, EDGE CASES/DETAIL opt-in.
+Call the Skill tool with "skill-writer" when generating or reviewing a skill, and with "documentation-writer" for human-facing docs.
 
 ### Recommended Hooks (`.claude/settings.json`)
 

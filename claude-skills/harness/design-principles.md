@@ -10,6 +10,8 @@ Patterns to follow when designing or reviewing harness skills and agents.
 - [User Prompts: Only Ask When Necessary](#user-prompts-only-ask-when-necessary)
 - [Composition Over Duplication](#composition-over-duplication)
 - [Prerequisite Automation](#prerequisite-automation)
+- [Gate Actions, Not Knowledge](#gate-actions-not-knowledge)
+- [House Style](#house-style)
 
 ## Skills Over Commands
 
@@ -106,3 +108,15 @@ Instead:
 ✅ Check git status → if clean and validated, proceed
 ✅ If not validated, run /pre-flight automatically → then proceed
 ```
+
+## Gate Actions, Not Knowledge
+
+A user-invoked skill (`allow_implicit_invocation: false` in `agents/openai.yaml`) is invisible to the agent until the human types its name. So a gated skill that also carries design-time guidance hides that guidance exactly when it is needed: during design, long before anyone runs the action.
+
+Split them. The gated skill keeps only the irreversible action (print, deploy, send, publish). How to design for that action lives in a model-invoked skill or a reference doc the agent can reach mid-task.
+
+The full invocation rules (which kind a skill should be, how to declare it, how one skill calls another) live in the `skill-writer` skill.
+
+## House Style
+
+Skills are short plain prose with no fixed section template. Each step ends on a checkable completion criterion; instructions state the behavior wanted rather than the behavior banned; emphasis stays in a normal register, without capitalized CRITICAL/MUST/NEVER. Exact numbered commands are reserved for fragile operations such as rebases, commits, and merge trains. The `skill-writer` skill holds the details and the sources behind them.
