@@ -60,6 +60,19 @@ For each dimension below, read the checklist in the DETAIL section and apply it:
 - **Testing** — Coverage, edge cases, test quality
 - **Security** — Vulnerabilities, auth, secrets, injection risks
 
+Alongside the dimensions, cite the repo's documented standards (`CLAUDE.md`,
+`AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md`) by file and rule, and
+flag Fowler code smells (mysterious name, duplicated code, feature envy, data
+clumps, primitive obsession, repeated switches, shotgun surgery, divergent
+change, speculative generality, message chains, middle man, refused bequest)
+as judgement calls that a documented standard overrides.
+
+When the change has a spec (the issues it closes), check it in a separate
+pass: requirements missing or partly met, behaviour nobody asked for, and
+requirements implemented wrongly, each quoting the spec line. Report the two
+passes side by side under `## Standards` and `## Spec`, without merging or
+reranking them.
+
 ### 3. Classify Findings
 
 For each finding, decide:
