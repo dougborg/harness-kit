@@ -1,5 +1,3 @@
 interface:
   display_name: "Issue Create"
-  short_description: "Run the issue-create workflow when explicitly requested."
-policy:
-  allow_implicit_invocation: false
+  short_description: "File a GitHub issue after a duplicate search and preview."

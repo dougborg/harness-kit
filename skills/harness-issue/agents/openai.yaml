@@ -1,0 +1,3 @@
+interface:
+  display_name: "Harness Issue"
+  short_description: "File an issue or PR against the upstream harness repo."

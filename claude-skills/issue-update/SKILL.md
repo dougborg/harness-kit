@@ -6,7 +6,6 @@ description: >-
   silently rewriting.
 argument-hint: "<#> | reopen <#>"
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
-disable-model-invocation: true
 ---
 
 # /issue-update — Update or Reopen an Issue

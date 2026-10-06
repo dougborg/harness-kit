@@ -1,0 +1,3 @@
+interface:
+  display_name: "Agent Standup"
+  short_description: "Reconcile ownership and merge order across agents."

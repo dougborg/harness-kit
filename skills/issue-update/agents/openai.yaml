@@ -1,5 +1,3 @@
 interface:
   display_name: "Issue Update"
-  short_description: "Run the issue-update workflow when explicitly requested."
-policy:
-  allow_implicit_invocation: false
+  short_description: "Edit, comment on, retag, or reopen a GitHub issue."

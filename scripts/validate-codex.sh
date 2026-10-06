@@ -30,6 +30,9 @@ for skill in sorted((root / "skills").iterdir()):
     assert skill_md.is_file(), f"{skill} is not a skill; move utilities outside skills/"
     frontmatter = skill_md.read_text().split("\n---\n", 1)[0]
     assert "disable-model-invocation: true" not in frontmatter, f"{skill} is not Codex-compatible"
+    policy = skill / "agents/openai.yaml"
+    assert policy.is_file(), f"{skill}: missing agents/openai.yaml (the invocation source of truth)"
+    assert "display_name:" in policy.read_text(), f"{policy}: missing interface.display_name"
 
 for agent in sorted((root / ".codex/agents").glob("*.toml")):
     data = tomllib.loads(agent.read_text())
