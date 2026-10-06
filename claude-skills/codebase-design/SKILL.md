@@ -27,7 +27,10 @@ Use these terms exactly; consistent words are the point.
   (both name only the type-level surface).
 - **Implementation**: the code inside a module.
 - **Depth**: leverage at the interface, the behaviour a caller or test can
-  exercise per unit of interface they have to learn. **Deep**: much behaviour
+  exercise per unit of interface they have to learn. The deep-module idea is
+  Ousterhout's; measuring it as leverage rather than as a ratio of
+  implementation lines to interface lines is deliberate, since a line ratio
+  rewards padding. **Deep**: much behaviour
   behind a small interface. **Shallow**: the interface is nearly as complex as
   the implementation.
 - **Seam** (Michael Feathers): a place where behaviour can change without
@@ -65,7 +68,8 @@ Use these terms exactly; consistent words are the point.
   apply them: `calculateDiscount(cart): Discount` over
   `applyDiscount(cart): void`.
 - **Keep the surface small.** Fewer methods mean fewer tests; fewer
-  parameters mean simpler setup.
+  parameters mean simpler setup. For any interface, ask: can it have fewer
+  methods, simpler parameters, or hide more inside?
 
 ## Going deeper
 

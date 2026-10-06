@@ -30,8 +30,8 @@ The category decides how the deepened module is tested across its seam.
 
 ## Replace tests; don't layer them
 
-- Once tests exist at the deepened module's interface, the old unit tests on
-  the shallow modules are waste: delete them.
+- Once tests at the deepened module's interface exist and pass, the old unit
+  tests on the shallow modules are waste: delete them.
 - Write new tests at the interface, asserting observable outcomes, not
   internal state.
 - A test that must change when the implementation changes is testing past the

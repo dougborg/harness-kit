@@ -47,15 +47,17 @@ Ways to build one, roughly in this order:
 9. A differential loop: the same input through the old and new version (or two
    configs), diffing the output.
 10. A human-in-the-loop script, as a last resort when a person must click.
-    Copy `${CLAUDE_SKILL_DIR}/hitl-loop.template.sh`, edit its steps, and run it: it
-    prompts the person and prints what they report as `KEY=VALUE` lines for
-    you to read.
+    Copy `${CLAUDE_SKILL_DIR}/hitl-loop.template.sh` into the repo's scratch space and
+    edit its steps. The person runs it in their own terminal, since your shell
+    has no terminal for them to type into: in Claude Code they type
+    `! bash <path>` at the prompt, elsewhere they run it and paste the output
+    back. Done when the `--- Captured ---` block is back in the conversation.
 
 **Tighten it.** Make it faster (cache setup, narrow the scope), sharper (assert
 the exact symptom, not "didn't crash"), and more deterministic (pin time, seed
 randomness, isolate the filesystem and network). For a flaky bug, aim for a
 higher reproduction rate rather than a clean repro: loop the trigger,
-parallelise, add stress. A 50% flake is debuggable; 1% is not yet.
+parallelise, add stress, narrow timing windows. A 50% flake is debuggable; 1% is not yet.
 
 **If you cannot build one,** stop and say so, list what you tried, and ask for
 access to an environment that reproduces it, a redacted captured artifact (HAR
@@ -70,8 +72,8 @@ its redacted output), that is:
 - **Deterministic:** the same verdict every run, or for a flaky bug a pinned,
   high reproduction rate.
 - **Fast:** seconds, not minutes.
-- **Agent-runnable:** you can run it unattended (a person only through the
-  HITL script).
+- **Agent-runnable:** you can run it unattended, or, for the human-in-the-loop
+  case, the person can run the script and hand back its output.
 
 Reading code to build a theory before this command exists is the exact failure
 this skill prevents. No red-capable command, no Phase 2.
@@ -97,7 +99,8 @@ hypothesis with no prediction is a hunch: sharpen it or drop it.
 
 Show the ranked list to the user before testing. They often know something
 that re-ranks it at once ("we changed #3 yesterday"), or what's already been
-ruled out. Proceed on your own ranking if they're away.
+ruled out. Proceed on your own ranking if they're away. Done when the ranked,
+falsifiable list has been shown.
 
 ## Phase 4: Instrument
 
@@ -109,12 +112,18 @@ unique prefix (`[DEBUG-a4f2]`) so cleanup is a single grep.
 For performance regressions, measure before fixing: establish a baseline
 (timing harness, profiler, query plan), then bisect.
 
+Done when one hypothesis is confirmed by a probe and each of the others is
+ruled out by one, or the evidence sends you back to Phase 3 with new
+hypotheses.
+
 ## Phase 5: Fix at the root, with a regression test
 
-A report names a symptom. Before editing, find every caller of the function
-you're about to change: one guard in the shared function is a smaller diff
-than a guard in each caller, and patching only the path the report names
-leaves the others broken.
+A report names a symptom. Before editing, list every caller of the function
+you're about to change and note which of them hit the same defect. Then fix
+the defect where all those callers route through, at its cause, not where the
+symptom shows: patching only the path the report names leaves the sibling
+callers broken, and a guard that hides a wrong value is still a symptom
+patch.
 
 Write the regression test before the fix, at a **correct seam**: one where the
 test reproduces the bug as it happens at the call site. If the only seam
@@ -126,6 +135,9 @@ report. With a correct seam:
 1. Turn the minimised repro into a failing test there, and watch it fail.
 2. Apply the fix, and watch it pass.
 3. Re-run the Phase 1 loop against the original, un-minimised scenario.
+
+Done when the callers are listed, the regression test went red then green
+(or the missing seam is noted), and the Phase 1 loop is green.
 
 ## Phase 6: Clean up
 

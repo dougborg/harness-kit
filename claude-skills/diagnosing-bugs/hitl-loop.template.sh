@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Human-in-the-loop reproduction loop for the diagnosing-bugs skill.
-# Copy this file, edit the steps between the markers, and run it. The agent
-# runs the script; the person follows the prompts in their terminal.
+# Copy this file and edit the steps between the markers. The person runs it
+# in their own terminal (in Claude Code: `! bash <path>`), because the agent's
+# shell has no terminal for them to answer prompts in, then pastes the output
+# back.
 #
 #   step "<instruction>"        show an instruction, wait for Enter
 #   capture VAR "<question>"    show a question, read the answer into VAR
 #
 # Captured values print as KEY=VALUE at the end for the agent to read. They
-# appear in the agent's transcript, so capture observations only, and leave
+# end up in the agent's transcript, so capture observations only, and leave
 # signing in to the person as a `step`.
 
 set -euo pipefail
