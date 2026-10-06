@@ -1,5 +1,5 @@
 interface:
   display_name: "Groom"
-  short_description: "Run the groom workflow when explicitly requested."
+  short_description: "Bucket the backlog and recommend a prioritized PR train."
 policy:
   allow_implicit_invocation: false

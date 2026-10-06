@@ -1,9 +1,11 @@
 ---
 name: issue-close
 description: >-
-  Close a GitHub issue with discipline — resolved, superseded, or duplicate.
-  Pre-flights body + comments, migrates substance before destroying context,
-  cross-links both directions.
+  Closes a GitHub issue as resolved, superseded, or duplicate: reads the body
+  and comments, migrates anything still live, cross-links both directions, and
+  previews before closing. Use when the user asks to close an issue, when work
+  that resolves one has merged, or when grooming finds a duplicate or
+  superseded issue.
 argument-hint: "<#> | supersede <closing#> <canonical#> | dedupe <dup#> <keeper#>"
 effort: low
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write

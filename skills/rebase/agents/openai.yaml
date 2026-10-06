@@ -1,5 +1,5 @@
 interface:
   display_name: "Rebase"
-  short_description: "Run the rebase workflow when explicitly requested."
+  short_description: "Rebase a branch onto its target and resolve conflicts."
 policy:
   allow_implicit_invocation: false

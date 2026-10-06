@@ -1,5 +1,5 @@
 interface:
-  display_name: "Svg Logo Designer"
-  short_description: "Run the svg-logo-designer workflow when explicitly requested."
+  display_name: "SVG Logo Designer"
+  short_description: "Generate SVG logo concepts and variations."
 policy:
   allow_implicit_invocation: false

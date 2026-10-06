@@ -79,9 +79,11 @@ extension. Run `$harness bootstrap` once to install repository-local
 `AGENTS.md`, `.agents/skills/`, and `.codex/agents/` content for both CLI and
 IDE use. Bootstrap installs both Claude and Codex destinations by default.
 
-The `budget` skill is Claude Code-only because it reads Claude's local usage
-panel. Codex will not invoke it implicitly and reports it unsupported when
-selected explicitly.
+Each skill's `agents/openai.yaml` declares whether the agent may start it on
+its own. User-invoked skills (such as `/groom`, `/rebase`, `/standup`) run only
+when you type them, on both hosts. The `budget` skill is Claude Code-only
+because it reads Claude's local usage panel. Codex will not invoke it
+implicitly and reports it unsupported when selected explicitly.
 
 ## How it works
 

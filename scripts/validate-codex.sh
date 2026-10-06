@@ -6,6 +6,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 python3 - "$repo_root" <<'PY'
 import json
 import pathlib
+import re
 import sys
 
 if sys.version_info < (3, 11):
@@ -32,7 +33,17 @@ for skill in sorted((root / "skills").iterdir()):
     assert "disable-model-invocation: true" not in frontmatter, f"{skill} is not Codex-compatible"
     policy = skill / "agents/openai.yaml"
     assert policy.is_file(), f"{skill}: missing agents/openai.yaml (the invocation source of truth)"
-    assert "display_name:" in policy.read_text(), f"{policy}: missing interface.display_name"
+    policy_text = policy.read_text()
+    for key in ("display_name:", "short_description:"):
+        assert key in policy_text, f"{policy}: missing interface.{key[:-1]}"
+    # The Claude generator matches this line literally, so a quoted or
+    # capitalised value would silently diverge between hosts.
+    for line in policy_text.splitlines():
+        if "allow_implicit_invocation" in line:
+            assert re.fullmatch(r"\s+allow_implicit_invocation: (true|false)", line), (
+                f"{policy}: allow_implicit_invocation must be a bare true or false: {line!r}"
+            )
+            assert "\npolicy:\n" in policy_text, f"{policy}: allow_implicit_invocation outside policy:"
 
 for agent in sorted((root / ".codex/agents").glob("*.toml")):
     data = tomllib.loads(agent.read_text())
