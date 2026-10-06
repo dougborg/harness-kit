@@ -130,7 +130,7 @@ The two retros are complements, run back-to-back at end-of-session:
 
 | | `/session-retro` | `/harness retro` |
 | --- | --- | --- |
-| Audits | The session's work | The harness (skills/agents/hooks) |
+| Audits | The session's work | The harness (skills/agents/hooks) and its environment (checks, steering files, tools) |
 | Output | `docs/sessions/` doc + project issues | Harness fixes + harness-kit issues |
 
 A finding can surface in both: "the agent fell back to the browser" is a

@@ -2,18 +2,18 @@
 name: pr-body
 description: >-
   The shape of a pull request description: the smallest visual that makes the
-  change clear, before-and-after evidence that it works, and a merge-danger
-  call (one-way or two-way door, plus blast radius). Use when writing or
-  rewriting a PR body, including from open-pr.
+  change clear, evidence that it works, and a merge-danger call (one-way or
+  two-way door, plus blast radius). Use when writing or rewriting a PR
+  description, and when opening or updating a pull request.
 ---
 
 # PR Body
 
-Write the body with this template. Skip preambles, keep prose brief, and use
-the project's terms from `GLOSSARY.md` where it has one.
+Write the body with this template, skipping preambles and keeping prose
+brief:
 
 ```markdown
-<one or two sentences: what changes and why, linking the issue>
+<one or two sentences: what changes and why>
 
 ## Summary
 
@@ -23,6 +23,7 @@ the project's terms from `GLOSSARY.md` where it has one.
 
 - **Before:** <failing test, error output, screenshot>
 - **After:** <passing test, correct output, screenshot>
+- **Not verified:** <anything you couldn't check, or "nothing">
 
 ## Merge danger
 
@@ -31,17 +32,15 @@ the project's terms from `GLOSSARY.md` where it has one.
 
 **Blast radius:** <who or what a bad merge would affect>
 
-## Test plan
-
-- [x] <what was verified, and how>
-
-Closes #<issue>
+Closes #<issue>   (Refs #<issue> for partial work; omit when there is none)
 ```
+
+Scale it to the change: a typo fix or a docs tweak needs the lead sentence and
+the link, not a visual or a merge-danger call.
 
 ## Summary: pick the smallest view
 
-Choose whichever makes the key point clearest; one is usually enough, and
-several is the most you'd ever want:
+Choose whichever makes the key point clearest; one is usually enough:
 
 - **Pseudocode** for logic or an algorithm.
 - **A call tree** for runtime control flow.
@@ -70,9 +69,9 @@ files, and boundaries needed to see the change.
 ## Evidence
 
 Show it working, before and after. A screenshot is the strongest evidence for
-a visual change when the environment can take one. Execution is next: the
-exact test that failed and now passes, or command output before and after.
-Say what you didn't verify.
+a visual change; `gh pr create` can't attach images, so upload it first and
+link the hosted URL. Next best is execution: the exact test that failed and
+now passes, or command output before and after. Say what you didn't verify.
 
 ## Merge danger
 
@@ -83,5 +82,6 @@ Say what you didn't verify.
   consumers of an API, other teams' pipelines, layout on mobile, performance,
   installed users.
 
-Done when the body has a visual, evidence or a stated gap in it, a door and
-blast-radius call, and a link to the issue it closes.
+Done when the body has the sections the change warrants, the evidence names
+what was and wasn't verified, and the issue it implements is linked if there
+is one.

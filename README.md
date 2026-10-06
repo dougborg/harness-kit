@@ -13,7 +13,7 @@ packaging for both hosts.
 - `update` — Pull latest upstream changes, smart-merge with local modifications
 - `add` — Install skills from external plugin marketplaces
 - `audit` — 10-step quality gate on your project's harness
-- `retro` — Post-session gap identification (Type A/B/C/D classification)
+- `retro` — Post-session environment audit and gap identification (Type A–E classification)
 - `hoist` — Propose upstream PRs for generic improvements
 
 **Selected skills:**
