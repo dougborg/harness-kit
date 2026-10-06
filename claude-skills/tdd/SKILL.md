@@ -11,7 +11,7 @@ description: >-
 # Test-Driven Development
 
 TDD is the **red → green** loop. This skill is the reference that makes the
-loop produce tests worth keeping. Every section applies on every cycle.
+loop produce tests worth keeping.
 
 Read the project's `GLOSSARY.md` (if any) so test names use the domain's
 words, and respect ADRs in the area you're changing.
@@ -30,10 +30,10 @@ Done when the user has confirmed the seams, or the task names them already.
 
 ## The loop
 
-1. **Red.** Write one failing test at an agreed seam, for one behaviour. Run
-   it and watch it fail for the reason you expect.
-2. **Green.** Write only enough code to pass it. Run the test, then the
-   nearby tests.
+1. **Red.** Write one failing test at an agreed seam, for one behaviour. Done
+   when you have run it and seen it fail for the reason you expect.
+2. **Green.** Write only enough code to pass it: no code for tests you haven't
+   written yet. Done when the test and its neighbours pass.
 3. Repeat with the next behaviour.
 
 Work in **vertical slices**: one test, one implementation, then the next, each
@@ -41,7 +41,8 @@ test a **tracer bullet** that responds to what the last cycle taught you.
 Writing all the tests first and then all the code tests imagined behaviour and
 locks in a structure before you understand it.
 
-Refactoring belongs to review, not to the red-green cycle.
+Refactor after green as its own step, or leave it to review (the
+code-reviewer skill), never inside the red-green cycle.
 
 ## What a good test is
 
@@ -60,5 +61,7 @@ Three anti-patterns, each with its tell:
   it (`expect(add(a, b)).toBe(a + b)`), so it passes by construction. Take
   expected values from an independent source: a known literal, a worked
   example, the spec.
-- **Unfalsifiable:** it can't fail when the defect it targets is present.
-  Before trusting a new test, break the code it covers and watch it go red.
+- **Unfalsifiable:** it can't fail when the defect it targets is present. The
+  red step proves this for a test written first; for a test written after the
+  code, break the code it covers and watch the test go red before trusting
+  it.

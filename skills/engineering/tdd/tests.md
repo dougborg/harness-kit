@@ -20,14 +20,16 @@ internal refactors, and its name says what, not how.
 
 ```typescript
 test("checkout calls paymentService.process", async () => {
-  const mockPayment = jest.mock(paymentService);
+  const process = jest.spyOn(paymentService, "process");
   await checkout(cart, payment);
-  expect(mockPayment.process).toHaveBeenCalledWith(cart.total);
+  expect(process).toHaveBeenCalledWith(cart.total);
 });
 ```
 
 Red flags: mocking your own collaborators, testing private methods, asserting
-call counts or order, a name that describes how instead of what.
+call counts or order on your own collaborators, a name that describes how
+instead of what. Asserting that a boundary mock was called ("charged once")
+is fine.
 
 ## Bad: verifying through a side channel
 
