@@ -2,8 +2,9 @@
 name: open-pr
 description: >-
   Open a PR for the current feature branch — validate, self-review, simplify,
-  organize commits, push, create the PR, wait for CI and review, then address
-  feedback.
+  organize commits, push, create the PR, wait for CI, run an independent agent
+  review and fix its findings, then answer any outside (Copilot or human)
+  review.
 when_to_use: >-
   When implementation is complete and ready for review — the user asks to open,
   raise, or submit a PR — and when /harness-issue hands off in PR mode.
@@ -13,11 +14,11 @@ allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), 
 
 # /open-pr — Open a Pull Request
 
-Take the current feature branch from "implementation done" to "PR open, CI green, first-round review addressed."
+Take the current feature branch from "implementation done" to "PR open, CI green, reviewed, findings addressed."
 
 ## PURPOSE
 
-Ship a feature branch end-to-end: validate, self-review, push, create PR, wait for CI, address the first round of review.
+Ship a feature branch end-to-end: validate, self-review, push, create PR, wait for CI, run our own agent review, and answer outside review when there is any.
 
 ## CRITICAL
 
@@ -39,9 +40,9 @@ The skill runs nine phases. Each phase is short; phase headings below are the na
 4. **Organize commits** — logical commits; mechanics via `/commit`'s standard path
 5. **Push and create PR** — `gh pr create` with HEREDOC body
 6. **Wait for CI** — `poll-ci.sh`; fix in place if anything fails
-7. **Wait for review** — `poll-review.sh`; never skip with `gh pr view`
-8. **Address review comments** — delegate to `/review-pr`
-9. **Summary** — report PR URL, CI status, comments addressed
+7. **Agent review** — `review-pr` Mode A runs the `code-reviewer` agent; fix findings, record them on the PR
+8. **Outside reviews** — `poll-review.sh` returns at once when nobody is expected; answer any via `review-pr`
+9. **Summary** — report PR URL, CI status, review outcome
 
 ## Phase 1: Pre-flight
 
@@ -189,11 +190,19 @@ If you backgrounded a poll and return later via a scheduled wakeup or task notif
 
 - Continue from whichever phase the fresh state indicates (CI running → keep waiting; CI failed → fix; CI green → Phase 7).
 
-When scheduling a wakeup, phrase the prompt as the **goal**, not a task reference: `"PR #<n>: continue /open-pr Phase 6 CI wait — re-check gh pr checks and proceed"`, never `"check poll task <id>"`. The same rules apply to any long-running poll in this skill, including Phase 7's review wait.
+When scheduling a wakeup, phrase the prompt as the **goal**, not a task reference: `"PR #<n>: continue /open-pr Phase 6 CI wait — re-check gh pr checks and proceed"`, never `"check poll task <id>"`. The same rules apply to any long-running poll in this skill, including Phase 8's outside-review wait.
 
-## Phase 7: Wait for review
+## Phase 7: Agent review
 
-**Always use the polling script** — never check for review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. The polling script uses the correct APIs (GraphQL review threads + review states).
+Our own review is the gate. Outside reviewers are not guaranteed: many repos have no required reviewers and Copilot review is often requested by hand. The Phase 2 read-through is the implementer checking its own work; this phase adds an independent reader with a fresh context.
+
+Call the Skill tool with "review-pr", passing the PR number. On a PR you authored it runs Mode A as a self-review gate: the `code-reviewer` agent reviews `<base>...HEAD` against the PR's linked issues, you fix the findings, and the outcome is posted to the PR.
+
+Done when the latest agent review has no BLOCKING findings, every other finding is fixed or deferred to an issue (search the backlog before filing), validation passes after the fixes, and the PR carries a comment listing each finding and its outcome.
+
+## Phase 8: Outside reviews
+
+Check for Copilot or human review with the polling script. It queries review threads and review states through GraphQL; `gh pr view --json` returns only top-level comments and misses inline review threads.
 
 ```bash
 ctx=$(<shared-scripts-dir>/resolve-github-context.sh <number>)
@@ -201,35 +210,24 @@ owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
 <skill-dir>/poll-review.sh "$owner_repo" <number>
 ```
 
-The Bash-timeout and wakeup-resume rules from Phase 6 apply here too — `poll-review.sh` waits even longer than `poll-ci.sh`, so it MUST also run with an explicit Bash `timeout` above the script's own, or with `run_in_background: true`.
+The script waits only when a review is actually expected: someone is in the PR's pending review requests (up to its timeout), or Copilot reviews this repo's PRs automatically (until Copilot lands, at most `POLL_REVIEW_COPILOT_WAIT` seconds after the PR opened). Otherwise it returns `none` immediately. When it does wait, the Bash-timeout and wakeup-resume rules from Phase 6 apply: run it with an explicit Bash `timeout` above the script's own, or with `run_in_background: true`.
 
-Outputs exactly one state:
+It prints exactly one state:
 
-- **approved** (exit 0) → tell user and stop
-- **changes-requested** (exit 0) → a reviewer requested changes — proceed to Phase 8
-- **comments** (exit 0) → new actionable inline threads (unresolved, and the last comment is not yours — threads you already replied to don't re-trigger) — proceed to Phase 8
-- **summary-only** (exit 0) → a reviewer posted a COMMENTED review with **no inline comments** (common for Copilot follow-up passes). Read the review body and surface it to the user — there is no fixup loop to run:
+| State | Exit | Next |
+| --- | --- | --- |
+| `none` | 3 | No outside review expected. Go to Phase 9 |
+| `comments` / `changes-requested` | 0 | Call the Skill tool with "review-pr" to work through them (Mode B) |
+| `summary-only` | 0 | A COMMENTED review with no inline comments (common for Copilot follow-ups). Read the body, surface it, act only on what the user agrees needs action |
+| `approved` | 0 | Report it and go to Phase 9 |
+| `timeout` | 2 | An expected review has not arrived. Report that the agent review is done and outside review is pending |
 
-  ```bash
-  gh api "repos/$owner_repo/pulls/<number>/reviews" \
-    --jq '[.[] | select(.state == "COMMENTED" and .body != "")] | last | .body'
-  ```
-
-  Decide with the user whether anything in the summary needs action; otherwise stop.
-
-- **timeout** (exit 2) → tell user "CI green, PR open, no review comments yet" and stop
-
-**Wait for Copilot:** the script does not report `timeout` until the Copilot review bot has left a review or the PR is older than `POLL_REVIEW_COPILOT_WAIT` seconds (default 300, measured from PR creation). Copilot reviews typically land 2–5 minutes after PR open — never conclude "no review" before that window passes. Repos without Copilot review are covered by the same window: the hold simply expires.
-
-## Phase 8: Address review comments
-
-Invoke `/review-pr` to handle all review comments:
+Read a `summary-only` body with:
 
 ```bash
-/review-pr <number>
+gh api "repos/$owner_repo/pulls/<number>/reviews" \
+  --jq '[.[] | select(.state == "COMMENTED" and .body != "")] | last | .body'
 ```
-
-**Do not duplicate the review-comment workflow** — always delegate to `/review-pr`.
 
 ## Phase 9: Summary
 
@@ -238,7 +236,8 @@ Print:
 - PR URL
 - Number of commits
 - CI status
-- Review comments addressed (if any)
+- Agent review: findings by severity and their outcomes
+- Outside review: state from Phase 8, and comments addressed (if any)
 - Current PR state
 
 ## Important Rules
@@ -255,10 +254,10 @@ Print:
 - **Stage specific files** — never `git add -A` or `git add .`
 - **HEREDOC for messages** — always use HEREDOC for commit messages and PR bodies
 - **File issues for deferred work** — if self-review finds out-of-scope issues, create GitHub issues before opening
-- **Delegate to /review-pr** — don't duplicate the comment-response workflow
+- **Delegate to /review-pr** — both the agent review (Mode A) and outside comments (Mode B); don't duplicate either workflow here
 
 ## Related Skills
 
-- `/review-pr` — Address review feedback (fix, commit, push, reply)
+- `/review-pr` — Agent review (Mode A) and addressing review feedback (Mode B)
 - `/commit` — Quality-gated conventional commits
 - `/simplify` — Code simplification pass

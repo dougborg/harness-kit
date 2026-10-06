@@ -11,7 +11,11 @@
 #   summary-only       exit 0  a reviewer's latest review is COMMENTED with
 #                              zero inline comments (overall body only —
 #                              read it, no fixup loop needed)
-#   timeout            exit 2  no new review activity within the timeout
+#   timeout            exit 2  an outside review was expected but none arrived
+#                              within the timeout
+#   none               exit 3  no outside review is expected: nobody is
+#                              requested and Copilot does not review this
+#                              repo's PRs automatically. Returned at once.
 #
 # "Actionable" thread = unresolved AND its last comment is NOT by the PR
 # author. Threads the author already replied to don't re-trigger `comments`,
@@ -19,13 +23,18 @@
 # without a timestamp baseline. Reviews authored by the PR author (e.g. the
 # COMMENTED reviews created by posting in_reply_to replies) are ignored.
 #
-# Copilot-aware wait: the script will not report `timeout` while the Copilot
-# review bot (login contains "copilot-pull-request-reviewer"; REST appends
-# "[bot]", GraphQL does not) has not yet reviewed AND the PR is younger than
-# POLL_REVIEW_COPILOT_WAIT seconds (default 300, measured from PR creation).
-# There is no way to know a priori whether a repo has Copilot review
-# configured, so this window is also the graceful fallback for repos
-# without it: the hold expires once the PR is older than the window.
+# Who is expected (POLL_REVIEW_EXPECT=auto|requested|copilot|none overrides):
+#   requested  someone (a person, team, or the Copilot bot) is in the PR's
+#              pending review requests: wait up to the full timeout.
+#   copilot    nobody is requested, but the Copilot review bot (login contains
+#              "copilot-pull-request-reviewer") reviewed at least 3 of the
+#              repo's 5 most recent other PRs, i.e. automatic review is on.
+#              Wait only while Copilot has not reviewed and the PR is younger
+#              than POLL_REVIEW_COPILOT_WAIT seconds (default 300); Copilot
+#              usually lands 2-5 minutes after the PR opens.
+#   none       neither: report `none` immediately instead of idling. Our own
+#              agent review (open-pr Phase 7) is the gate; outside reviews
+#              are optional input.
 
 set -euo pipefail
 
@@ -33,6 +42,7 @@ repo="${1:?Usage: poll-review.sh <owner/repo> <pr-number> [timeout-seconds]}"
 pr_number="${2:?Missing PR number}"
 timeout="${3:-900}"                             # default 15 minutes
 copilot_wait="${POLL_REVIEW_COPILOT_WAIT:-300}" # default 5 min from PR creation
+expect_override="${POLL_REVIEW_EXPECT:-auto}"
 interval=60
 elapsed=0
 
@@ -42,9 +52,17 @@ repo_name="${repo##*/}"
 read -r -d '' query <<'GRAPHQL' || true
   query($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
+      pullRequests(last: 6, states: [OPEN, MERGED, CLOSED]) {
+        nodes {
+          number
+          reviews(first: 50) { nodes { author { login } } }
+        }
+      }
       pullRequest(number: $number) {
+        number
         createdAt
         author { login }
+        reviewRequests(first: 1) { totalCount }
         reviews(last: 100) {
           nodes {
             state
@@ -66,7 +84,8 @@ read -r -d '' query <<'GRAPHQL' || true
   }
 GRAPHQL
 
-# One line of output: "<state> <pr-age-seconds> <copilot-reviewed:yes|no>".
+# One line of output:
+#   "<state> <pr-age-seconds> <copilot-reviewed:yes|no> <expect>".
 # State precedence: changes-requested > comments > approved > summary-only.
 # A CHANGES_REQUESTED review only fires while it still has actionable
 # threads — or has no inline comments at all (body-only request) — so an
@@ -95,6 +114,16 @@ read -r -d '' decide <<'JQ' || true
        | select((.author.login // "") | ascii_downcase
                 | contains("copilot-pull-request-reviewer"))
      ] | length > 0) as $copilot
+  | ([ .data.repository.pullRequests.nodes[]
+       | select(.number != $pr.number)
+       | select([ .reviews.nodes[]
+                  | (.author.login // "") | ascii_downcase
+                  | select(contains("copilot-pull-request-reviewer")) ]
+                | length > 0)
+     ] | length) as $copilot_recent
+  | (if $pr.reviewRequests.totalCount > 0 then "requested"
+     elif $copilot_recent >= 3 then "copilot"
+     else "none" end) as $expect
   | (if $cr and ($actionable > 0) then "changes-requested"
      elif $cr_body_only then "changes-requested"
      elif $actionable > 0 then "comments"
@@ -103,16 +132,21 @@ read -r -d '' decide <<'JQ' || true
      else "pending" end)
     + " " + ((now - ($pr.createdAt | fromdateiso8601)) | floor | tostring)
     + " " + (if $copilot then "yes" else "no" end)
+    + " " + $expect
 JQ
 
 while :; do
   state="pending"
   pr_age=""
   copilot_reviewed="no"
+  expect="requested" # if the API call fails, fall back to a plain timed wait
   if snapshot=$(gh api graphql -f query="$query" \
     -F "owner=$owner" -F "repo=$repo_name" -F "number=$pr_number" \
     --jq "$decide" 2>/dev/null); then
-    read -r state pr_age copilot_reviewed <<<"$snapshot"
+    read -r state pr_age copilot_reviewed expect <<<"$snapshot"
+  fi
+  if [ "$expect_override" != auto ]; then
+    expect="$expect_override"
   fi
 
   case "$state" in
@@ -122,17 +156,25 @@ while :; do
     ;;
   esac
 
-  if [ "$elapsed" -ge "$timeout" ]; then
-    # Copilot-aware hold: keep polling past the timeout while Copilot has
-    # not reviewed and the PR is still inside the copilot wait window.
-    # If the API call failed (pr_age empty), time out normally.
-    if [ "$copilot_reviewed" = "no" ] && [ -n "$pr_age" ] &&
-      [ "$pr_age" -lt "$copilot_wait" ]; then
-      : # keep waiting for Copilot
-    else
+  case "$expect" in
+  none)
+    echo "none"
+    exit 3
+    ;;
+  copilot)
+    # Only Copilot is expected: stop once it has reviewed (any actionable
+    # state was reported above) or its window has passed.
+    if [ "$copilot_reviewed" = "yes" ] ||
+      { [ -n "$pr_age" ] && [ "$pr_age" -ge "$copilot_wait" ]; }; then
       echo "timeout"
       exit 2
     fi
+    ;;
+  esac
+
+  if [ "$elapsed" -ge "$timeout" ]; then
+    echo "timeout"
+    exit 2
   fi
 
   sleep "$interval"

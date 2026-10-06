@@ -1,11 +1,14 @@
 ---
 name: review-pr
 description: >-
-  Reviews a pull request across six dimensions, or works through unresolved
-  review feedback on an existing PR — fix, commit, push, and reply in thread.
+  Reviews a pull request across six dimensions with the code-reviewer agent
+  (on your own PR, as the gate before merge: fix the findings and record them),
+  or works through unresolved review feedback on an existing PR — fix, commit,
+  push, and reply in thread.
 when_to_use: >-
   When the user asks to review a PR or address review comments, and whenever
-  /open-pr reaches its review-comment phase or finds an open PR already exists.
+  /open-pr reaches its agent-review or outside-review phase, or finds an open
+  PR already exists.
 argument-hint: "[PR number or URL]"
 allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status), Bash(git rev-parse *), Bash(git switch *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(<skill-dir>/*), Bash(<shared-scripts-dir>/*), Read
 ---
@@ -44,18 +47,18 @@ Analyze code changes thoroughly and respond to review comments without missing i
 gh pr view <PR#> --json state,reviews
 ```
 
-- **No review comments** → Mode A: Initial review (analyze with code-reviewer agent)
+- **Called from `/open-pr` Phase 7**, or **no review comments** → Mode A: agent review with the code-reviewer agent
 - **Unresolved comments** → Mode B: Address feedback (fix issues, validate, reply)
 - **Overall review only** (a reviewer's review has state `COMMENTED` but zero inline comments — `poll-review.sh` reports `summary-only`) → read the review body, surface it to the user, and stop. There are no comments to address, so do NOT run the Mode B fix loop. See DETAIL: Mode B Workflow, "Summary-only reviews".
 
-### 2. Mode A: Initial Review
+### 2. Mode A: Agent Review
 
-```bash
-gh pr view <PR#> --json title,body,diff
-[Invoke code-reviewer agent with PR context]
-Organize findings: BLOCKING → SUGGESTION → NITPICK
-Post structured review via gh pr review
-```
+Dispatch the `code-reviewer` agent with the PR context and its spec (the issues the PR closes), and organize findings BLOCKING → SUGGESTION → NITPICK. Then branch on who wrote the PR:
+
+- **Your own PR** (the self-review gate): fix every BLOCKING finding; fix each SUGGESTION or defer it to an issue (search the backlog first); validate, commit, push; re-run the agent after substantive fixes. Post one PR comment listing each finding and its outcome. GitHub rejects `--approve` and `--request-changes` on your own PR, so the record is a comment. Done when the latest review has no BLOCKING findings and every finding has an outcome on the PR.
+- **Someone else's PR**: post the findings as a review with `gh pr review` (`--approve`, `--request-changes`, or `--comment`).
+
+See DETAIL: Mode A Workflow.
 
 ### 3. Mode B: Address Feedback
 
@@ -248,6 +251,15 @@ owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
 <shared-scripts-dir>/fetch-pr-context.sh "$owner_repo" <PR#>
 ```
 
+Then find the spec — the issues this PR closes:
+
+```bash
+gh pr view <PR#> --json closingIssuesReferences --jq '.closingIssuesReferences[].number'
+gh issue view <issue#> --comments
+```
+
+If the PR closes nothing, use the PR description as the spec and say so in the review.
+
 ### 2. Invoke code-reviewer Agent
 
 Pass compiled context:
@@ -259,7 +271,10 @@ Description: [body]
 Labels: [labels]
 Diff: [patch]
 Existing Comments: [any automated reviewer comments]
+Spec: [bodies of the issues the PR closes, or "PR description only"]
 ```
+
+Ask it to check the diff against the spec as well as the six dimensions: requirements missing or only partly met, and behaviour nobody asked for.
 
 Agent returns: 6D analysis + findings organized by severity.
 
@@ -272,11 +287,20 @@ NITPICK: [list nice-to-haves]
 ✨ What Looks Good: [highlight strengths]
 ```
 
-### 4. Post Review
+### 4. Act on the Findings
+
+**Someone else's PR** — post the review:
 
 ```bash
 gh pr review <PR#> --approve    # or --request-changes / --comment
 ```
+
+**Your own PR** — this is the gate before merge, so the findings get fixed rather than posted for someone else:
+
+1. Fix every BLOCKING finding. Fix each SUGGESTION and NITPICK, or defer it to a GitHub issue after searching the backlog for an existing one.
+2. Run the project's verification, commit specific files, and push.
+3. If the fixes were substantive, run the agent again on the new diff.
+4. Post one comment recording the review (`gh pr comment <PR#> --body-file <file>`): a table with each finding, its severity, and its outcome (the fixing commit, the deferral issue, or why no change). GitHub does not allow approving or requesting changes on your own PR.
 
 ---
 
@@ -323,7 +347,7 @@ Returns JSON array of unresolved comments with id, path, line, body, author. Res
 
 #### Summary-only reviews (empty array with review activity)
 
-If the array is empty but a reviewer did post a review — e.g. `/open-pr` Phase 7 returned `summary-only` — the reviewer left only an overall `COMMENTED` review with no inline action items. This is not an error and not a fix loop:
+If the array is empty but a reviewer did post a review — e.g. `/open-pr` Phase 8 returned `summary-only` — the reviewer left only an overall `COMMENTED` review with no inline action items. This is not an error and not a fix loop:
 
 ```bash
 gh api "repos/{owner}/{repo}/pulls/{number}/reviews" \
