@@ -8,6 +8,7 @@ Automation-first hook staging, the Stop-hook retro nudge, and exit-code safety. 
 - [PostToolUse Hooks: 3-Stage Pattern](#posttooluse-hooks-3-stage-pattern)
 - [Stop Hooks](#stop-hooks)
 - [Hook Exit Code Safety](#hook-exit-code-safety)
+- [Context Injection and Subagents](#context-injection-and-subagents)
 - [Why This Matters](#why-this-matters)
 
 ## Principle
@@ -91,6 +92,18 @@ if [ "$changed" -gt 3 ]; then echo "message"; fi
 | `[ test ] && action` | Exit 1 when test is false | `if [ test ]; then action; fi` |
 | `grep pattern file` | Exit 1 when no match | `grep pattern file \|\| true` |
 | `command \| head -1` | Exit 141 (SIGPIPE) on some systems | Pipe to `head -1 \|\| true` |
+
+## Context Injection and Subagents
+
+Context a `SessionStart` hook injects reaches the main session only. Subagents start later with their own context, so they never see it. Verified on Claude Code by a codeword test (main session saw it, subagent did not) and stated in the [sub-agents docs](https://code.claude.com/docs/en/sub-agents.md).
+
+| Source | Main session | Subagent |
+| --- | --- | --- |
+| `SessionStart` hook output | Yes | No |
+| `SubagentStart` hook `additionalContext` | — | Yes |
+| `CLAUDE.md` / `AGENTS.md` | Yes | Yes, unless the agent sets `omitClaudeMd: true` |
+
+So put rules every agent needs in `CLAUDE.md` or `AGENTS.md`. When a rule has to be injected by a hook (it is dynamic, or computed at start), pair the `SessionStart` hook with a `SubagentStart` hook. `SubagentStart` takes a `matcher` on the agent type (`general-purpose`, `Explore`, a plugin agent name) and cannot block the subagent. Codex behaviour is not yet verified.
 
 ## Why This Matters
 
