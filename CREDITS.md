@@ -45,10 +45,15 @@ SOFTWARE.
 
 ## ponytail
 
-The root-cause rule in `diagnosing-bugs` (find every caller of the function
-you're about to change, and fix the shared function once) is adapted from
-[DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail), used
-under the MIT License.
+Adapted from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail),
+used under the MIT License:
+
+- The root-cause rule in `diagnosing-bugs` (find every caller of the function
+  you're about to change, and fix the defect where they all route through).
+- The `minimal-change` skill: the ladder, the list of things never to cut,
+  and marked shortcuts.
+- The complexity lens in `code-reviewer` (the `delete`, `reuse`, `stdlib`,
+  `native`, `yagni`, and `shrink` tags).
 
 ```text
 MIT License

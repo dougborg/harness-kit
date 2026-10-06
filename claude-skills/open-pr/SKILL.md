@@ -36,7 +36,7 @@ The skill runs nine phases. Each phase is short; phase headings below are the na
 
 1. **Pre-flight** — ensure feature branch, run validation, check for existing PR
 2. **Self-review** — read the full diff, check for bugs/secrets/debug code
-3. **Simplify (optional)** — reuse, dead code, duplication
+3. **Simplify** — hold the diff against `minimal-change`'s ladder
 4. **Organize commits** — logical commits; mechanics via `/commit`'s standard path
 5. **Push and create PR** — `gh pr create` with HEREDOC body
 6. **Wait for CI** — `poll-ci.sh`; fix in place if anything fails
@@ -99,17 +99,14 @@ Check for:
 
 Fix any issues found, then re-run validation.
 
-## Phase 3: Simplify (Optional)
+## Phase 3: Simplify
 
-Review for opportunities to simplify:
-
-- Reuse opportunities (existing utilities that could replace new code)
-- Dead code or unnecessary complexity
-- Duplication within the changeset
-
-If improvements are found, apply them and re-run validation.
-
-Note: This phase is optional and relies on manual review or the `/simplify` skill if available in your Claude Code environment.
+Call the Skill tool with "minimal-change" and hold the diff against its
+ladder: could each addition be deleted, or replaced by existing code, the
+standard library, a native platform feature, or an installed dependency?
+Apply the cuts, keep what the skill says never to cut, and mark any deliberate
+shortcut with a `shortcut:` comment. Re-run validation after any change. Done
+when every addition in the diff has been checked against the ladder.
 
 ## Phase 4: Organize commits
 
@@ -253,8 +250,7 @@ Print:
 - **Never merge with unaddressed comments** — All review comments must be resolved before merging. No exceptions.
 - **Validate before opening** — verification must pass before creating the PR
 - **Self-review is mandatory** — always review the full diff
-- **Simplify is encouraged but optional** — Phase 3; use `/simplify` if it would
-  meaningfully reduce duplication or dead code, otherwise skip
+- **Simplify every diff** — Phase 3 holds it against `minimal-change`'s ladder; the agent review in Phase 7 reports anything it missed under Complexity
 - **Logical commits** — organize into meaningful commits, not one giant squash
 - **No shortcuts** — never use `--no-verify`, `noqa`, or `type: ignore`
 - **Fix CI in-place** — don't close and re-open
@@ -267,4 +263,4 @@ Print:
 
 - `/review-pr` — Agent review (Mode A) and addressing review feedback (Mode B)
 - `/commit` — Quality-gated conventional commits
-- `/simplify` — Code simplification pass
+- `/minimal-change` — The ladder Phase 3 applies
