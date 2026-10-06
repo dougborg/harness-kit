@@ -86,7 +86,7 @@ ChernyCode principle: "If you do something more than once a day, make it a skill
 
 **Stack-dependent:**
 
-- If GitHub is used: `project-manager` agent? + `/feature-spec`, `/issue-triage`, `/standup` skills?
+- If GitHub is used: `project-manager` agent? + `/feature-spec`, `/groom`, `/standup` skills?
 - If multiple agents or operators work concurrently: `/agent-standup` skill?
 - If frontend present: design harness (`.impeccable.md`) + `/ui-review` skill?
 
@@ -142,8 +142,10 @@ Flag, at high priority:
 Then apply the permission review:
 
 - Do agents have only the tools they need? A reviewer should not have `Write`; a verifier should not have `Write` or `Edit`
-- Is a side-effecting skill (one that writes files, pushes, comments, or opens PRs) missing `disable-model-invocation`? Skills that must only run when the user asks for them should not be model-invocable
-- Conversely: does a skill carry `disable-model-invocation` while **another skill instructs Claude to invoke it** (`grep -rn '/skill-name' skills/ agents/`)? That chain is silently broken — either drop the field or reword the caller to hand off to the user. Same for a restricted skill named in an agent's `skills:` field, which cannot preload it
+- Does every canonical skill have an `agents/openai.yaml` with `interface.display_name`? It is the invocation source of truth; the Claude projection derives `disable-model-invocation` from its `policy.allow_implicit_invocation`
+- Is each skill's invocation right? A workflow only the human should time (grooming, restructuring, generating) is user-invoked; reusable discipline the agent should reach for mid-task, or that another skill calls, is model-invoked. A skill that previews its side effects before acting is safe to leave model-invoked. The `skill-writer` skill has the full test
+- Does a user-invoked skill's step **call** another user-invoked skill, or does any skill or agent `skills:` field depend on one (`grep -rn '/skill-name' skills/ agents/`, ignoring `Related` lists)? That chain is silently broken. Either make the callee model-invoked or reword the step to tell the user to run it
+- Does a user-invoked skill carry guidance the agent needs while designing for its action? Move that guidance into a model-invoked skill or reference doc; the gated skill keeps only the action
 - Does a `context: fork` skill depend on conversation history, or run `background: true` while needing tools outside the background-subagent set? Both fail silently
 
 ## 8. Check Description Signal Quality
@@ -173,6 +175,13 @@ The only real limits worth enforcing. There is **no section schema and no per-se
 - **Any inline bash duplicated across skills?** → Extract it to
   `scripts/shared/` and reference `${CLAUDE_SKILL_DIR}/script.sh`.
 - **Any inline command previously fixed for wrong syntax?** → Extract to prevent recurrence
+
+House-style recommendations (judgment calls, not defects; the `skill-writer` skill explains each):
+
+- Capitalized emphasis (`CRITICAL`, `MUST`, `NEVER`, `ALWAYS`, `IMPORTANT`) used as the default register. Current models overtrigger on it; suggest the plain rule plus a one-clause reason. Leave targeted emphasis that testing showed was needed
+- A fixed section scaffold (`PURPOSE` / `CRITICAL` / `ASSUMES` / `STANDARD PATH` / `EDGE CASES`) on a skill whose content does not need it, or many `DETAIL:` sections piled into one `SKILL.md` instead of sibling reference files
+- Steps with no checkable completion criterion, and prohibitions with no stated positive target
+- Skills calling another skill with a bare `/name` in prose instead of an instruction to use the Skill tool
 
 ## 10. Check Internal Consistency
 

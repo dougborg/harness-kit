@@ -1,5 +1,3 @@
 interface:
   display_name: "Skill Writer"
-  short_description: "Run the skill-writer workflow when explicitly requested."
-policy:
-  allow_implicit_invocation: false
+  short_description: "Write and review skills and agents in the house style."

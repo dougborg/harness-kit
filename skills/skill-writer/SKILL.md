@@ -3,8 +3,10 @@ name: skill-writer
 description: >-
   Writes and reviews shared agent skills plus Claude Code Markdown and Codex
   TOML subagents for this plugin and bootstrapped projects. Covers choosing how
-  prescriptive to be, writing the description field that controls when a skill
-  fires, splitting content across reference files, the allowed-tools vs tools
+  prescriptive to be, the house writing style, whether a skill is user- or
+  model-invoked and how skills call each other, writing the description field
+  that controls when a skill fires, splitting content across reference files,
+  the allowed-tools vs tools
   frontmatter distinction, and harness-kit's own conventions (shared scripts,
   dual plugin registration and host-specific script paths). Use when creating a
   new skill or agent, editing an existing one, or deciding whether something
@@ -32,7 +34,7 @@ Prefer the smallest thing that works:
 | --- | --- |
 | A fixed sequence of commands | A script in `scripts/shared/` |
 | Project facts Claude must always know | `CLAUDE.md` |
-| A repeatable multi-step workflow the user invokes | A skill |
+| A repeatable workflow, or discipline the agent should reach for mid-task | A skill |
 | Wide reads/searches whose output should stay out of the main context | An agent |
 | Something that must happen automatically, every time | A hook |
 
@@ -68,8 +70,8 @@ of each invoked skill, inside a **25,000-token** combined budget filled
 most-recent-first — an oversized skill gets truncated mid-file and pushes older
 skills out entirely.
 
-So: state what to do rather than narrating how or why. Challenge each line —
-does it justify its cost? Assume the reader is smart.
+So: state what to do, with the reason in a clause rather than a narrative.
+Challenge each line — does it justify its cost? Assume the reader is smart.
 
 The real limits, and the only ones worth quoting:
 
@@ -82,6 +84,48 @@ The real limits, and the only ones worth quoting:
 
 There is no prescribed section schema and no per-section token budget. Use the
 headings the content actually needs.
+
+## Writing the body
+
+The house style is short plain prose. These levers decide whether an agent
+takes the same path through a skill every run.
+
+- **Give each step a completion criterion.** End every step on the condition
+  that tells the agent it is done ("done when every captured value has a
+  destination"). A vague bound ("once you understand the code") invites the
+  agent to finish early, pulled by the steps it can see ahead. Sharpen the
+  bound first; split later steps into another skill or subagent only when the
+  rush persists. A demanding criterion ("every modified model accounted for")
+  drives more legwork than "produce a change list".
+- **Use leading words.** A compact concept the model already knows (_tight_
+  loop, _tracer bullet_, _frontier_, _red_) anchors a whole region of behavior
+  in one token. Repeat the word, not a sentence restating it. Prefer an
+  existing word over a coined one: a coinage recruits no prior knowledge, so
+  you pay for its definition. Look for a triad spelled out at three sites, or
+  a sentence gesturing at one idea, and collapse it into the word.
+- **State the behavior you want.** A prohibition puts the forbidden behavior
+  into context and makes it more available. Write "write one-line comments",
+  not "don't write long comments". Keep a prohibition only as a hard guardrail
+  with no positive phrasing, and pair it with the target.
+- **Write in a normal register.** Current Claude and GPT models follow
+  instructions closely; CRITICAL, MUST, NEVER, and ALWAYS in capitals make them
+  overtrigger and overapply. Give the rule plus a one-clause reason instead.
+  Reach for stronger wording only as a targeted fix after testing shows the
+  agent skipping that specific rule.
+- **Delete no-ops.** Test each sentence: does it change behavior versus the
+  model's default? If not, delete the whole sentence. A word too weak to beat
+  the default ("be thorough") is also a no-op; the fix is a stronger leading
+  word ("relentless"), not more words.
+- **Let the environment be the source of truth.** A skill that restates
+  `package.json` scripts, config, or `--help` output is a cache that goes
+  stale. Write down what the agent cannot find by looking: the unwritten
+  convention, the reason behind a choice, the gotcha no config confesses.
+- **Prune sediment.** Stale layers settle because adding feels safe and
+  removing feels risky. Every edit is a chance to delete a line that no longer
+  bears on what the skill does.
+
+Each meaning lives in one place. Restating a rule in a second skill doubles its
+maintenance and inflates its weight; point at the owner instead.
 
 ## Structure: a default, not a contract
 
@@ -132,84 +176,76 @@ skills that never fire; overly narrow ones fire only on exact phrasing.
 An optional `when_to_use` field can carry trigger phrasing separately; keep the
 two together under 1,536 characters.
 
-### Control who invokes the skill
-
-`description` (and `when_to_use`) load into context on **every request** so
-Claude can decide whether to invoke the skill. `disable-model-invocation: true`
-hides the skill from Claude entirely until the user types `/name` — dropping
-its context cost to zero. It stays in the `/` menu; `user-invocable: false` is
-the field that hides it from the menu.
-
-Default to setting it on any skill with side effects that the user should time
-deliberately — filing issues, writing docs, generating files. **Before you set
-it, grep for the skill name across `skills/` and `agents/`.** If another skill
-tells Claude to invoke this one mid-workflow, restricting it breaks that chain
-silently — `just check` validates schema, not behavior. In this repo `/commit`,
-`/open-pr`, `/review-pr`, `/harness-issue`, and `/harness` are all invoked by
-other skills and must stay model-invocable. A restricted skill also cannot be
-preloaded into a subagent via an agent's `skills:` field.
-
-`paths:` scopes auto-activation to matching globs — the opposite lever from
-`disable-model-invocation`, so pick one per skill. Measured caveat: a skill
+`paths:` scopes auto-activation to matching globs. Measured caveat: a skill
 carrying `paths:` stops registering as a slash command, so the user loses
 `/name`. Only worth it for a skill nobody invokes by name.
 
-### `context: fork` — run the skill in a subagent
+Skill-execution fields (`context: fork`, `effort:`, `model:`), the
+`allowed-tools` (skills) vs `tools` (agents) distinction, and when to reach for
+a subagent at all live in [frontmatter-and-agents.md](frontmatter-and-agents.md).
+Read it before setting any of them: the wrong field name is silently ignored,
+and an agent with no `tools:` key inherits every tool.
+
+## Invocation and composition
+
+Every skill is one of two kinds, decided by who can start it:
+
+- **Model-invoked** skills hold reusable discipline or reference: how to
+  review, how to write a commit, how to file an issue. The agent can reach for
+  them mid-task, and other skills can call them. The description is
+  model-facing: lead with the job, then the distinct situations that should
+  trigger it, one trigger per situation. It loads on every request, so it is a
+  permanent context cost paid for discoverability.
+- **User-invoked** skills are workflows the human times: grooming a backlog,
+  restructuring issues, generating a logo. Only the human typing `/name` can
+  start one; no agent and no other skill can. The description is a one-line
+  summary for a person browsing the menu, and costs no context.
+
+The test is whether the agent could usefully reach for the skill on its own,
+or another skill must. If yes, keep it model-invoked; a skill that previews
+its side effects before acting (`issue-create`, `issue-close`) is safe to
+leave reachable. If it only ever fires by hand, make it user-invoked.
+
+A user-invoked skill may call model-invoked skills, never another user-invoked
+one. When a step needs a user-invoked skill as a precondition, tell the user to
+run it rather than calling it.
+
+**Gating an action must not gate the knowledge needed to design for it.** A
+user-invoked skill is invisible while the agent designs, so guidance needed
+before the action (how to pick a print orientation, how to plan a migration)
+lives in a model-invoked skill or reference doc, and the user-invoked skill
+keeps only the action.
+
+### Declaring it
+
+`agents/openai.yaml` beside each `SKILL.md` is the single source of truth.
+User-invoked skills set:
 
 ```yaml
-context: fork
-agent: harness-kit:code-reviewer   # optional: which agent to fork into
-background: false
+policy:
+  allow_implicit_invocation: false
 ```
 
-Right for skills that read widely and return a report. Four constraints:
+Codex reads that policy directly. The Claude generator derives
+`disable-model-invocation: true` from it, so shared `SKILL.md` frontmatter
+stays free of Claude-only fields. A skill hidden from Codex only because it
+needs Claude Code (such as `budget`) is listed in the generator's
+`claude_only` set instead. Every `openai.yaml` also carries
+`interface.display_name` and `interface.short_description` for the Codex
+picker. The Claude menu still shows a user-invoked skill;
+`user-invocable: false` is the separate field that hides it there.
 
-- The fork sees **no conversation history**. A skill that depends on "what we
-  were just doing" is not a candidate — say so in its ASSUMES.
-- Only works for skills with **explicit instructions**. Guidelines without a
-  task give the subagent no actionable prompt.
-- A backgrounded fork runs with the **narrower background-subagent tool set** —
-  set `background: false` when the skill needs more.
-- Forked edits land outside session checkpoints (`/rewind` won't undo them),
-  and a forked skill ends skill-stacking: `/a /b` chains stop there.
+### Calling another skill
 
-`effort:` (`low`…`max`) overrides per-skill reasoning depth. Use it where the
-work is genuinely mechanical (`low`) or genuinely deep (`high`); otherwise
-inherit.
+Write the call as an instruction to use the Skill tool: `Call the Skill tool
+with "commit"`. Naming the tool fires it far more reliably than a bare `/commit`
+in prose, and a bare name carries no host-specific slash syntax. One skill per
+call: a step that needs two says `Call the Skill tool twice, for "grilling" and
+"domain-modeling"`. Shared reference lives in the skill that owns it; other
+skills reach it by calling that skill, not by linking into its folder.
 
-Name in gerund form where it reads naturally (`processing-pdfs`); noun phrases
-and command-style names (`open-pr`) are fine. Avoid vague names.
-
-Omit `model:` on skills — they execute in the parent conversation's context,
-and pinning a model can break long sessions (e.g. 1M-context Opus). Agents get
-a fresh context, so `model:` on an agent is fine.
-
-### `allowed-tools` (skills) vs `tools` (agents)
-
-**The field name differs by file type, and the wrong one is silently ignored.**
-This is not cosmetic: every "read-only" agent in this repo carried
-`allowed-tools:` for months and ran completely unrestricted, because an agent
-with no `tools:` key **inherits every tool**. Omitting it is not a safe
-default — it is the permissive default.
-
-| File type | Field | Accepts |
-| --- | --- | --- |
-| Skill (`SKILL.md`) | `allowed-tools:` | Tool names **and** `Bash(pattern*)` scoping |
-| Agent (`agents/*.md`) | `tools:` / `disallowedTools:` | Bare tool names only — **no** `Bash(...)` scoping |
-
-Per-command Bash scoping for an agent belongs in settings permissions or a
-`PreToolUse` hook, not in frontmatter. `Task` is not a tool name — subagent
-dispatch is not granted this way.
-
-Grant the minimum that works, then test by removing one entry: if it still
-works, leave it out.
-
-| Role | Typical grant |
-| --- | --- |
-| Validator skill | `Bash(just check*)` — scoped, not bare `Bash` |
-| Generator skill | `Write(.claude/skills/**)`, `Read`, `Glob` |
-| Advisory agent | `Read, Grep, Glob` |
-| Reviewing agent | `Read, Grep, Glob, Bash` — never `Write` |
+Router prose that only lists skills for a human to pick from (`## Related`
+sections) is not a call and keeps `/name` labels.
 
 ## Splitting across files
 
@@ -233,27 +269,6 @@ Two rules make this work:
 
 Agent reference docs in this repo live in `agents/references/` and follow the
 same rules.
-
-## Skills and agents: isolation, not read-only
-
-Older guidance in this repo claimed agents are advisors that never execute or
-modify files. That was never true here, and it is not what subagents are for.
-
-The real trade-off is **isolation and context economy**. A subagent gets its
-own context window; its tool output — wide searches, long file reads, verbose
-command output — never enters the parent conversation, only its final report
-does. That is the reason to reach for one.
-
-Restricting an agent's tools is a separate, deliberate choice you make per
-agent, and you make it in `tools:`. `code-reviewer` and `project-manager` are
-advisory by design and should hold no write tools; `verifier` and
-`harness-builder` legitimately run commands. Write down which one you are
-building, and make the frontmatter match — a description promising "read-only"
-over inherited-everything tools is a lie the runtime will not catch.
-
-Subagents also support `memory:`, `isolation: worktree`, and `permissionMode:`
-when the work needs persistence, a scratch checkout, or different prompting
-behavior.
 
 ## harness-kit conventions
 
@@ -304,54 +319,7 @@ reads as over-explaining to Opus can be the necessary detail for Haiku.
 
 ## Templates
 
-Starting points, not schemas. Delete any heading the skill does not need.
-
-### Skill
-
-```markdown
----
-name: skill-name
-description: >-
-  What it does, and when to use it — third person, with trigger terms.
-allowed-tools: Read, Write, Bash(git add*), Bash(git commit*)
----
-
-# /skill-name — Short Title
-
-One or two sentences: what this is for and when it applies.
-
-## <Constraints that cause real damage if violated>
-
-## <The path most runs take>
-
-## <Exceptions, named so a skimmer can tell if they are in one>
-
-## Related
-
-- `/other-skill` — how it connects
-```
-
-### Agent
-
-```markdown
----
-name: agent-name
-description: >-
-  What this agent analyzes or does, and when to dispatch it. Include
-  <example> blocks showing the invoking exchange.
-tools: Read, Grep, Glob
----
-
-# Agent Name
-
-What this agent is for, and what it returns to its caller.
-
-## <How it works — checklist, dimensions, or procedure>
-
-## Output format
-
-<The exact shape of the report the caller receives>
-```
+Copyable skill and agent skeletons live in [templates.md](templates.md).
 
 ## Related
 
@@ -364,3 +332,8 @@ What this agent is for, and what it returns to its caller.
 - [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
 - [Claude Code skills](https://code.claude.com/docs/en/skills)
 - [Prompting Claude Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5)
+- [Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) (dial back aggressive emphasis)
+- [skill-creator](https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md)
+- [GPT-5 prompting guide](https://developers.openai.com/cookbook/examples/gpt-5/gpt-5_prompting_guide)
+- [Agent Skills specification](https://agentskills.io/specification)
+- [mattpocock/skills `writing-for-agents`](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents) (MIT): completion criteria, leading words, negation, no-ops, and the invocation split; see `CREDITS.md`
