@@ -41,6 +41,14 @@ for area in visible(root / "skills"):
 # Each area README lists exactly its skills, under the section matching the
 # invocation policy. Claude-only skills (the generator's claude_only set) are
 # hidden from Codex for host availability but model-invoked on Claude.
+claude_manifest = json.loads((root / ".claude-plugin/plugin.json").read_text())
+projected = sorted(f"./claude-skills/{name}" for name in {skill.name for skill in skills})
+assert sorted(claude_manifest["skills"]) == projected, (
+    ".claude-plugin/plugin.json skills must list every generated claude-skills/<skill>: "
+    f"missing {sorted(set(projected) - set(claude_manifest['skills']))}, "
+    f"extra {sorted(set(claude_manifest['skills']) - set(projected))}"
+)
+
 generator = (root / "scripts/generate-claude-skills.sh").read_text()
 claude_only = set(re.search(r'^claude_only="([^"]*)"', generator, re.M).group(1).split())
 for area in {skill.parent for skill in skills}:
