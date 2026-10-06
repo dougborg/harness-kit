@@ -20,8 +20,7 @@ Scope: this mode audits the *harness* (skills, agents, hooks) and the environmen
    - Which gave wrong or outdated guidance?
 
 3. **Look at the environment, not just the skills.** Read the session itself
-   (the conversation, or its log when retro runs later) and look for these,
-   most severe first:
+   (the conversation, or its log when retro runs later) and look for:
    - **Navigation**: the agent took a long time to find a file or fact.
      Would a pointer in `AGENTS.md`/`CLAUDE.md` or a doc have saved it?
    - **Automated checks**: the agent made a mistake a lint rule, type check,
@@ -33,12 +32,15 @@ Scope: this mode audits the *harness* (skills, agents, hooks) and the environmen
      violation (a banned API, an import shape, a file-location rule) becomes
      a deterministic check, never a written rule. Only a **judgement call**
      (consistency across files, matching the surrounding style) becomes a
-     written standard the review agent enforces: the reviewer reads a diff
-     with little context pressure, so standards belong with review, not in
-     the implementer's always-loaded instructions.
-   - **Steering files**: always-loaded instructions that are large, that
-     should be standards or checks instead, or that no longer change
-     behaviour (no-ops).
+     written standard in `CODING_STANDARDS.md` (or the repo's existing
+     standards file), which the review agent's standards pass reads: the
+     reviewer sees a diff with little context pressure, so standards belong
+     with review, not in the implementer's always-loaded instructions.
+   - **Steering files**: always-loaded instructions, in the repo or the
+     user's global scope, that are large or that should be standards or
+     checks instead.
+   - **No-ops**: instructions that don't change the agent's behaviour from
+     its default. Look when steering files or skills are long.
    - **Tool economy**: expensive or token-heavy tool calls that a script, a
      narrower command, or a better tool would make cheap.
    - **Information access**: something the agent needed but couldn't see:
@@ -52,11 +54,12 @@ Scope: this mode audits the *harness* (skills, agents, hooks) and the environmen
    - Type B: New skill needed (create in `.claude/skills/`, add to lock as `source: "local"`)
    - Type C: Builder template would not have generated this correctly → fix the upstream harness (most valuable — prevents the gap in every future project)
    - Type D: Lightweight pattern — a learned heuristic that doesn't warrant a full skill (store in memory or `.claude/patterns/`)
+   - Type E: Environment change from step 3 — a check, hook, CI job, standard, doc pointer, or access grant, made in the project. It is also Type C when the builder should have recommended it for every project.
 
    **Promotion heuristic:** Before classifying as Type D, ask: *would this prevent the same mistake in another project, or for another agent?* If yes, escalate to A/B/C — encode it in a skill, not memory. Memories are session/user-scoped and fade; skills persist and ship to every consumer of the harness. Type D is for pattern learnings genuinely scoped to *this* project's quirks.
 
-5. **Propose 1-3 improvements** as specific, actionable changes, most severe
-   first.
+5. **Propose the most severe improvements first** (usually one to three) as
+   specific, actionable changes; list the rest so they aren't lost.
 
 6. **Promotion pass — what belongs upstream?** For *every* finding (not just Type C), ask: would this prevent the same problem in another harness-kit consumer? If yes, mark it as upstream-worthy. Common cases:
    - Type C — by definition belongs upstream

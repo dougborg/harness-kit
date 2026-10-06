@@ -22,9 +22,9 @@ License. Adapted material so far:
 - The environment categories in `/harness retro` (navigation, automated
   checks, mechanical vs judgement standards, steering files, tool economy,
   information access), from `retro`.
-- The `pr-body` skill, from `pr`. Its menu of summary visuals comes, through
-  `pr`, from Dex Horthy's `show-me` skill
-  ([humanlayer](https://github.com/humanlayer/humanlayer)).
+- The `pr-body` skill, from `pr`. Its menu of summary visuals is credited
+  there to Dex Horthy's `show-me` skill
+  ([humanlayer/skills](https://github.com/humanlayer/skills)).
 
 Tracking issue: [#111](https://github.com/dougborg/harness-kit/issues/111).
 

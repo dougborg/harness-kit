@@ -57,7 +57,7 @@ If none of `.claude/`, `.agents/`, or `.codex/` contains harness content, run
 | `bootstrap` | `<skill-dir>/bootstrap.md` | harness-builder handoff, approval gate, install steps, `.harness-lock.json` creation |
 | `update` | `<skill-dir>/update.md` | Smart-merge with upstream using lock-file provenance |
 | `add` | `<skill-dir>/update.md` | Installing skills from another marketplace (second half of the file) |
-| `retro` | `<skill-dir>/retro.md` | Gap classification A/B/C/D, upstream promotion pass |
+| `retro` | `<skill-dir>/retro.md` | Environment audit, gap classification A/B/C/D/E, upstream promotion pass |
 | `hoist` | `<skill-dir>/hoist.md` | Proposing project-local improvements back upstream |
 
 Topic references, read as needed from any mode (all reachable in one hop from here — no reference file links to another):
@@ -91,6 +91,7 @@ Every finding from audit or retro gets a type — it determines where the fix go
 - **Type B** — Skill missing entirely → add the skill
 - **Type C** — The builder template would not have generated this → fix the builder (double-loop; most valuable)
 - **Type D** — Lightweight pattern, not worth a skill → store in memory or `.claude/patterns/` (retro only)
+- **Type E** — Environment change (a check, hook, CI job, standard, doc pointer, or access grant) made in the project; also Type C when the builder should have recommended it (retro only)
 
 For a file sourced from upstream (per `.harness-lock.json`), a Type A or generic Type B is usually an upstream fix, not just a local one.
 
