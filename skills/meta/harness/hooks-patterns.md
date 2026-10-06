@@ -15,7 +15,7 @@ Automation-first hook staging, the Stop-hook retro nudge, and exit-code safety. 
 
 Don't ask users to do things we can automate.
 
-**Schema reference:** For the correct shape of plugin `hooks/hooks.json` (including the common plugin-vs-`settings.json` gotcha), see `agents/references/hooks-reference.md`. Validate locally with `just validate-hooks`.
+**Schema reference:** For the correct shape of plugin `hooks/hooks.json` (including the common plugin-vs-`settings.json` gotcha), see `<skill-dir>/hooks-reference.md`. Validate locally with `just validate-hooks`.
 
 ## PostToolUse Hooks: 3-Stage Pattern
 

@@ -128,7 +128,7 @@ Note: This phase is optional and relies on manual review or the `/simplify` skil
 3. **Create each commit via `/commit`'s STANDARD PATH** — it owns the commit
    mechanics: intentional staging (never `git add -A` or `git add .`), the
    uv.lock drift check for Python+uv projects (see DETAIL: uv.lock Drift in
-   `skills/commit/SKILL.md`), conventional message format, and HEREDOC commit
+   the commit skill), conventional message format, and HEREDOC commit
    creation. Validation already ran in Phase 1 — skip `/commit`'s validation
    step unless code changed since.
 

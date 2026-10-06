@@ -113,7 +113,10 @@ The lock file tracks all sources.
 
 ## Compatibility model
 
-`skills/` is the canonical open-format catalog used by Codex. Claude Code
+`skills/` is the canonical open-format catalog used by Codex, grouped into
+topic areas (`skills/<area>/<skill>/`); Codex discovers skills recursively,
+and the generator flattens them for Claude, so invocation names don't depend
+on the area. Claude Code
 requires additional invocation and permission frontmatter, so
 `scripts/generate-claude-skills.sh` produces the checked-in `claude-skills/`
 projection. Never edit that projection directly; `just check` fails if it

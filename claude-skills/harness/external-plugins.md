@@ -1,6 +1,13 @@
 # External Capabilities Reference — Bundled Skills and Official Anthropic Marketplaces
 
-Single source of truth for recommending capabilities that live outside harness-kit during `/harness bootstrap` and `/harness audit`. Referenced by `skills/harness/bootstrap.md`, `skills/harness/audit.md`, and `agents/harness-builder.md` — do not duplicate these catalogs elsewhere.
+Single source of truth for recommending capabilities that live outside harness-kit during `/harness bootstrap` and `/harness audit`. Read by the harness skill's bootstrap and audit modes and by the `harness-builder` agent — do not duplicate these catalogs elsewhere.
+
+## Contents
+
+- [Already in the Box: Bundled Skills](#already-in-the-box-bundled-skills)
+- [The Two Marketplaces](#the-two-marketplaces)
+- [Catalog: Stack-Conditional Recommendations](#catalog-stack-conditional-recommendations)
+- [Composition Principles](#composition-principles)
 
 Read top to bottom. Bundled skills come first: nothing should be installed to solve a problem the built-ins already cover.
 

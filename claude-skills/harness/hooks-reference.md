@@ -127,7 +127,7 @@ When writing multiple `PostToolUse` hooks, order them as **Formatters → Valida
 2. **Validators** — bounded output (≤30 lines), gated with conditions. Surface real errors only. (e.g. `typecheck`, `test`)
 3. **Guidance** — context reminders (≤20 lines). Nudge the developer with domain info. (e.g. "this touches auth — see domain-advisor")
 
-See `skills/harness/hooks-patterns.md` for the full rationale.
+The harness skill's hooks-patterns reference has the full rationale.
 
 ## Fully Worked Example
 
@@ -186,8 +186,7 @@ This check would have caught both v0.1.0 and v0.2.0 releases before they shipped
 
 ## Related
 
-- `skills/harness/SKILL.md` — harness audit/update/bootstrap flows reference this doc
-- `skills/harness/hooks-patterns.md` — hook staging philosophy and exit-code safety
-- `agents/harness-builder.md` — stack-detection-driven hook recommendations
+- The harness skill — its audit, update, and bootstrap flows link this doc, alongside its hooks-patterns reference (hook staging and exit-code safety)
+- The `harness-builder` agent — stack-detection-driven hook recommendations
 - [Claude Code docs: hooks](https://code.claude.com/docs/en/hooks.md)
 - [Claude Code docs: plugins reference](https://code.claude.com/docs/en/plugins-reference.md)

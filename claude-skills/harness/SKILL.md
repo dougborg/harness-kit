@@ -66,9 +66,9 @@ Topic references, read as needed from any mode (all reachable in one hop from he
 | --- | --- | --- |
 | Skill/agent design patterns | `${CLAUDE_SKILL_DIR}/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
 | Hook staging and exit codes | `${CLAUDE_SKILL_DIR}/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks, exit-code safety) |
-| Bundled skills + official plugin catalog | `${CLAUDE_SKILL_DIR}/../../agents/references/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
-| Multi-agent architecture patterns | `${CLAUDE_SKILL_DIR}/../../agents/references/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
-| Plugin `hooks.json` schema | `${CLAUDE_SKILL_DIR}/../../agents/references/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
+| Bundled skills + official plugin catalog | `${CLAUDE_SKILL_DIR}/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
+| Multi-agent architecture patterns | `${CLAUDE_SKILL_DIR}/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
+| Plugin `hooks.json` schema | `${CLAUDE_SKILL_DIR}/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
 
 ## EDGE CASES
 

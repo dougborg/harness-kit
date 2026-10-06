@@ -13,9 +13,16 @@ trap 'rm -rf "$staging"' EXIT
 # model-invocable.
 claude_only=" budget "
 
-for source in "$repo_root"/skills/*; do
+# Canonical skills live in topic-area folders (skills/<area>/<skill>/); the
+# Claude projection is flat (claude-skills/<skill>/), so skill names must be
+# unique across areas.
+for source in "$repo_root"/skills/*/*; do
   [ -f "$source/SKILL.md" ] || continue
   name=$(basename "$source")
+  if [ -e "$staging/$name" ]; then
+    echo "$name: skill name used in more than one area" >&2
+    exit 1
+  fi
   policy="$source/agents/openai.yaml"
   if [ ! -f "$policy" ]; then
     echo "$name: missing agents/openai.yaml" >&2

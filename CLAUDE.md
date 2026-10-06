@@ -21,11 +21,12 @@ A collection of shared skills plus Claude Code-specific agent and packaging adap
 ```text
 .claude-plugin/          Plugin manifest and marketplace config
 skills/                  Canonical open-format skills used by Codex
-  <skill>/*.md           Reference files, siblings of SKILL.md (one level deep only)
-claude-skills/           Generated Claude projection; never edit directly
+  <area>/                Topic area: engineering, meta, orchestration,
+                         project-management, writing (README.md lists its skills)
+    <skill>/*.md         Reference files, siblings of SKILL.md (one level deep only)
+claude-skills/           Generated flat Claude projection; never edit directly
 scripts/shared/          Cross-skill shell scripts
 agents/                  Agent .md files
-  references/            Reference docs for agents
 hooks/                   hooks.json for lifecycle hooks
 ```
 
