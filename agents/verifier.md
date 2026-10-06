@@ -82,7 +82,7 @@ Then search those files for:
 
 ### 4. No Forbidden Patterns
 
-Check that no shortcuts were taken:
+Check that no checks were bypassed:
 
 - No `--no-verify` in recent git history
 - No `noqa` or `type: ignore` added in the diff
