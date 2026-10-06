@@ -104,8 +104,8 @@ Fix any issues found, then re-run validation.
 Call the Skill tool with "minimal-change" and hold the diff against its
 ladder: could each addition be deleted, or replaced by existing code, the
 standard library, a native platform feature, or an installed dependency?
-Apply the cuts, keep what the skill says never to cut, and mark any deliberate
-shortcut with a `shortcut:` comment. Re-run validation after any change. Done
+Apply the cuts, keep everything under the skill's "Always keep", and mark any
+deliberate shortcut in the skill's `shortcut:` format. Re-run validation after any change. Done
 when every addition in the diff has been checked against the ladder.
 
 ## Phase 4: Organize commits
@@ -250,9 +250,9 @@ Print:
 - **Never merge with unaddressed comments** — All review comments must be resolved before merging. No exceptions.
 - **Validate before opening** — verification must pass before creating the PR
 - **Self-review is mandatory** — always review the full diff
-- **Simplify every diff** — Phase 3 holds it against `minimal-change`'s ladder; the agent review in Phase 7 reports anything it missed under Complexity
+- **Simplify every diff** — see Phase 3
 - **Logical commits** — organize into meaningful commits, not one giant squash
-- **No shortcuts** — never use `--no-verify`, `noqa`, or `type: ignore`
+- **No bypassed checks** — never use `--no-verify`, `noqa`, or `type: ignore`
 - **Fix CI in-place** — don't close and re-open
 - **Stage specific files** — never `git add -A` or `git add .`
 - **HEREDOC for messages** — always use HEREDOC for commit messages and PR bodies

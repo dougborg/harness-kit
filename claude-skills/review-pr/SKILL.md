@@ -56,7 +56,7 @@ Pick the first match:
 
 ### 2. Mode A: Agent Review
 
-Dispatch the `code-reviewer` agent with the PR context and its spec (the issues the PR closes), and organize findings BLOCKING → SUGGESTION → NITPICK. Then branch on who wrote the PR:
+Dispatch the `code-reviewer` agent with the PR context and its spec (the issues the PR closes), and organize findings BLOCKING → SUGGESTION → NITPICK, with its Complexity findings (`C1.`, ...) treated as SUGGESTIONs. Then branch on who wrote the PR:
 
 - **Your own PR** (the self-review gate) — the PR author matches `gh api user --jq .login`: fix every BLOCKING finding; fix each SUGGESTION or defer it to an issue (search the backlog first); fix each NITPICK or note why not; validate, commit, push; re-run the agent once if the fixes changed behaviour beyond the lines the findings named (at most two rounds, then report what is left). Post one `## Agent review` PR comment listing each finding and its outcome. GitHub rejects `--approve` and `--request-changes` on your own PR, so the record is a comment. Done when the latest review has no BLOCKING findings and every finding has an outcome on the PR.
 - **Someone else's PR**: post the findings as a review with `gh pr review` (`--approve`, `--request-changes`, or `--comment`).
@@ -480,7 +480,7 @@ If the count is nonzero, the script didn't match — re-check the sed pattern ag
 - **Reply to every comment — automatically** — Push + reply is atomic. Never stop at "pushed". Nothing left hanging.
 - **Fix first, reply after** — Push must complete before replying. But replying is mandatory, not a separate task.
 - **Clean history** — Use fixup + autosquash, no "address review" commits
-- **No shortcuts** — Never use `--no-verify`, `# noqa`, `type: ignore`
+- **No bypassed checks** — Never use `--no-verify`, `# noqa`, `type: ignore`
 - **Deferred work needs issues** — Acknowledged items must link to `gh issue create` ticket
 - **Stage specific files** — Never `git add -A` or `git add .`
 - **Use HEREDOC** — Pass commit messages via HEREDOC (not inline)

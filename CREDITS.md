@@ -50,8 +50,8 @@ used under the MIT License:
 
 - The root-cause rule in `diagnosing-bugs` (find every caller of the function
   you're about to change, and fix the defect where they all route through).
-- The `minimal-change` skill: the ladder, the list of things never to cut,
-  and marked shortcuts.
+- The `minimal-change` skill: the ladder and the list of things to always
+  keep. Its `shortcut:` markers adapt ponytail's `ponytail:` comments.
 - The complexity lens in `code-reviewer` (the `delete`, `reuse`, `stdlib`,
   `native`, `yagni`, and `shrink` tags).
 

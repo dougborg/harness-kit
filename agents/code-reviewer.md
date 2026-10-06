@@ -60,7 +60,7 @@ Evaluate each change across six dimensions, then classify findings by severity:
 - **Testing** — adequate coverage, tests that actually test behavior, edge cases
 - **Security** — hardcoded secrets, injection vulnerabilities, unsafe deserialization, path traversal
 
-**Complexity lens.** Separately from the six dimensions, look for what the diff could delete. Tag each finding:
+**Complexity lens.** Separately from the six dimensions, look for what the diff could delete. Number these findings `C1.`, `C2.`, ... so they never collide with the numbered findings above, and the user can say "fix 2 and C3". Tag each finding:
 
 - `delete:` dead code, unused flexibility, a speculative feature. Nothing replaces it.
 - `reuse:` duplicates a helper or pattern already in this repo. Name its path.
@@ -69,7 +69,7 @@ Evaluate each change across six dimensions, then classify findings by severity:
 - `yagni:` an abstraction with one implementation, config nobody sets, a layer with one caller.
 - `shrink:` the same logic in fewer lines. Show the shorter form.
 
-Leave alone what the `minimal-change` skill says never to cut: trust-boundary validation, data-loss error handling, security, accessibility, explicit requirements, and the one runnable check that non-trivial logic leaves behind.
+Leave alone everything under the `minimal-change` skill's "Always keep" (trust-boundary validation, data-loss error handling, security, accessibility, hardware calibration, explicit requirements, and the one runnable check non-trivial logic keeps).
 
 **Severity tiers:**
 
@@ -114,7 +114,7 @@ Leave alone what the `minimal-change` skill says never to cut: trust-boundary va
 1. **[file:line]** — [description]
 
 ### Complexity
-1. **[file:line]** — `<tag>:` [what to cut]. [what replaces it]
+C1. **[file:line]** — `<tag>:` [what to cut]. [what replaces it]
 net: -N lines possible   (or: "Lean already.")
 
 ### What Looks Good

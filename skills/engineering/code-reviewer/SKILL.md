@@ -132,7 +132,8 @@ Check architecture, interfaces, and design patterns.
 - Are responsibilities separated correctly? (One thing per module)
 - Are interfaces clean? (Parameters, return types, public API)
 - Does this violate any contracts or invariants?
-- Is this change a special case or a sign of missing abstraction?
+- Is this change a special case, or a second instance of an existing pattern
+  that should reuse it?
 - Would this be hard to extend or maintain?
 - Are dependencies one-way? (No circular imports)
 - Does this introduce coupling where it shouldn't?
@@ -147,16 +148,18 @@ Check architecture, interfaces, and design patterns.
 - Hardcoded values that genuinely vary by environment or deployment (a
   config knob for a value nobody changes is the opposite smell; see below)
 
-**Complexity lens:** report what the diff could delete, one numbered line
-each, tagged `delete:`, `reuse:`, `stdlib:`, `native:`, `yagni:`, or `shrink:`,
-naming what replaces it, and end with `net: -N lines possible` or "Lean
-already." Leave alone what the minimal-change skill says never to cut
-(trust-boundary validation, data-loss error handling, security, accessibility,
-explicit requirements, and the one check non-trivial logic needs).
+**Complexity lens:** report what the diff could delete, one line each,
+numbered `C1.`, `C2.`, ... so they don't collide with other findings, tagged:
+`delete:` (dead or speculative, nothing replaces it), `reuse:` (name the
+existing helper's path), `stdlib:` (name the function), `native:` (name the
+platform feature), `yagni:` (one implementation, unset config, single-caller
+layer), or `shrink:` (show the shorter form). End with
+`net: -N lines possible` or "Lean already." Leave alone everything under the
+minimal-change skill's "Always keep".
 
 ```text
-1. src/repo.py:88 — yagni: AbstractRepository has one implementation. Inline it until a second exists.
-2. src/dates.ts:4 — native: moment.js imported for one format call. Intl.DateTimeFormat, no dependency.
+C1. src/repo.py:88 — yagni: AbstractRepository has one implementation. Inline it until a second exists.
+C2. src/dates.ts:4 — native: moment.js imported for one format call. Intl.DateTimeFormat, no dependency.
 net: -40 lines possible
 ```
 
