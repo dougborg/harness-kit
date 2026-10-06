@@ -56,7 +56,7 @@ Pick the first match:
 
 ### 2. Mode A: Agent Review
 
-Dispatch the `code-reviewer` agent with the PR context and its spec (the issues the PR closes), and organize findings BLOCKING → SUGGESTION → NITPICK, with its Complexity findings (`C1.`, ...) treated as SUGGESTIONs. Then branch on who wrote the PR:
+Dispatch the `code-reviewer` agent twice in parallel: a **standards pass** with the PR context, and a **spec pass** with the PR context plus its spec (the issues the PR closes). Keep the two reports side by side under `## Standards` and `## Spec` rather than merging or reranking them: a change can follow every standard and still build the wrong thing, or build exactly the right thing badly. Treat Complexity findings (`C1.`, ...) as SUGGESTIONs and Spec findings (`R1.`, ...) at the severity the agent gave them. Then branch on who wrote the PR:
 
 - **Your own PR** (the self-review gate) — the PR author matches `gh api user --jq .login`: fix every BLOCKING finding; fix each SUGGESTION or defer it to an issue (search the backlog first); fix each NITPICK or note why not; validate, commit, push; re-run the agent once if the fixes changed behaviour beyond the lines the findings named (at most two rounds, then report what is left). Post one `## Agent review` PR comment listing each finding and its outcome. GitHub rejects `--approve` and `--request-changes` on your own PR, so the record is a comment. Done when the latest review has no BLOCKING findings and every finding has an outcome on the PR.
 - **Someone else's PR**: post the findings as a review with `gh pr review` (`--approve`, `--request-changes`, or `--comment`).
@@ -263,9 +263,10 @@ gh issue view <issue#> --comments
 
 If the PR closes nothing, use the PR description as the spec and say so in the review.
 
-### 2. Invoke code-reviewer Agent
+### 2. Invoke the code-reviewer Agent, Twice in Parallel
 
-Pass compiled context:
+Pass both dispatches the compiled context; the spec pass also gets the spec
+and is told it is the spec pass:
 
 ```text
 PR Title: [title]
@@ -277,18 +278,20 @@ Existing Comments: [any automated reviewer comments]
 Spec: [bodies of the issues the PR closes, or "PR description only"]
 ```
 
-Ask it to check the diff against the spec as well as the six dimensions: requirements missing or only partly met, and behaviour nobody asked for.
-
-Agent returns: 6D analysis + findings organized by severity.
+The standards pass returns the six dimensions, documented-standard and smell findings, and the Complexity section. The spec pass returns `R1.`, `R2.`, ... findings, each quoting the spec line, or "No spec available".
 
 ### 3. Present Findings
 
 ```text
-BLOCKING: [list items that must be fixed]
-SUGGESTION: [list improvements]
-NITPICK: [list nice-to-haves]
+## Standards
+BLOCKING / SUGGESTION / NITPICK, then Complexity (C1., ...)
+## Spec
+R1., R2., ... with severity and the quoted spec line
 ✨ What Looks Good: [highlight strengths]
 ```
+
+End with one line per axis: its finding count and its worst finding. Don't
+pick a single winner across the two axes.
 
 ### 4. Act on the Findings
 
