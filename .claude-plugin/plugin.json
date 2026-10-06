@@ -24,7 +24,9 @@
     "./claude-skills/agent-standup",
     "./claude-skills/budget",
     "./claude-skills/code-reviewer",
+    "./claude-skills/codebase-design",
     "./claude-skills/commit",
+    "./claude-skills/diagnosing-bugs",
     "./claude-skills/documentation-writer",
     "./claude-skills/domain-modeling",
     "./claude-skills/feature-spec",
@@ -47,6 +49,7 @@
     "./claude-skills/skill-writer",
     "./claude-skills/standup",
     "./claude-skills/svg-logo-designer",
+    "./claude-skills/tdd",
     "./claude-skills/to-questionnaire",
     "./claude-skills/ui-review",
     "./claude-skills/wait-what"
