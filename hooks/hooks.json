@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/shared/claude-usage-check.sh --hook"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/shared/claude-usage-check.sh\" --hook"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/shared/markdownlint-fix.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/shared/markdownlint-fix.sh\""
           }
         ]
       }
