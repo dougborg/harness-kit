@@ -37,6 +37,9 @@ jobs:
       - name: Run cross-host hook tests
         run: ./scripts/test-cross-host-hooks.sh
 
+      - name: Run poll-review decision tests
+        run: ./scripts/test-poll-review.sh
+
       - name: Smoke-test Codex marketplace installation
         run: ./scripts/test-codex-plugin-install.sh
 
