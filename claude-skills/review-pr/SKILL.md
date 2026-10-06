@@ -47,15 +47,18 @@ Analyze code changes thoroughly and respond to review comments without missing i
 gh pr view <PR#> --json state,reviews
 ```
 
-- **Called from `/open-pr` Phase 7**, or **no review comments** → Mode A: agent review with the code-reviewer agent
-- **Unresolved comments** → Mode B: Address feedback (fix issues, validate, reply)
+Pick the first match:
+
+- **Called from `/open-pr` Phase 7** → Mode A: agent review
+- **Called from `/open-pr` Phase 8**, or **unresolved comments**, or a **changes-requested** review (including body-only) → Mode B: address feedback (fix issues, validate, reply)
 - **Overall review only** (a reviewer's review has state `COMMENTED` but zero inline comments — `poll-review.sh` reports `summary-only`) → read the review body, surface it to the user, and stop. There are no comments to address, so do NOT run the Mode B fix loop. See DETAIL: Mode B Workflow, "Summary-only reviews".
+- **No reviews at all** → Mode A: agent review
 
 ### 2. Mode A: Agent Review
 
 Dispatch the `code-reviewer` agent with the PR context and its spec (the issues the PR closes), and organize findings BLOCKING → SUGGESTION → NITPICK. Then branch on who wrote the PR:
 
-- **Your own PR** (the self-review gate): fix every BLOCKING finding; fix each SUGGESTION or defer it to an issue (search the backlog first); validate, commit, push; re-run the agent after substantive fixes. Post one PR comment listing each finding and its outcome. GitHub rejects `--approve` and `--request-changes` on your own PR, so the record is a comment. Done when the latest review has no BLOCKING findings and every finding has an outcome on the PR.
+- **Your own PR** (the self-review gate) — the PR author matches `gh api user --jq .login`: fix every BLOCKING finding; fix each SUGGESTION or defer it to an issue (search the backlog first); fix each NITPICK or note why not; validate, commit, push; re-run the agent once if the fixes changed behaviour beyond the lines the findings named (at most two rounds, then report what is left). Post one `## Agent review` PR comment listing each finding and its outcome. GitHub rejects `--approve` and `--request-changes` on your own PR, so the record is a comment. Done when the latest review has no BLOCKING findings and every finding has an outcome on the PR.
 - **Someone else's PR**: post the findings as a review with `gh pr review` (`--approve`, `--request-changes`, or `--comment`).
 
 See DETAIL: Mode A Workflow.
@@ -297,10 +300,10 @@ gh pr review <PR#> --approve    # or --request-changes / --comment
 
 **Your own PR** — this is the gate before merge, so the findings get fixed rather than posted for someone else:
 
-1. Fix every BLOCKING finding. Fix each SUGGESTION and NITPICK, or defer it to a GitHub issue after searching the backlog for an existing one.
+1. Fix every BLOCKING finding. Fix each SUGGESTION, or defer it to a GitHub issue after searching the backlog for an existing one. Fix each NITPICK or note in one line why not; nitpicks don't get issues.
 2. Run the project's verification, commit specific files, and push.
-3. If the fixes were substantive, run the agent again on the new diff.
-4. Post one comment recording the review (`gh pr comment <PR#> --body-file <file>`): a table with each finding, its severity, and its outcome (the fixing commit, the deferral issue, or why no change). GitHub does not allow approving or requesting changes on your own PR.
+3. If the fixes changed behaviour beyond the lines the findings named, run the agent again on the new diff. Stop after two rounds and report anything still open.
+4. Post one comment recording the review (`gh pr comment <PR#> --body-file <file>`), headed `## Agent review` so a resumed session can tell the gate already ran: a table with each finding, its severity, and its outcome (the fixing commit, the deferral issue, or why no change). GitHub does not allow approving or requesting changes on your own PR.
 
 ---
 
