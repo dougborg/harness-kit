@@ -10,6 +10,9 @@ License. Adapted material so far:
   leading words, positive framing, no-op and sediment pruning) and its
   invocation rules (user-invoked vs model-invoked skills, composition by
   calling the Skill tool), from `writing-for-agents` and `.agents/invocation.md`.
+- The `thinking` area: `grilling` (adapted to ask through `AskUserQuestion` on
+  Claude Code), `domain-modeling` with its glossary and ADR formats, `grill-me`,
+  `grill-with-docs`, `wait-what`, and `to-questionnaire`.
 
 Tracking issue: [#111](https://github.com/dougborg/harness-kit/issues/111).
 

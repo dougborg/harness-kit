@@ -1,0 +1,5 @@
+interface:
+  display_name: "To Questionnaire"
+  short_description: "Write a questionnaire for the person who can answer a decision."
+policy:
+  allow_implicit_invocation: false
