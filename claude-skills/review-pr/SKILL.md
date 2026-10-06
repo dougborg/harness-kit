@@ -1,7 +1,7 @@
 ---
 name: review-pr
 description: >-
-  Reviews a pull request across six dimensions with the code-reviewer agent
+  Reviews a pull request with two code-reviewer passes, standards and spec
   (on your own PR, as the gate before merge: fix the findings and record them),
   or works through unresolved review feedback on an existing PR — fix, commit,
   push, and reply in thread.
@@ -15,7 +15,7 @@ allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status),
 
 # /review-pr — Structured PR Review
 
-Review a PR using 6 dimensions or address unresolved review feedback systematically.
+Review a PR with a standards pass and a spec pass, or address unresolved review feedback systematically.
 
 ## PURPOSE
 
@@ -56,12 +56,12 @@ Pick the first match:
 
 ### 2. Mode A: Agent Review
 
-Dispatch the `code-reviewer` agent twice in parallel: a **standards pass** with the PR context, and a **spec pass** with the PR context plus its spec (the issues the PR closes). Keep the two reports side by side under `## Standards` and `## Spec` rather than merging or reranking them: a change can follow every standard and still build the wrong thing, or build exactly the right thing badly. Treat Complexity findings (`C1.`, ...) as SUGGESTIONs and Spec findings (`R1.`, ...) at the severity the agent gave them. Then branch on who wrote the PR:
+Dispatch the `code-reviewer` agent twice, in parallel: a **standards pass** (six dimensions, documented standards, smells, complexity) and a **spec pass** against the issues the PR closes. Present the two reports side by side under `## Standards` and `## Spec`, never merged or reranked: a change can follow every standard and still build the wrong thing, or build exactly the right thing badly.
 
-- **Your own PR** (the self-review gate) — the PR author matches `gh api user --jq .login`: fix every BLOCKING finding; fix each SUGGESTION or defer it to an issue (search the backlog first); fix each NITPICK or note why not; validate, commit, push; re-run the agent once if the fixes changed behaviour beyond the lines the findings named (at most two rounds, then report what is left). Post one `## Agent review` PR comment listing each finding and its outcome. GitHub rejects `--approve` and `--request-changes` on your own PR, so the record is a comment. Done when the latest review has no BLOCKING findings and every finding has an outcome on the PR.
-- **Someone else's PR**: post the findings as a review with `gh pr review` (`--approve`, `--request-changes`, or `--comment`).
+- **Your own PR** (author matches `gh api user --jq .login`): it is the gate before merge. Fix or defer every finding, re-run the pass whose findings you fixed, and post an `## Agent review` comment with each finding's outcome. Done when neither report has an open BLOCKING finding.
+- **Someone else's PR**: post one `gh pr review`, requesting changes if either axis has a BLOCKING finding.
 
-See DETAIL: Mode A Workflow.
+The prompts, report layout, severity rules, and fix loop are in [agent-review.md](agent-review.md).
 
 ### 3. Mode B: Address Feedback
 
@@ -82,7 +82,6 @@ See DETAIL: Mode A Workflow.
 - [Large PRs with many files] — Read DETAIL: Handling Large PRs (sample files, skip boilerplate)
 - [Merge conflicts during review] — Read DETAIL: Conflict Resolution (fetch base, merge, resolve)
 - [CI failures blocking review] — Read DETAIL: CI Failures (distinguish code vs. infrastructure issues)
-- [Review prompt template] — Read DETAIL: Review Prompt Template (consistency guide)
 - [Responding to comments] — Read DETAIL: Comment Response Format (fix/deferred/already-fixed patterns)
 
 ---
@@ -152,64 +151,6 @@ gh pr checks {number}
 
 ---
 
-## DETAIL: Review Prompt Template
-
-Use this structure for consistent, thorough reviews (avoid repeating automated findings):
-
-```markdown
-# Review: [PR Title]
-
-## What This Changes
-
-[1-2 sentences summarizing the change and its impact]
-
-## 6-Dimensional Analysis
-
-### ✅ Correctness
-- [Semantic correctness, type safety, logic]
-- [Any potential bugs or edge cases]
-
-### ✅ Design
-- [Architecture, interfaces, patterns vs. project conventions]
-- [Trade-offs and alternatives considered?]
-
-### ✅ Readability
-- [Naming clarity, documentation, code flow]
-- [Any confusing sections?]
-
-### ✅ Performance
-- [Efficiency, algorithms, resource usage]
-- [Any obvious optimizations possible?]
-
-### ✅ Testing
-- [Test coverage for new code]
-- [Edge cases and error conditions covered?]
-
-### ✅ Security
-- [Input validation, auth, secrets, injection risks]
-- [Any exposed internals or vulnerabilities?]
-
-## Findings
-
-### 🚫 BLOCKING (must fix before merge)
-[Only items that break functionality or violate critical constraints]
-
-### ⚠️ SUGGESTION (worth addressing)
-[Improvements that enhance quality, maintainability, or safety]
-
-### 💬 NITPICK (nice-to-have)
-[Style, naming, minor clarity suggestions]
-
-### ✨ What Looks Good
-[Highlight strong aspects: good patterns, clever solutions, solid testing]
-
-## Summary
-- Verdict: Approved / Changes requested / Comment
-- Ready to merge after addressing blocking items
-```
-
----
-
 ## DETAIL: Comment Response Format
 
 Reply to each comment with one of these patterns:
@@ -239,74 +180,6 @@ Tracked in #NNN [link to GitHub issue].
 ```text
 I wasn't able to reproduce this. Can you clarify [specific question]?
 ```
-
----
-
-## DETAIL: Mode A Workflow
-
-Initial PR review (no comments yet).
-
-### 1. Fetch PR Context
-
-```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
-owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/fetch-pr-context.sh "$owner_repo" <PR#>
-```
-
-Then find the spec — the issues this PR closes:
-
-```bash
-gh pr view <PR#> --json closingIssuesReferences --jq '.closingIssuesReferences[].number'
-gh issue view <issue#> --comments
-```
-
-If the PR closes nothing, use the PR description as the spec and say so in the review.
-
-### 2. Invoke the code-reviewer Agent, Twice in Parallel
-
-Pass both dispatches the compiled context; the spec pass also gets the spec
-and is told it is the spec pass:
-
-```text
-PR Title: [title]
-Author: [author]
-Description: [body]
-Labels: [labels]
-Diff: [patch]
-Existing Comments: [any automated reviewer comments]
-Spec: [bodies of the issues the PR closes, or "PR description only"]
-```
-
-The standards pass returns the six dimensions, documented-standard and smell findings, and the Complexity section. The spec pass returns `R1.`, `R2.`, ... findings, each quoting the spec line, or "No spec available".
-
-### 3. Present Findings
-
-```text
-## Standards
-BLOCKING / SUGGESTION / NITPICK, then Complexity (C1., ...)
-## Spec
-R1., R2., ... with severity and the quoted spec line
-✨ What Looks Good: [highlight strengths]
-```
-
-End with one line per axis: its finding count and its worst finding. Don't
-pick a single winner across the two axes.
-
-### 4. Act on the Findings
-
-**Someone else's PR** — post the review:
-
-```bash
-gh pr review <PR#> --approve    # or --request-changes / --comment
-```
-
-**Your own PR** — this is the gate before merge, so the findings get fixed rather than posted for someone else:
-
-1. Fix every BLOCKING finding. Fix each SUGGESTION, or defer it to a GitHub issue after searching the backlog for an existing one. Fix each NITPICK or note in one line why not; nitpicks don't get issues.
-2. Run the project's verification, commit specific files, and push.
-3. If the fixes changed behaviour beyond the lines the findings named, run the agent again on the new diff. Stop after two rounds and report anything still open.
-4. Post one comment recording the review (`gh pr comment <PR#> --body-file <file>`), headed `## Agent review` so a resumed session can tell the gate already ran: a table with each finding, its severity, and its outcome (the fixing commit, the deferral issue, or why no change). GitHub does not allow approving or requesting changes on your own PR.
 
 ---
 
@@ -492,7 +365,7 @@ If the count is nonzero, the script didn't match — re-check the sed pattern ag
 
 ## RELATED
 
-- `/code-reviewer` — 6-dimensional review reference
+- `/code-reviewer` — the standards pass as a standalone review
 - `/pr-comments` — Systematic reply workflow (alternative to this skill's Mode B)
 - `/commit` — Quality-gated conventional commits
-- `code-reviewer` agent — Automated 6D analysis (spawned by this skill)
+- `code-reviewer` agent — runs both passes (spawned by this skill)

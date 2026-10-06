@@ -15,9 +15,9 @@ effort: high
 allowed-tools: Read, Grep, Glob, Bash(git diff*), Bash(git log*)
 ---
 
-# /code-reviewer — 6-Dimensional Code Review
+# /code-reviewer — Standards Review
 
-Perform structured code reviews across six dimensions: correctness, design, readability, performance, testing, and security.
+Perform structured code reviews across six dimensions (correctness, design, readability, performance, testing, and security), plus the repo's documented standards, code smells, and what the diff could delete.
 
 ## PURPOSE
 
@@ -67,11 +67,9 @@ clumps, primitive obsession, repeated switches, shotgun surgery, divergent
 change, speculative generality, message chains, middle man, refused bequest)
 as judgement calls that a documented standard overrides.
 
-When the change has a spec (the issues it closes), check it in a separate
-pass: requirements missing or partly met, behaviour nobody asked for, and
-requirements implemented wrongly, each quoting the spec line. Report the two
-passes side by side under `## Standards` and `## Spec`, without merging or
-reranking them.
+This skill is the **standards pass**. Checking the diff against its spec (the
+issues a PR closes) is a separate pass that needs its own context, so
+`/review-pr` runs both in parallel and reports them side by side.
 
 ### 3. Classify Findings
 

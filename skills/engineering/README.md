@@ -13,7 +13,7 @@ Run only when you type them.
 
 You can type them, and the agent also reaches for them when a task fits.
 
-- **[code-reviewer](./code-reviewer/SKILL.md)**: Review a diff across six dimensions.
+- **[code-reviewer](./code-reviewer/SKILL.md)**: Review a diff against six dimensions and the repo's standards.
 - **[codebase-design](./codebase-design/SKILL.md)**: Design deep modules: small interfaces at clean seams.
 - **[commit](./commit/SKILL.md)**: Create a quality-gated conventional commit.
 - **[diagnosing-bugs](./diagnosing-bugs/SKILL.md)**: Build a red feedback loop first, then find and fix the root cause.

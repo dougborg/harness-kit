@@ -40,7 +40,7 @@ The skill runs nine phases. Each phase is short; phase headings below are the na
 4. **Organize commits** — logical commits; mechanics via `/commit`'s standard path
 5. **Push and create PR** — `gh pr create` with HEREDOC body
 6. **Wait for CI** — `poll-ci.sh`; fix in place if anything fails
-7. **Agent review** — `review-pr` Mode A runs the `code-reviewer` agent; fix findings, record them on the PR
+7. **Agent review** — `review-pr` Mode A runs the standards and spec passes; fix findings, record them on the PR
 8. **Outside reviews** — `poll-review.sh` returns at once when nobody is expected; answer any via `review-pr`
 9. **Summary** — report PR URL, CI status, review outcome
 
@@ -197,7 +197,7 @@ When scheduling a wakeup, phrase the prompt as the **goal**, not a task referenc
 
 Our own review is the gate. Outside reviewers are not guaranteed: many repos have no required reviewers and Copilot review is often requested by hand. The Phase 2 read-through is the implementer checking its own work; this phase adds an independent reader with a fresh context.
 
-Call the Skill tool with "review-pr", passing the PR number. On a PR you authored it runs Mode A as a self-review gate: the `code-reviewer` agent reviews `<base>...HEAD` against the PR's linked issues, you fix the findings, and the outcome is posted to the PR.
+Call the Skill tool with "review-pr", passing the PR number. On a PR you authored it runs Mode A as a self-review gate: the `code-reviewer` agent runs a standards pass and a spec pass (against the PR's linked issues) on `<base>...HEAD`, you fix the findings, and the outcome is posted to the PR.
 
 When the fixes are pushed, wait for CI again (Phase 6) so the summary reports the CI result for the reviewed code.
 
