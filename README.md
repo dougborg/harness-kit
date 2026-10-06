@@ -25,10 +25,10 @@ packaging for both hosts.
 | `/grill-with-docs` | The same interview, also maintaining `GLOSSARY.md` and ADRs |
 | `/commit` | Conventional commits with quality gates |
 | `/open-pr` | PR creation with CI polling and review monitoring |
-| `/review-pr` | Structured PR review using 6-dimension code review |
+| `/review-pr` | PR review with a standards pass and a spec pass, or work through review feedback |
 | `/pr-comments` | Reply to PR review comments in thread context |
 | `/rebase` | Rebase with conflict resolution and validation |
-| `/code-reviewer` | 6-dimension code review reference |
+| `/code-reviewer` | Standards review: six dimensions, documented standards, smells, complexity |
 | `/skill-writer` | Create well-structured skills with progressive disclosure |
 | `/documentation-writer` | Write scannable, layered documentation |
 | `/harness-builder` | Analyze codebases and recommend harness setup |
@@ -43,7 +43,7 @@ packaging for both hosts.
 
 | Agent | Model | Purpose |
 | --- | --- | --- |
-| `code-reviewer` | sonnet | 6D review: correctness, design, readability, performance, testing, security |
+| `code-reviewer` | sonnet | Standards pass (six dimensions, documented standards, smells, complexity) and spec pass |
 | `verifier` | haiku | Stack-agnostic validation runner |
 | `harness-builder` | sonnet | Deep-read codebase and recommend harness |
 | `project-manager` | sonnet | Read-only backlog grooming: PR train, stale flags, gap analysis |
