@@ -150,10 +150,14 @@ Note: This phase is optional and relies on manual review or the `/simplify` skil
    ## Test plan
    - [ ] How to verify the changes work
 
+   Closes #<issue>
+
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
    EOF
    )"
    ```
+
+   Link the issue the branch implements with `Closes #<issue>` (or `Refs #<issue>` when it only partly addresses it). Phase 7's agent review uses the closing issues as its spec; without one it can only check the diff against the PR description.
 
 3. Print the PR URL.
 
@@ -188,7 +192,7 @@ If you backgrounded a poll and return later via a scheduled wakeup or task notif
   gh pr view <number> --json state,reviews,mergeStateStatus
   ```
 
-- Continue from whichever phase the fresh state indicates (CI running → keep waiting; CI failed → fix; CI green → Phase 7).
+- Continue from whichever phase the fresh state indicates (CI running → keep waiting; CI failed → fix; CI green → Phase 7). Phase 7 is done if the PR already has an `## Agent review` comment newer than the latest push (`gh pr view <number> --json comments,commits`); then go to Phase 8.
 
 When scheduling a wakeup, phrase the prompt as the **goal**, not a task reference: `"PR #<n>: continue /open-pr Phase 6 CI wait — re-check gh pr checks and proceed"`, never `"check poll task <id>"`. The same rules apply to any long-running poll in this skill, including Phase 8's outside-review wait.
 
@@ -198,7 +202,9 @@ Our own review is the gate. Outside reviewers are not guaranteed: many repos hav
 
 Call the Skill tool with "review-pr", passing the PR number. On a PR you authored it runs Mode A as a self-review gate: the `code-reviewer` agent reviews `<base>...HEAD` against the PR's linked issues, you fix the findings, and the outcome is posted to the PR.
 
-Done when the latest agent review has no BLOCKING findings, every other finding is fixed or deferred to an issue (search the backlog before filing), validation passes after the fixes, and the PR carries a comment listing each finding and its outcome.
+When the fixes are pushed, wait for CI again (Phase 6) so the summary reports the CI result for the reviewed code.
+
+Done when the latest agent review has no BLOCKING findings, every finding has an outcome, CI is green on the final push, and the PR carries an `## Agent review` comment listing each finding and its outcome.
 
 ## Phase 8: Outside reviews
 
@@ -216,11 +222,12 @@ It prints exactly one state:
 
 | State | Exit | Next |
 | --- | --- | --- |
-| `none` | 3 | No outside review expected. Go to Phase 9 |
+| `none` | 3 | Nothing from outside reviewers to act on: nobody was expected, or Copilot already reviewed and its threads are handled. Go to Phase 9 |
 | `comments` / `changes-requested` | 0 | Call the Skill tool with "review-pr" to work through them (Mode B) |
 | `summary-only` | 0 | A COMMENTED review with no inline comments (common for Copilot follow-ups). Read the body, surface it, act only on what the user agrees needs action |
 | `approved` | 0 | Report it and go to Phase 9 |
-| `timeout` | 2 | An expected review has not arrived. Report that the agent review is done and outside review is pending |
+| `timeout` | 2 | An expected reviewer (requested, or automatic Copilot) has not arrived. Report that the agent review is done and outside review is pending |
+| `error` | 4 | The GitHub API kept failing; stderr has the details. Fix auth or the PR reference and re-run |
 
 Read a `summary-only` body with:
 

@@ -95,15 +95,15 @@ if [ "$changed" -gt 3 ]; then echo "message"; fi
 
 ## Context Injection and Subagents
 
-Context a `SessionStart` hook injects reaches the main session only. Subagents start later with their own context, so they never see it. Verified on Claude Code by a codeword test (main session saw it, subagent did not) and stated in the [sub-agents docs](https://code.claude.com/docs/en/sub-agents.md).
+Context a `SessionStart` hook injects reaches the main session only. Subagents start later with their own context, so they never see it. Verified on Claude Code 2.1.289 (2026-10-06) with a codeword test: each source injected a different codeword and each kind of agent was asked to list what it saw. The [sub-agents docs](https://code.claude.com/docs/en/sub-agents.md) agree.
 
 | Source | Main session | Subagent |
 | --- | --- | --- |
 | `SessionStart` hook output | Yes | No |
 | `SubagentStart` hook `additionalContext` | — | Yes |
-| `CLAUDE.md` / `AGENTS.md` | Yes | Yes, unless the agent sets `omitClaudeMd: true` |
+| `CLAUDE.md` / `AGENTS.md` | Yes | General-purpose and custom agents: yes. Built-in `Explore` and `Plan`: no |
 
-So put rules every agent needs in `CLAUDE.md` or `AGENTS.md`. When a rule has to be injected by a hook (it is dynamic, or computed at start), pair the `SessionStart` hook with a `SubagentStart` hook. `SubagentStart` takes a `matcher` on the agent type (`general-purpose`, `Explore`, a plugin agent name) and cannot block the subagent. Codex behaviour is not yet verified.
+So put rules that general-purpose and custom agents need in `CLAUDE.md` or `AGENTS.md`, and pass anything `Explore` or `Plan` must know in the prompt you dispatch them with. When a rule has to be injected by a hook (it is dynamic, or computed at start), pair the `SessionStart` hook with a `SubagentStart` hook. `SubagentStart` takes a `matcher` on the agent type (`general-purpose`, `Explore`, a plugin agent name) and cannot block the subagent. Codex behaviour is not yet verified.
 
 ## Why This Matters
 
