@@ -8,9 +8,10 @@ description: >-
 # To Questionnaire
 
 Turn something the user can't answer alone into a Markdown **questionnaire**
-for one recipient who holds the missing knowledge. Interview the user only
-about the **send** (who it is for and what they need back), which they can
-always answer. The questions in the document then aim at the **gap** between
+for one recipient who holds the missing knowledge. **Grill the send, not the
+subject:** interview the user only about who it is for and what they need
+back, which they can always answer. Ask the way the `grilling` skill does
+(`AskUserQuestion` on Claude Code, plain text elsewhere). The questions in the document then aim at the **gap** between
 what the recipient knows and what the user needs.
 
 ## 1. Who is it for?
@@ -21,7 +22,8 @@ doesn't; that fixes the tone and how much context the document must carry.
 
 ## 2. What do you need back?
 
-Ask for the specific decisions or facts the user can't settle alone. Done when
+Ask, in one exchange, for the specific decisions or facts the user can't
+settle alone. Done when
 you have a concrete list of what the user must be able to decide or do once
 the answers come back.
 

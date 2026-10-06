@@ -54,7 +54,9 @@ Skill content stays in context for the whole session once loaded, and after comp
 
 **Never ask users to do things you can do yourself.**
 
-Skills should minimize user interaction. Only ask for:
+Skills should minimize user interaction. Interview skills (`grilling` and the
+skills built on it) are the declared exception: the user's decisions are their
+output. Everywhere else, only ask for:
 
 - **Destructive confirmations** — Operations that can't be undone (deletes, force pushes, system changes)
 - **Critical decisions** — Mutually exclusive choices with real trade-offs

@@ -1,7 +1,9 @@
 # ADR format
 
 ADRs live in `docs/adr/` (or the repo's existing decisions folder) as
-`0001-slug.md`, `0002-slug.md`, and so on. Number a new one by scanning for the
+`0001-slug.md`, `0002-slug.md`, and so on. In a repo with several contexts,
+an ADR that concerns one context sits in a `docs/adr/` beside that context's
+`GLOSSARY.md`. Number a new one by scanning for the
 highest existing number and adding one.
 
 ## Template
@@ -24,11 +26,13 @@ why. Add a section only when it earns its place:
 
 All three must hold:
 
-1. **Hard to reverse.** Changing your mind later costs something real.
+1. **Hard to reverse.** Changing your mind later costs something real. If it
+   is cheap to undo, skip the ADR: you'll just undo it.
 2. **Surprising without context.** A future reader would ask "why on earth is
-   it done this way?"
+   it done this way?" If nobody would wonder, there is nothing to explain.
 3. **A real trade-off.** There were genuine alternatives, and one was chosen
-   for specific reasons.
+   for specific reasons. With no real alternative, there is nothing to record
+   beyond "we did the obvious thing".
 
 Typical qualifiers: architectural shape (monorepo, event-sourced writes),
 integration patterns between contexts, technology choices with lock-in,

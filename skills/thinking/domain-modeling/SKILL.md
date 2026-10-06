@@ -44,7 +44,8 @@ directory when the first ADR is written.
 
 - **Glossary:** update it the moment a term is resolved, not in a batch at the
   end, following [GLOSSARY-FORMAT.md](GLOSSARY-FORMAT.md). The glossary holds
-  definitions only: implementation details, plans, and specs go elsewhere.
+  terms, how they relate, and resolved ambiguities; implementation details,
+  plans, and specs go elsewhere.
 - **ADRs:** offer one only when a decision is hard to reverse, would surprise
   a future reader, and came from a real trade-off. All three, or skip it.
   Format and examples are in [ADR-FORMAT.md](ADR-FORMAT.md).
