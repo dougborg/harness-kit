@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Regression tests for skills/engineering/open-pr/poll-review.sh decision logic, using
-# canned GraphQL responses (POLL_REVIEW_FIXTURE) instead of the live API.
+# Regression tests for skills/engineering/open-pr/poll-review.sh decision
+# logic, using canned GraphQL responses (POLL_REVIEW_FIXTURE) instead of the
+# live API.
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)

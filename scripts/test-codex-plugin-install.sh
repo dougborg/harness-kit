@@ -19,6 +19,6 @@ grep -F '<shared-scripts-dir>/discover-verification-cmd.sh' \
 
 # Codex discovers skills recursively under the area folders; confirm a nested
 # model-invoked skill reaches the model under its unchanged name.
-prompt=$(cd "$profile" && CODEX_HOME="$profile" codex debug prompt-input "hi" 2>&1)
+prompt=$(cd "$profile" && CODEX_HOME="$profile" codex debug prompt-input "hi")
 grep -F 'harness-kit:commit' <<<"$prompt" >/dev/null
 grep -F 'engineering/commit/SKILL.md' <<<"$prompt" >/dev/null

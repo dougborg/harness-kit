@@ -69,6 +69,7 @@ Topic references, read as needed from any mode (all reachable in one hop from he
 | Bundled skills + official plugin catalog | `<skill-dir>/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
 | Multi-agent architecture patterns | `<skill-dir>/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
 | Plugin `hooks.json` schema | `<skill-dir>/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
+| Release Please setup | `<skill-dir>/release-please-reference.md` | Recommending automated semver releases for a Conventional Commits + GitHub project |
 
 ## EDGE CASES
 
@@ -110,7 +111,10 @@ Agent(
   prompt: "Fix [gap] in harness-kit.
     1. git clone --depth 1 https://github.com/dougborg/harness-kit /tmp/harness-fix
     2. cd /tmp/harness-fix && git checkout -b fix/[name]
-    3. Fix skills/[skill]/SKILL.md or agents/[agent].md. If fixing inline bash,
+    3. Fix skills/<area>/[skill]/SKILL.md (find it with ls skills/*/[skill])
+       or agents/[agent].md, then run scripts/generate-claude-skills.sh.
+       A new skill goes in a topic-area folder and that area's README.md.
+       If fixing inline bash,
        extract to a script instead of patching in place.
     4. Commit, push, open PR with gh
     5. Clean up: rm -rf /tmp/harness-fix"

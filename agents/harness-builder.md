@@ -15,7 +15,7 @@ Claude Code and Codex agent harness.
 
 ## Reference catalogs
 
-Four catalogs live in the harness skill's folder: `external-plugins.md` (bundled skills and official plugins), `architecture-patterns.md`, `hooks-reference.md`, and `release-please-reference.md`. The caller passes their paths in your prompt. If it didn't, find them with Glob (`**/harness/external-plugins.md`) under the harness-kit plugin or the project's `.claude/skills/harness/`; read them rather than recommending from memory.
+Four catalogs live in the harness skill's folder: `external-plugins.md` (bundled skills and official plugins), `architecture-patterns.md`, `hooks-reference.md`, and `release-please-reference.md`. The caller passes their paths in your prompt. If it didn't, look for `harness/external-plugins.md` under `~/.claude/plugins/`, `~/.codex/plugins/`, and the project's `.claude/skills/` or `.agents/skills/`. Read them rather than recommending from memory. If you can't find them, say so at the top of your report, so the caller knows the plugin and pattern recommendations are unchecked.
 
 ## Discovery Checklist
 
