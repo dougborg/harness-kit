@@ -1,5 +1,5 @@
 interface:
   display_name: "Session Retro"
-  short_description: "Run the session-retro workflow when explicitly requested."
+  short_description: "Write a retro doc for the current work session."
 policy:
   allow_implicit_invocation: false

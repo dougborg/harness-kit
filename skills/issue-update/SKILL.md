@@ -1,9 +1,11 @@
 ---
 name: issue-update
 description: >-
-  Update an existing GitHub issue — edit body, post a comment, retag, or
-  reopen. Pre-flights body + comments; acknowledges stale framing instead of
-  silently rewriting.
+  Updates an existing GitHub issue: edits the body, posts a comment, retags,
+  or reopens, acknowledging stale framing instead of silently rewriting it, and
+  previews before applying. Use when the user asks to update, comment on,
+  relabel, or reopen an issue, or when a workflow needs to post a progress
+  checkpoint to a tracking issue.
 argument-hint: "<#> | reopen <#>"
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---

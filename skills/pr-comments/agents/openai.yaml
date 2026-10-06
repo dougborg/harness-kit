@@ -1,5 +1,5 @@
 interface:
-  display_name: "Pr Comments"
-  short_description: "Run the pr-comments workflow when explicitly requested."
+  display_name: "PR Comments"
+  short_description: "Reply to PR review comments in thread context."
 policy:
   allow_implicit_invocation: false

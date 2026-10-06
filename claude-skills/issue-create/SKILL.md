@@ -1,9 +1,10 @@
 ---
 name: issue-create
 description: >-
-  File a new GitHub issue with duplicate search, scope decision, label
-  discovery, and preview before posting. Prevents fragmented or silently-filed
-  issues.
+  Files a new GitHub issue: searches for duplicates, picks focused vs umbrella
+  scope, applies real labels, and previews before posting. Use when the user
+  asks to file, open, or track an issue, and when another workflow needs to
+  record deferred work, a bug found mid-task, or a follow-up as an issue.
 allowed-tools: Bash(gh issue *), Bash(gh search *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---
 

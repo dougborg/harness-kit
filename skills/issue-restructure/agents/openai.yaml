@@ -1,5 +1,5 @@
 interface:
   display_name: "Issue Restructure"
-  short_description: "Run the issue-restructure workflow when explicitly requested."
+  short_description: "Split one GitHub issue into many, or merge many into one."
 policy:
   allow_implicit_invocation: false

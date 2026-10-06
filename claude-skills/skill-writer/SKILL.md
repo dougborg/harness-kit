@@ -6,11 +6,11 @@ description: >-
   prescriptive to be, the house writing style, whether a skill is user- or
   model-invoked and how skills call each other, writing the description field
   that controls when a skill fires, splitting content across reference files,
-  the allowed-tools vs tools
-  frontmatter distinction, and harness-kit's own conventions (shared scripts,
-  dual plugin registration and host-specific script paths). Use when creating a
-  new skill or agent, editing an existing one, or deciding whether something
-  should be a skill, an agent, a script, or nothing at all.
+  the allowed-tools vs tools frontmatter distinction, and harness-kit's own
+  conventions (shared scripts, dual plugin registration and host-specific
+  script paths). Use when creating a new skill or agent, editing an existing
+  one, or deciding whether something should be a skill, an agent, a script, or
+  nothing at all.
 allowed-tools: Glob, Grep, Read, Write, Edit
 ---
 
