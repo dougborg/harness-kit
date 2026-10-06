@@ -22,7 +22,8 @@ configuration adapt that catalog without forking its workflow guidance.
 ## Repository layout
 
 - `skills/<area>/<skill>/` holds the canonical skills, grouped by topic area
-  (`engineering`, `meta`, `orchestration`, `project-management`, `writing`).
+  (`engineering`, `meta`, `orchestration`, `project-management`, `thinking`,
+  `writing`).
   Skill names stay unique across areas; each area's `README.md` lists its
   skills.
 - `.claude-plugin/` packages the Claude Code plugin and marketplace. Its

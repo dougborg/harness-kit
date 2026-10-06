@@ -21,6 +21,8 @@ packaging for both hosts.
 | Skill | Purpose |
 | --- | --- |
 | `/harness` | Meta-harness management |
+| `/grill-me` | Relentless interview to sharpen a plan, a round of questions at a time |
+| `/grill-with-docs` | The same interview, also maintaining `GLOSSARY.md` and ADRs |
 | `/commit` | Conventional commits with quality gates |
 | `/open-pr` | PR creation with CI polling and review monitoring |
 | `/review-pr` | Structured PR review using 6-dimension code review |

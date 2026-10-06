@@ -26,7 +26,11 @@
     "./claude-skills/code-reviewer",
     "./claude-skills/commit",
     "./claude-skills/documentation-writer",
+    "./claude-skills/domain-modeling",
     "./claude-skills/feature-spec",
+    "./claude-skills/grill-me",
+    "./claude-skills/grill-with-docs",
+    "./claude-skills/grilling",
     "./claude-skills/groom",
     "./claude-skills/harness",
     "./claude-skills/harness-builder",
@@ -43,6 +47,8 @@
     "./claude-skills/skill-writer",
     "./claude-skills/standup",
     "./claude-skills/svg-logo-designer",
-    "./claude-skills/ui-review"
+    "./claude-skills/to-questionnaire",
+    "./claude-skills/ui-review",
+    "./claude-skills/wait-what"
   ]
 }

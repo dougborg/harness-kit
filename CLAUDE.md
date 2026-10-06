@@ -13,6 +13,7 @@ A collection of shared skills plus Claude Code-specific agent and packaging adap
 - **PR workflows** — `/open-pr`, `/review-pr`, `/pr-comments`, `/rebase`
 - **Multi-agent coordination** — `/agent-standup` reconciles ownership, handoffs, and merge order across agents and operators
 - **Code review** — 6-dimension structured review (code-reviewer agent + skill)
+- **Alignment** — `/grill-me`, `/grill-with-docs`, and the `grilling` and `domain-modeling` skills behind them
 - **Skill authoring** — `/skill-writer`, `/documentation-writer`
 - **Validation** — Stack-agnostic verifier agent with auto-discovered verification command
 
@@ -22,7 +23,8 @@ A collection of shared skills plus Claude Code-specific agent and packaging adap
 .claude-plugin/          Plugin manifest and marketplace config
 skills/                  Canonical open-format skills used by Codex
   <area>/                Topic area: engineering, meta, orchestration,
-                         project-management, writing (README.md lists its skills)
+                         project-management, thinking, writing
+                         (README.md lists its skills)
     <skill>/*.md         Reference files, siblings of SKILL.md (one level deep only)
 claude-skills/           Generated flat Claude projection; never edit directly
 scripts/shared/          Cross-skill shell scripts

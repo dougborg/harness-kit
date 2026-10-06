@@ -291,7 +291,7 @@ passes their paths in its prompt.
   see `scripts/shared/resolve-all-threads.sh`.
 - Put each canonical skill in its topic-area folder,
   `skills/<area>/<skill>/` (`engineering`, `meta`, `orchestration`,
-  `project-management`, `writing`, ...); names stay unique across areas
+  `project-management`, `thinking`, `writing`); names stay unique across areas
   because the Claude projection is flat. Register canonical skills through
   `.codex-plugin/plugin.json`, regenerate
   `claude-skills/`, and register the projection in
