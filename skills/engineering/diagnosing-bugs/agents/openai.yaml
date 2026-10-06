@@ -1,0 +1,3 @@
+interface:
+  display_name: "Diagnosing Bugs"
+  short_description: "Build a red feedback loop first, then find and fix the root cause."
