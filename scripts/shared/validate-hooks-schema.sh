@@ -20,14 +20,14 @@ fi
 if ! jq -e '.hooks | type == "object"' "$file" >/dev/null 2>&1; then
   echo "ERROR: $file must have a top-level 'hooks' object." >&2
   echo "       Plugin hooks.json wraps event types in a 'hooks' record." >&2
-  echo "       See agents/references/hooks-reference.md" >&2
+  echo "       See skills/meta/harness/hooks-reference.md" >&2
   exit 1
 fi
 
 bad_events=$(jq -r '.hooks | to_entries[] | select(.value | type != "array") | .key' "$file")
 if [ -n "$bad_events" ]; then
   echo "ERROR: $file event types must be arrays. Bad keys: $bad_events" >&2
-  echo "       See agents/references/hooks-reference.md" >&2
+  echo "       See skills/meta/harness/hooks-reference.md" >&2
   exit 1
 fi
 
@@ -42,7 +42,7 @@ bad_handlers=$(jq -r '
 if [ -n "$bad_handlers" ]; then
   echo "ERROR: $file handler entries must contain a 'hooks' array." >&2
   echo "       Bad entries: $bad_handlers" >&2
-  echo "       See agents/references/hooks-reference.md" >&2
+  echo "       See skills/meta/harness/hooks-reference.md" >&2
   exit 1
 fi
 
@@ -57,13 +57,13 @@ bad_commands=$(jq -r '
 if [ -n "$bad_commands" ]; then
   echo "ERROR: $file command entries must have type=\"command\" and a non-empty command string." >&2
   echo "       Bad entries: $bad_commands" >&2
-  echo "       See agents/references/hooks-reference.md" >&2
+  echo "       See skills/meta/harness/hooks-reference.md" >&2
   exit 1
 fi
 
 # If hooks.json sits at the auto-discovery path, plugin.json must NOT also
 # declare a "hooks" field — Claude Code loads both and refuses with
-# "Duplicate hooks file detected". See agents/references/hooks-reference.md.
+# "Duplicate hooks file detected". See skills/meta/harness/hooks-reference.md.
 #
 # `-ef` compares inodes, so any spelling of the same file (./hooks/hooks.json,
 # hooks/hooks.json, an absolute path) is detected. The check is silently
@@ -75,7 +75,7 @@ if [ -f "hooks/hooks.json" ] && [ "$file" -ef "hooks/hooks.json" ] && [ -f "$man
     echo "ERROR: $manifest declares a 'hooks' field, but $file is at the auto-discovery path." >&2
     echo "       Both register the same hooks, causing 'Duplicate hooks file detected' at load time." >&2
     echo "       Remove the 'hooks' field from $manifest." >&2
-    echo "       See agents/references/hooks-reference.md" >&2
+    echo "       See skills/meta/harness/hooks-reference.md" >&2
     exit 1
   fi
 fi

@@ -90,7 +90,7 @@ ChernyCode principle: "If you do something more than once a day, make it a skill
 - If multiple agents or operators work concurrently: `/agent-standup` skill?
 - If frontend present: design harness (`.impeccable.md`) + `/ui-review` skill?
 
-**Bundled-skill and official plugin coverage** (catalog: `agents/references/external-plugins.md`):
+**Bundled-skill and official plugin coverage** (catalog: `${CLAUDE_SKILL_DIR}/external-plugins.md`):
 
 - Is a local skill, agent, or script reimplementing something a bundled skill already does (beyond `/doctor` — e.g. `/verify`, `/code-review`, `/security-review`, `/batch`, `/run-skill-generator`)? Recommend delegating. Check the bundled-skills table before any install recommendation
 - Would an official Anthropic plugin cover a detected gap? (e.g., Python without `pyright-lsp`, an MCP server without `mcp-server-dev`, a legacy codebase without `code-modernization`) — recommend the install command, don't generate a local equivalent
@@ -120,7 +120,7 @@ The field name differs by file type and **the wrong one is silently ignored** �
 
 | File | Valid | Invalid |
 | --- | --- | --- |
-| `skills/*/SKILL.md` | Open skill fields plus Claude adapter fields tolerated by Codex | `disable-model-invocation: true` in the canonical Codex catalog |
+| `skills/<area>/<skill>/SKILL.md` | Open skill fields plus Claude adapter fields tolerated by Codex | `disable-model-invocation: true` in the canonical Codex catalog |
 | `claude-skills/*/SKILL.md` | Generated Claude fields, including `allowed-tools` and `disable-model-invocation` | Manual edits or projection drift |
 | `agents/*.md` | `name`, `description`, `tools`, `disallowedTools`, `model`, `memory`, `isolation`, `permissionMode` | `allowed-tools:` |
 | `.codex/agents/*.toml` | `name`, `description`, `developer_instructions`, optional sandbox/model settings | A read-only description without `sandbox_mode = "read-only"` |

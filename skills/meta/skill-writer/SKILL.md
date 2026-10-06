@@ -254,7 +254,7 @@ sibling files and link to them by name and purpose, so Claude can tell whether
 a file is worth opening.
 
 ```text
-skills/my-skill/
+skills/<area>/my-skill/
   SKILL.md          Navigation + the path most runs take
   reference.md      Full detail, loaded on demand
   scripts/run.sh    Executable steps, not pasted into the body
@@ -267,8 +267,9 @@ Two rules make this work:
 - **Table of contents past 100 lines.** A partial read of a long reference
   should still reveal its full scope.
 
-Agent reference docs in this repo live in `agents/references/` and follow the
-same rules.
+Reference docs an agent needs live beside the skill that dispatches it (the
+`harness-builder` catalogs sit in the harness skill), and that skill passes
+their paths in the agent's prompt.
 
 ## harness-kit conventions
 
@@ -288,7 +289,11 @@ same rules.
   does not. Split it into two calls.
 - A shared script that calls a sibling resolves it beside the canonical script;
   see `scripts/shared/resolve-all-threads.sh`.
-- Register canonical skills through `.codex-plugin/plugin.json`, regenerate
+- Put each canonical skill in its topic-area folder,
+  `skills/<area>/<skill>/` (`engineering`, `meta`, `orchestration`,
+  `project-management`, `writing`, ...); names stay unique across areas
+  because the Claude projection is flat. Register canonical skills through
+  `.codex-plugin/plugin.json`, regenerate
   `claude-skills/`, and register the projection in
   `.claude-plugin/plugin.json`. Claude agents use the Claude manifest; Codex
   agents are project TOMLs installed by bootstrap.
@@ -325,7 +330,7 @@ Copyable skill and agent skeletons live in [templates.md](templates.md).
 
 - `/documentation-writer` — human-facing docs (README, guides, reference)
 - `/harness audit` — audits skills and agents in a project
-- `agents/references/hooks-reference.md` — hooks.json schema, events, gotchas
+- The harness skill's `hooks-reference.md` — hooks.json schema, events, gotchas
 
 ## Sources
 

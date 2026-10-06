@@ -24,9 +24,27 @@ entry = next(item for item in market["plugins"] if item["name"] == manifest["nam
 assert entry["source"] == "./"
 assert entry["policy"] == {"installation": "AVAILABLE", "authentication": "ON_INSTALL"}
 
-for skill in sorted((root / "skills").iterdir()):
-    if not skill.is_dir():
-        continue
+# skills/<area>/<skill>/: areas hold only skill directories and a README.md.
+# Codex discovers SKILL.md recursively, so a stray SKILL.md anywhere would ship.
+skills = []
+for area in sorted((root / "skills").iterdir()):
+    assert area.is_dir(), f"{area}: only topic-area folders belong directly under skills/"
+    assert not (area / "SKILL.md").exists(), f"{area}: skills live one level down, in skills/<area>/<skill>/"
+    for entry in sorted(area.iterdir()):
+        if entry.name == "README.md":
+            continue
+        assert entry.is_dir(), f"{entry}: areas hold only skill folders and README.md"
+        skills.append(entry)
+for skill in skills:
+    readme = skill.parent / "README.md"
+    assert readme.is_file(), f"{skill.parent}: missing README.md listing the area's skills"
+    assert f"](./{skill.name}/SKILL.md)" in readme.read_text(), f"{readme}: does not list {skill.name}"
+names = [skill.name for skill in skills]
+duplicates = sorted({name for name in names if names.count(name) > 1})
+assert not duplicates, f"skill names must be unique across areas: {duplicates}"
+assert len(list((root / "skills").rglob("SKILL.md"))) == len(skills), "a SKILL.md is nested below a skill folder"
+
+for skill in skills:
     skill_md = skill / "SKILL.md"
     assert skill_md.is_file(), f"{skill} is not a skill; move utilities outside skills/"
     frontmatter = skill_md.read_text().split("\n---\n", 1)[0]

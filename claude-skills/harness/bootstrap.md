@@ -6,14 +6,14 @@ and Codex, and generate project-specific additions. Auto-trigger only when
 
 ## Workflow
 
-1. **Spawn `harness-builder` agent** — It analyzes the codebase and returns:
+1. **Spawn `harness-builder` agent** — pass it the absolute paths of this skill's `architecture-patterns.md`, `external-plugins.md`, `hooks-reference.md`, and `release-please-reference.md` (siblings of this file, under `${CLAUDE_SKILL_DIR}`) so it can read the catalogs. It analyzes the codebase and returns:
    - Stack summary (language, toolchain, verification command)
    - Draft CLAUDE.md skeleton
-   - **Recommended architecture pattern** (from `agents/references/architecture-patterns.md`)
+   - **Recommended architecture pattern** (from `${CLAUDE_SKILL_DIR}/architecture-patterns.md`)
    - **Recommended agents** with model + `tools:` (agents use `tools:`, not the skill-only `allowed-tools:`) (always includes code-reviewer, verifier, test-writer, domain-advisor; adds project-manager if GitHub detected)
    - **Recommended skills from harness-kit:** which of the plugin's base skills to copy into the project
-   - **Bundled skills to delegate to:** matches from the bundled-skills table in `agents/references/external-plugins.md` — no install required
-   - **Recommended official Anthropic plugins:** stack-matched picks from the marketplace catalog in `agents/references/external-plugins.md`, with overlap flags against harness-kit skills
+   - **Bundled skills to delegate to:** matches from the bundled-skills table in `${CLAUDE_SKILL_DIR}/external-plugins.md` — no install required
+   - **Recommended official Anthropic plugins:** stack-matched picks from the marketplace catalog in `${CLAUDE_SKILL_DIR}/external-plugins.md`, with overlap flags against harness-kit skills
    - **Recommended external sources:** additional plugin marketplaces based on stack (e.g., Vercel skills for React, impeccable for frontend)
    - **Project-specific skills** to generate (domain workflows, custom checks)
    - Recommended hooks (PostToolUse: formatters → validators → guidance; Stop: session-end guidance)
@@ -22,8 +22,8 @@ and Codex, and generate project-specific additions. Auto-trigger only when
 2. **Present recommendations for approval:**
    - **Stack:** one-line summary + architecture pattern
    - **Skills from harness-kit to install:** table with name, purpose, why this project needs it
-   - **Bundled skills already available (no install):** the matching rows from the bundled-skills table in `agents/references/external-plugins.md`, one line each. Present these *before* anything installable — never propose installing a plugin or generating a project skill for a job a bundled skill already does
-   - **Official Anthropic plugins to install (optional):** for each stack-matched plugin from `agents/references/external-plugins.md`, show one-line rationale plus the install command (`/plugin install <name>@claude-plugins-official`). Where a plugin overlaps a harness-kit skill (e.g., `code-review` vs `code-reviewer`, `commit-commands` vs `/commit`), flag the overlap and ask the user to pick one or accept the documented composition — never install both sides of an overlap silently
+   - **Bundled skills already available (no install):** the matching rows from the bundled-skills table in `${CLAUDE_SKILL_DIR}/external-plugins.md`, one line each. Present these *before* anything installable — never propose installing a plugin or generating a project skill for a job a bundled skill already does
+   - **Official Anthropic plugins to install (optional):** for each stack-matched plugin from `${CLAUDE_SKILL_DIR}/external-plugins.md`, show one-line rationale plus the install command (`/plugin install <name>@claude-plugins-official`). Where a plugin overlaps a harness-kit skill (e.g., `code-review` vs `code-reviewer`, `commit-commands` vs `/commit`), flag the overlap and ask the user to pick one or accept the documented composition — never install both sides of an overlap silently
    - **External sources to add:** marketplace repos with rationale
    - **Project-specific skills to generate:** table with name, purpose
    - **Agents to create:** table with name, purpose, model
@@ -34,9 +34,11 @@ and Codex, and generate project-specific additions. Auto-trigger only when
 
 4. **After approval, install and generate for both hosts:**
    - Copy approved skills from `${CLAUDE_PLUGIN_ROOT}/claude-skills/` to `.claude/skills/` — copy each skill's **whole directory**, including sibling reference `.md` files and scripts, not just `SKILL.md`
-   - Copy approved agents from `${CLAUDE_PLUGIN_ROOT}/agents/` to `.claude/agents/`, including the `references/` subdirectory
-   - Copy the same canonical skills to `.agents/skills/` for Codex CLI and IDE
-     repository discovery, preserving each `agents/openai.yaml`.
+   - Copy approved agents from `${CLAUDE_PLUGIN_ROOT}/agents/` to `.claude/agents/`
+   - Copy the same canonical skills to `.agents/skills/<skill>/` for Codex CLI
+     and IDE repository discovery, preserving each `agents/openai.yaml`. The
+     plugin groups skills by area (`${CLAUDE_PLUGIN_ROOT}/skills/<area>/<skill>/`);
+     install them flat by skill name, matching `.claude/skills/<skill>/`.
    - Copy shared scripts to `.agents/scripts/shared/`; installed canonical
      skills resolve `${CLAUDE_SKILL_DIR}` from their loaded location.
    - Copy Codex agent TOMLs from `${CLAUDE_PLUGIN_ROOT}/.codex/agents/` to
@@ -66,7 +68,7 @@ and Codex, and generate project-specific additions. Auto-trigger only when
    - `/doctor` (bundled with Claude Code, alias `/checkup`) — ongoing setup hygiene: installation and PATH problems, unused skills and MCP servers, slow hooks, CLAUDE.md bloat. Run it periodically; no install needed.
    - `/harness audit` — harness-kit structure, frontmatter validity, and provenance. Advisory, not a gate.
 
-   Also recommend running `/run-skill-generator` once, to record this project's real build/launch recipe as a `run-<name>` skill that `/run` and `/verify` then follow. See the bundled-skills table in `agents/references/external-plugins.md` for the rest.
+   Also recommend running `/run-skill-generator` once, to record this project's real build/launch recipe as a `run-<name>` skill that `/run` and `/verify` then follow. See the bundled-skills table in `${CLAUDE_SKILL_DIR}/external-plugins.md` for the rest.
 
 ## Lock File Creation
 

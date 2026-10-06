@@ -13,6 +13,10 @@ tools: Read, Grep, Glob, Bash
 Deep-read a codebase and produce structured recommendations for a shared
 Claude Code and Codex agent harness.
 
+## Reference catalogs
+
+Four catalogs live in the harness skill's folder: `external-plugins.md` (bundled skills and official plugins), `architecture-patterns.md`, `hooks-reference.md`, and `release-please-reference.md`. The caller passes their paths in your prompt. If it didn't, find them with Glob (`**/harness/external-plugins.md`) under the harness-kit plugin or the project's `.claude/skills/harness/`; read them rather than recommending from memory.
+
 ## Discovery Checklist
 
 ### 1. Stack Fingerprint
@@ -78,7 +82,7 @@ Adapt recommendations based on detected stack:
 - **Multiple agents or operators?** → Recommend: `agent-standup` skill
 - **Frontend present?** → Recommend: design harness (`.impeccable.md` seed) + `ui-review` skill
 - **Preferred component library?** → Note target in `.impeccable.md` — do NOT encode existing design; let `/impeccable:init` guide new direction
-- **Any stack detected** → Match against `agents/references/external-plugins.md`, bundled skills first (already available, no install: `/verify` and `/run-skill-generator` for build/launch, `/code-review` and `/security-review` for review, `/batch` for fan-out), then official Anthropic plugin recommendations (language → LSP plugin, MCP server → `mcp-server-dev`, Agent SDK → `agent-sdk-dev`, legacy code → `code-modernization`, ...)
+- **Any stack detected** → Match against `external-plugins.md`, bundled skills first (already available, no install: `/verify` and `/run-skill-generator` for build/launch, `/code-review` and `/security-review` for review, `/batch` for fan-out), then official Anthropic plugin recommendations (language → LSP plugin, MCP server → `mcp-server-dev`, Agent SDK → `agent-sdk-dev`, legacy code → `code-modernization`, ...)
 
 ### 6. Domain Knowledge
 
@@ -196,7 +200,7 @@ Domain agents should be **advisors**, not enforcers. The test suite is the enfor
 
 ### Recommended Architecture Pattern
 
-Select from the 6 patterns in `agents/references/architecture-patterns.md`:
+Select from the 6 patterns in `architecture-patterns.md`:
 
 - **Fan-out/Fan-in** — Default for most projects (parallel review, lint, test)
 - **Pipeline** — When ordered stages are needed (plan → build → review → release)
@@ -225,7 +229,7 @@ Add domain-specific skills for frequent workflows discovered in step 5.
 
 ### Bundled Skills and Recommended Official Anthropic Plugins (optional)
 
-Match the detected stack against the catalogs in `agents/references/external-plugins.md` (the single source of truth — do not restate its tables here). Work the bundled-skills table first; never propose installing or generating something a bundled skill already covers. Output a section like:
+Match the detected stack against the catalogs in `external-plugins.md` (the single source of truth — do not restate its tables here). Work the bundled-skills table first; never propose installing or generating something a bundled skill already covers. Output a section like:
 
 ```markdown
 ## Already available (bundled with Claude Code, no install)
@@ -273,9 +277,9 @@ Call the Skill tool with "skill-writer" when generating or reviewing a skill, an
 
 Hooks are always **project-local** — configured in `.claude/settings.local.json`. They reference project-specific tools and file patterns that vary across codebases. Each project gets hooks tailored to its stack during bootstrap.
 
-**Schema reference:** For plugin `hooks/hooks.json` (different shape from `settings.json`!), see `agents/references/hooks-reference.md`.
+**Schema reference:** For plugin `hooks/hooks.json` (different shape from `settings.json`!), see `hooks-reference.md`.
 
-**Release automation reference:** When the project uses Conventional Commits + GitHub, recommend Release Please for automated semver. Setup has three reliable gotchas (workflow PR-create permission, release-PR CI triggering, CHANGELOG markdownlint conflicts) — see `agents/references/release-please-reference.md` for the working config.
+**Release automation reference:** When the project uses Conventional Commits + GitHub, recommend Release Please for automated semver. Setup has three reliable gotchas (workflow PR-create permission, release-PR CI triggering, CHANGELOG markdownlint conflicts) — see `release-please-reference.md` for the working config.
 
 **Execution order principle:** Formatters → Validators → Guidance. This ensures:
 
