@@ -1,0 +1,3 @@
+interface:
+  display_name: "Minimal Change"
+  short_description: "Find the smallest change that solves the problem."

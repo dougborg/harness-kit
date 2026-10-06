@@ -60,6 +60,17 @@ Evaluate each change across six dimensions, then classify findings by severity:
 - **Testing** — adequate coverage, tests that actually test behavior, edge cases
 - **Security** — hardcoded secrets, injection vulnerabilities, unsafe deserialization, path traversal
 
+**Complexity lens.** Separately from the six dimensions, look for what the diff could delete. Tag each finding:
+
+- `delete:` dead code, unused flexibility, a speculative feature. Nothing replaces it.
+- `reuse:` duplicates a helper or pattern already in this repo. Name its path.
+- `stdlib:` hand-rolls something the standard library ships. Name the function.
+- `native:` a dependency or code doing what the platform already does. Name the feature.
+- `yagni:` an abstraction with one implementation, config nobody sets, a layer with one caller.
+- `shrink:` the same logic in fewer lines. Show the shorter form.
+
+Leave alone what the `minimal-change` skill says never to cut: trust-boundary validation, data-loss error handling, security, accessibility, explicit requirements, and the one runnable check that non-trivial logic leaves behind.
+
 **Severity tiers:**
 
 **BLOCKING** — Must fix before merge:
@@ -101,6 +112,10 @@ Evaluate each change across six dimensions, then classify findings by severity:
 
 ### NITPICKS (N issues)
 1. **[file:line]** — [description]
+
+### Complexity
+1. **[file:line]** — `<tag>:` [what to cut]. [what replaces it]
+net: -N lines possible   (or: "Lean already.")
 
 ### What Looks Good
 - [brief notes on well-done aspects — builds confidence in the review]

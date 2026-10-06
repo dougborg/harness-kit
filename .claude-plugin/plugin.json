@@ -41,6 +41,7 @@
     "./claude-skills/issue-create",
     "./claude-skills/issue-restructure",
     "./claude-skills/issue-update",
+    "./claude-skills/minimal-change",
     "./claude-skills/open-pr",
     "./claude-skills/pr-comments",
     "./claude-skills/rebase",
