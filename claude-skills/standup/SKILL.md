@@ -8,6 +8,7 @@ when_to_use: >-
   yesterday", or a recap of recent activity.
 effort: low
 allowed-tools: Bash(git log*), Bash(git config*), Bash(gh pr*), Bash(gh issue*), Read
+disable-model-invocation: true
 ---
 
 # /standup — Daily Standup Report

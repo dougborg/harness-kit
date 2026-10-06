@@ -1,0 +1,3 @@
+interface:
+  display_name: "Open PR"
+  short_description: "Validate, push, and open a pull request, then shepherd CI and review."

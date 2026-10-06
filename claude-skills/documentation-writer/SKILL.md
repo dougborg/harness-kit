@@ -9,7 +9,6 @@ description: >-
   README has drifted from the code, or when deciding where a piece of
   information belongs. For SKILL.md and agent files, use /skill-writer instead.
 allowed-tools: Read, Write, Edit, Glob, Grep
-disable-model-invocation: true
 ---
 
 # /documentation-writer — Human-Facing Documentation

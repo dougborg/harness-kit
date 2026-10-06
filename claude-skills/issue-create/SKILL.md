@@ -5,7 +5,6 @@ description: >-
   discovery, and preview before posting. Prevents fragmented or silently-filed
   issues.
 allowed-tools: Bash(gh issue *), Bash(gh search *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
-disable-model-invocation: true
 ---
 
 # /issue-create — File a New GitHub Issue

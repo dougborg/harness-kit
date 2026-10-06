@@ -1,0 +1,5 @@
+interface:
+  display_name: "Standup"
+  short_description: "Generate a personal daily standup report."
+policy:
+  allow_implicit_invocation: false

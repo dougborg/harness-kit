@@ -1,5 +1,3 @@
 interface:
   display_name: "Documentation Writer"
-  short_description: "Run the documentation-writer workflow when explicitly requested."
-policy:
-  allow_implicit_invocation: false
+  short_description: "Write scannable, human-facing documentation."

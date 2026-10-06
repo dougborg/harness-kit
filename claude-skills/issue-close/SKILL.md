@@ -7,7 +7,6 @@ description: >-
 argument-hint: "<#> | supersede <closing#> <canonical#> | dedupe <dup#> <keeper#>"
 effort: low
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
-disable-model-invocation: true
 ---
 
 # /issue-close — Close an Issue with Context Preserved
