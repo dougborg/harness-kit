@@ -19,7 +19,7 @@ body:
     id: where
     attributes:
       label: Where
-      description: The file, skill or agent, and harness-kit version (from `.harness-lock.json`, or `unknown`).
+      description: The file, skill or agent, and harness-kit version (from `.harness-lock.json`); write `unknown` for any you don't know.
       placeholder: |
         - File: `skills/engineering/open-pr/SKILL.md`
         - Skill / agent: `open-pr`
@@ -36,8 +36,8 @@ body:
   - type: textarea
     id: repro
     attributes:
-      label: Repro
-      description: The smallest steps that show the problem.
+      label: Repro / suggested fix
+      description: The smallest steps that show the problem, and a fix if you have one.
       value: |
         1.
         2.

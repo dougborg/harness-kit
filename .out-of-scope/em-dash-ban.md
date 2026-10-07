@@ -10,4 +10,4 @@ file for no change in what an agent does.
 
 ## Prior requests
 
-- #111: considered while porting mattpocock/skills
+- #111: "epic: integrate mattpocock/skills" (its "Not adopting" list)
