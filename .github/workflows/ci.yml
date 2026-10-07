@@ -40,6 +40,9 @@ jobs:
       - name: Run poll-review decision tests
         run: ./scripts/test-poll-review.sh
 
+      - name: Run poll-ci decision tests
+        run: ./scripts/test-poll-ci.sh
+
       - name: Smoke-test Codex marketplace installation
         run: ./scripts/test-codex-plugin-install.sh
 
