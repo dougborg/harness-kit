@@ -63,7 +63,9 @@ instead. The harness-kit plugin ships a retro nudge, `scripts/shared/retro-nudge
 
 After a session that touched more than three files (unstaged, staged, or
 committed in the last four hours), it suggests the harness skill's retro mode
-to capture learnings before context is lost. Projects override it in
+to capture learnings before context is lost. Stop fires after every turn,
+so the script shows the nudge once per session, keyed on the hook input's
+`session_id`. Projects override it in
 `.claude/settings.local.json` only if they want different behavior.
 
 ## Hook Exit Code Safety
