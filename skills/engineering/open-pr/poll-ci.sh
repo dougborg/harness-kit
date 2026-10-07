@@ -3,8 +3,9 @@
 #
 # Usage: poll-ci.sh <pr-number> [timeout-seconds]
 # Exit 0: all checks passed
-# Exit 1: a check failed (prints failed check details)
-# Exit 2: timeout reached (checks still running — NON-terminal)
+# Exit 1: a check failed or was cancelled (prints failed check details)
+# Exit 2: timeout reached (checks still running or not started — NON-terminal)
+# Exit 3: error — the PR couldn't be read from GitHub
 #
 # Output contract: every terminal outcome prints a final line starting with
 # "CI RESULT:". While waiting, the script prints a "CI POLL:" heartbeat each
@@ -18,6 +19,8 @@
 #     (a queued run has no check entries yet, so `gh pr checks` alone misses
 #     it);
 #   - every status check the base branch's rules require has reported.
+# A transient API failure while polling counts as "not known yet", never as a
+# pass or a failure.
 #
 # Deliberately does not use `gh pr checks --watch`: --watch produces no
 # heartbeat and its output, truncated by an external timeout, is
@@ -35,20 +38,29 @@ interval="${POLL_CI_INTERVAL:-30}"
 fixtures="${POLL_CI_FIXTURE_DIR:-}"
 elapsed=0
 
+pr_head() {
+  gh pr view "$pr_number" --json headRefOid,baseRefName \
+    --jq '"\(.headRefOid) \(.baseRefName)"'
+}
+
 head_sha=""
-base=""
-required="[]"
 if [ -n "$fixtures" ]; then
   required=$(cat "$fixtures/required.json")
 else
-  read -r head_sha base < <(gh pr view "$pr_number" \
-    --json headRefOid,baseRefName --jq '"\(.headRefOid) \(.baseRefName)"')
-  # Required checks from the branch's effective rules (rulesets). A repo
-  # without rules, or a token that can't read them, yields an empty list.
-  required=$(gh api "repos/{owner}/{repo}/rules/branches/${base}" \
+  if ! pr_info=$(pr_head); then
+    echo "CI RESULT: ERROR for PR #${pr_number} — couldn't read the PR from GitHub (check the number and gh auth)" >&2
+    exit 3
+  fi
+  read -r head_sha base <<<"$pr_info"
+  # Required checks from the branch's effective rules (rulesets). A branch
+  # with no rules returns an empty list; a failed call means the gate is
+  # unknown, so say so rather than silently dropping it.
+  if ! required=$(gh api "repos/{owner}/{repo}/rules/branches/${base}" \
     --jq '[.[] | select(.type == "required_status_checks")
-           | .parameters.required_status_checks[].context]' 2>/dev/null ||
-    echo "[]")
+           | .parameters.required_status_checks[].context]'); then
+    echo "CI POLL: couldn't read ${base}'s branch rules; required checks are not enforced by this poll" >&2
+    required="[]"
+  fi
 fi
 
 checks_json() {
@@ -60,16 +72,22 @@ checks_json() {
   fi
 }
 
+# Prints the number of workflow runs for the head commit that haven't
+# finished; on an API failure, prints "?" so the poll keeps waiting.
 active_runs() {
   if [ -n "$fixtures" ]; then
     jq '[.[] | select(.status != "completed")] | length' "$fixtures/runs.json"
   else
-    gh run list --commit "$head_sha" --json status \
-      --jq '[.[] | select(.status != "completed")] | length'
+    gh run list --commit "$head_sha" --limit 100 --json status \
+      --jq '[.[] | select(.status != "completed")] | length' 2>/dev/null || echo "?"
   fi
 }
 
 while true; do
+  if [ -z "$fixtures" ] && pr_info=$(pr_head 2>/dev/null); then
+    read -r head_sha base <<<"$pr_info" # follow a push made during the poll
+  fi
+
   checks=$(checks_json)
   failed=$(jq -r '.[] | select(.bucket == "fail" or .bucket == "cancel") | .name' <<<"$checks")
   if [ -n "$failed" ]; then
@@ -84,13 +102,13 @@ while true; do
   missing=$(jq -rn --argjson req "$required" --argjson checks "$checks" \
     '[$req[] | select(. as $r | [$checks[].name] | index($r) | not)] | join(", ")')
 
-  if [ "$reported" -gt 0 ] && [ "$pending" -eq 0 ] && [ "$runs" -eq 0 ] && [ -z "$missing" ]; then
+  if [ "$reported" -gt 0 ] && [ "$pending" -eq 0 ] && [ "$runs" = 0 ] && [ -z "$missing" ]; then
     echo "CI RESULT: PASSED for PR #${pr_number} after ${elapsed}s — all checks green"
     exit 0
   fi
 
   if [ "$elapsed" -ge "$timeout" ]; then
-    echo "CI RESULT: TIMEOUT for PR #${pr_number} after ${elapsed}s — checks still running or not started, NOT complete; re-poll to get final state" >&2
+    echo "CI RESULT: TIMEOUT for PR #${pr_number} after ${elapsed}s — NOT complete: ${pending} pending, ${runs} run(s) queued or running, required checks not yet reported: ${missing:-none}. A required check that never reports may be skipped by path filters. Re-poll to get the final state." >&2
     exit 2
   fi
 
