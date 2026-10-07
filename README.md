@@ -36,6 +36,7 @@ packaging for both hosts.
 | `/to-tickets` | Split a spec into tracer-bullet sub-issues with blocking links |
 | `/standup` | Generate daily standup from git history |
 | `/agent-standup` | Reconcile ownership, handoffs, and merge order across agents and operators |
+| `/triage` | Move incoming issues through triage states to agent-ready briefs |
 | `/groom` | Backlog grooming: theme buckets, PR train, stale flags, gaps |
 | `/ui-review` | Accessibility and UX audit (WCAG 2.1 AA) |
 | `/svg-logo-designer` | Generate SVG logos |

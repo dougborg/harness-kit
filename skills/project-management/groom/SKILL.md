@@ -58,6 +58,9 @@ manager — run your survey process against the backlog, covering:
 3. Recommend a prioritized train of 5-10 PRs ordered by leverage, with ~2 sentences of rationale each covering user-visible value, effort (S/M/L), risk if deferred, and dependencies unblocked.
 4. Flag stale issues (>90 days inactive with no open PR), duplicates, and superseded issues, each with evidence and a disposition.
 5. Identify gaps — work the project should be tracking but isn't.
+6. Survey the shortcut ledger: call the Skill tool with "shortcut-ledger" and
+   report its totals, plus each marker whose trigger has plainly fired or that
+   has no trigger, as gap candidates.
 
 Your agent instructions define the output contract (top-line state, umbrella
 table, PR train, stale list, gaps). Cap the brief at ~1500 words.
@@ -68,7 +71,8 @@ End the brief with a short next-actions footer mapping recommendations to skills
 
 - Close stale/duplicate/superseded → `/issue-close` per issue
 - Split or merge tangled issues → `/issue-restructure`
-- File gap issues → `/issue-create` per gap
+- File gap issues, including fired or untriggered shortcuts → `/issue-create` per gap
+- Raw incoming issues awaiting evaluation → `/triage`
 - Start the train's first PR → normal feature flow, then `/open-pr`
 
 Do not execute any of these automatically.

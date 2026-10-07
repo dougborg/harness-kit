@@ -78,7 +78,7 @@ Identify what a developer does repeatedly:
 
 Adapt recommendations based on detected stack:
 
-- **GitHub used?** → Recommend: `project-manager` agent + `to-spec`, `to-tickets`, `groom`, `standup` skills
+- **GitHub used?** → Recommend: `project-manager` agent + `to-spec`, `to-tickets`, `triage`, `groom`, `standup` skills
 - **Multiple agents or operators?** → Recommend: `agent-standup` skill
 - **Frontend present?** → Recommend: design harness (`.impeccable.md` seed) + `ui-review` skill
 - **Preferred component library?** → Note target in `.impeccable.md` — do NOT encode existing design; let `/impeccable:init` guide new direction
@@ -221,7 +221,7 @@ For each, provide:
 Always recommend these universal skills:
 
 - `/to-spec` and `/to-tickets` — turn a design conversation into a spec issue, then into tracer-bullet sub-issues
-- `/issue-create`, `/groom` — file issues with real labels and duplicate search; prioritize the backlog
+- `/issue-create`, `/triage`, `/groom` — file issues with real labels and duplicate search; move incoming issues to agent-ready briefs; prioritize the backlog
 - `/commit` — quality gate + conventional commit
 - `/ui-review` — accessibility/UX audit (frontend projects)
 

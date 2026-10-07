@@ -1,0 +1,3 @@
+interface:
+  display_name: "Shortcut Ledger"
+  short_description: "List marked shortcuts, their ceilings, and revisit triggers."
