@@ -45,13 +45,9 @@ If it has drifted, stage it with the commit:
 git add uv.lock
 ```
 
-Tell the user each time you do this, for example:
-
-> Staging drifted `uv.lock` alongside this commit: pre-commit hooks that run
-> tools under `uv run` regenerate it, and an unstaged `uv.lock` makes
-> pre-commit's auto-stash/pop cycle conflict and abort the commit.
-
-The drift is legitimate and belongs in the commit; [uv-lock-drift.md](uv-lock-drift.md)
+Tell the user each time you do this: an unstaged `uv.lock` makes
+pre-commit's auto-stash/pop cycle conflict and abort the commit. The drift is
+legitimate and belongs in the commit; [uv-lock-drift.md](uv-lock-drift.md)
 explains the failure mode and why the lock drifts without dependency changes.
 
 Done when `uv.lock` shows no unstaged change, or the step does not apply.
@@ -103,9 +99,6 @@ Closes #NNN
 EOF
 )"
 ```
-
-A one-line message can go straight into `git commit -m "type(scope):
-description"`; use the HEREDOC for any multi-line body.
 
 If pre-commit aborts with "files were modified by this hook" and `uv.lock` is
 in the modified list, stage `uv.lock` (step 2), warn the user, and retry once
