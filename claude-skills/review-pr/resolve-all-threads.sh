@@ -19,17 +19,6 @@ PR_NUMBER="$2"
 OWNER="${REPO%%/*}"
 REPO_NAME="${REPO##*/}"
 
-# Resolve $0 through any symlinks — consuming skills reach this script via the
-# canonical shared-scripts directory,
-# so a naive dirname would look for its sibling in the wrong directory.
-src="$0"
-while [ -L "$src" ]; do
-  link_dir="$(cd -P "$(dirname "$src")" && pwd)"
-  src="$(readlink "$src")"
-  case "$src" in /*) ;; *) src="$link_dir/$src" ;; esac
-done
-SCRIPT_DIR="$(cd -P "$(dirname "$src")" && pwd)"
-
 # Fetch all unresolved thread IDs
 read -r -d '' query <<'GRAPHQL' || true
 query($owner: String!, $repo: String!, $number: Int!) {
@@ -56,11 +45,20 @@ if [ -z "$thread_ids" ]; then
   exit 0
 fi
 
-# Resolve each thread
+read -r -d '' mutation <<'GRAPHQL' || true
+mutation($threadId: ID!) {
+  resolveReviewThread(input: {threadId: $threadId}) {
+    thread { isResolved }
+  }
+}
+GRAPHQL
+
+# Resolve each thread; a failure's own error stays visible on stderr.
 resolved=0
 failed=0
 while IFS= read -r thread_id; do
-  if "$SCRIPT_DIR/resolve-thread.sh" "$thread_id" >/dev/null 2>&1; then
+  if gh api graphql -f query="$mutation" -f threadId="$thread_id" \
+    --jq '.data.resolveReviewThread.thread.isResolved' >/dev/null; then
     resolved=$((resolved + 1))
   else
     echo "Failed to resolve thread: $thread_id" >&2
