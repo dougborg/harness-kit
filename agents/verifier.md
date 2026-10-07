@@ -100,7 +100,9 @@ cannot fail passes for free.
 
 Flag as suspicious any new assertion over an aggregate (a size, count,
 bounding box, hash, or status code) with no such evidence: unrelated material
-can satisfy it while the feature is missing.
+can satisfy it while the feature is missing. A flagged assertion makes the
+result NOT READY. When the work adds or changes no tests, report this check
+as "none added".
 
 ### 6. Commit Quality
 

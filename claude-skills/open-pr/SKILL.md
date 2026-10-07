@@ -23,7 +23,8 @@ These hold for every step:
 - **Self-review every change yourself**; reviewers are a second reader, not
   the first.
 - **Every review finding gets an outcome:** fixed, deferred to a tracked
-  issue, or discussed with the reviewer. Review concerns are the point of
+  issue (searched for first, and added to an existing one when it already
+  covers the work), or discussed with the reviewer. Review concerns are the point of
   review, so "not blocking", "acceptable", or "good for future refinement" is
   not an outcome, and green CI or passing tests do not override a finding.
   Merge only when every comment is resolved.
@@ -95,7 +96,9 @@ debug code (`print()`, `console.log`, `TODO`/`FIXME` without an issue ref),
 and naming drift. Fix what you find and re-run verification. For each
 out-of-scope problem, call the Skill tool with "issue-create" before opening
 the PR: it searches the backlog first, and adding your findings to an
-existing issue beats filing a near-duplicate. Done when you have read the
+existing issue beats filing a near-duplicate. It shows the user each draft
+before posting, so the flow pauses there; a declined draft leaves the finding
+open, to fix or discuss. Done when you have read the
 whole diff and every finding is fixed, filed, or commented onto the issue
 that already tracks it.
 
