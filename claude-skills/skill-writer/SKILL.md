@@ -9,8 +9,8 @@ description: >-
   the allowed-tools vs tools frontmatter distinction, and harness-kit's own
   conventions (shared scripts, dual plugin registration and host-specific
   script paths). Use when creating a new skill or agent, editing an existing
-  one, or deciding whether something should be a skill, an agent, a script, or
-  nothing at all.
+  one, writing a pointer line in AGENTS.md or CLAUDE.md, or deciding whether
+  something should be a skill, an agent, a script, or nothing at all.
 allowed-tools: Glob, Grep, Read, Write, Edit
 ---
 
@@ -84,6 +84,24 @@ The real limits, and the only ones worth quoting:
 
 There is no prescribed section schema and no per-section token budget. Use the
 headings the content actually needs.
+
+## Context pointers
+
+A **context pointer** is an always-loaded line that names material outside
+the context and says when to reach for it: a skill's description, or an
+`AGENTS.md` / `CLAUDE.md` line naming a doc. Its wording, not its target,
+decides how reliably the agent reaches the material. When must-have material
+behind a pointer gets missed, sharpen the pointer first; inline the material
+only if that fails.
+
+A pointer states what the material is and lists its **branches**, the
+distinct cases that should send the agent there. It costs tokens on every
+turn, so prune it harder than any body:
+
+- Front-load the leading word; that is where the triggering happens.
+- One trigger per branch. Synonyms for one branch are that branch written
+  twice.
+- Cut anything the target already says about itself.
 
 ## Writing the body
 
@@ -253,6 +271,15 @@ SKILL.md is the navigation layer. When it outgrows ~500 lines, move depth into
 sibling files and link to them by name and purpose, so Claude can tell whether
 a file is worth opening.
 
+Decide what moves out by **branch**: keep inline what every run needs, and
+put behind a pointer what only some runs reach. Reference left inline buries
+the steps around it, so they get skipped at random. Push too much out and the
+agent misses material it needed. Whatever stays, **co-locate**: a concept's
+definition, rules, and caveats sit under one heading, not scattered through
+the file. A file too long even when every line is live (**sprawl**) thins the
+agent's attention; split it by branch, or by sequence when later steps tempt
+the agent to rush the current one.
+
 ```text
 skills/<area>/my-skill/
   SKILL.md          Navigation + the path most runs take
@@ -269,7 +296,9 @@ Two rules make this work:
 
 Reference docs an agent needs live in one skill (the `harness-builder`
 catalogs sit in the harness skill), and every skill that dispatches the agent
-passes their paths in its prompt.
+passes their paths in its prompt. Reference two user-invoked skills both need
+can live in neither, since neither can call the other: put it in a plain file
+outside the skill system that both point at.
 
 ## harness-kit conventions
 
@@ -341,4 +370,4 @@ Copyable skill and agent skeletons live in [templates.md](templates.md).
 - [skill-creator](https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md)
 - [GPT-5 prompting guide](https://developers.openai.com/cookbook/examples/gpt-5/gpt-5_prompting_guide)
 - [Agent Skills specification](https://agentskills.io/specification)
-- [mattpocock/skills `writing-for-agents`](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents) (MIT): completion criteria, leading words, negation, no-ops, and the invocation split; see `CREDITS.md`
+- [mattpocock/skills `writing-for-agents`](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents) (MIT): context pointers, completion criteria, leading words, negation, no-ops, splitting by branch, and the invocation split; see `CREDITS.md`
