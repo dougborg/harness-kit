@@ -39,17 +39,19 @@ run_case() {
 
 both='["Validate plugin","ShellCheck"]'
 green='[{"name":"Validate plugin","bucket":"pass"},{"name":"ShellCheck","bucket":"pass"},{"name":"CodeQL","bucket":"pass"}]'
-done_runs='[{"status":"completed"}]'
+done_runs='[{"name":"CI","status":"completed","createdAt":"2026-10-07T15:00:00Z"}]'
 
 run_case all-green "$green" "$done_runs" "$both" 0
 run_case check-failed '[{"name":"ShellCheck","bucket":"fail"}]' "$done_runs" '[]' 1
 run_case check-cancelled '[{"name":"ShellCheck","bucket":"cancel"}]' "$done_runs" '[]' 1
-run_case failed-while-queued '[{"name":"ShellCheck","bucket":"fail"}]' '[{"status":"queued"}]' '[]' 1
+run_case failed-while-queued '[{"name":"ShellCheck","bucket":"fail"}]' '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:00:00Z"}]' '[]' 1
 run_case check-pending '[{"name":"ShellCheck","bucket":"pending"},{"name":"CodeQL","bucket":"pass"}]' "$done_runs" '[]' 2
 # The #126 case: CodeQL done, the CI workflow run still queued with no checks.
-run_case run-queued '[{"name":"CodeQL","bucket":"pass"}]' '[{"status":"queued"},{"status":"completed"}]' '[]' 2
+run_case run-queued '[{"name":"CodeQL","bucket":"pass"}]' '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:00:00Z"},{"name":"CodeQL","status":"completed","createdAt":"2026-10-07T15:00:00Z"}]' '[]' 2
 run_case required-missing '[{"name":"CodeQL","bucket":"pass"}]' "$done_runs" "$both" 2
 run_case required-partial '[{"name":"ShellCheck","bucket":"pass"}]' "$done_runs" "$both" 2
+# An orphaned older run superseded by a finished newer run of the same workflow.
+run_case superseded-run "$green" '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:07:28Z"},{"name":"CI","status":"completed","createdAt":"2026-10-07T15:45:14Z"}]' "$both" 0
 run_case nothing-reported '[]' '[]' '[]' 2
 run_case skipped-counts '[{"name":"Validate plugin","bucket":"pass"},{"name":"ShellCheck","bucket":"skipping"}]' "$done_runs" "$both" 0
 
