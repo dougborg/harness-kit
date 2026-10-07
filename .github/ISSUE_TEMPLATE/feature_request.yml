@@ -1,28 +1,51 @@
-name: Feature Request
-description: Suggest a new skill, agent, or improvement
+name: Idea or skill request
+description: A change to a skill or agent, or a new one, ideally grounded in a session where it fell short.
 labels: [enhancement]
 body:
-  - type: textarea
-    id: description
+  - type: markdown
     attributes:
-      label: Description
-      description: What would you like harness-kit to do?
-    validations:
-      required: true
+      value: |
+        Read [`SCOPE.md`](https://github.com/dougborg/harness-kit/blob/main/SCOPE.md) and check [`.out-of-scope/`](https://github.com/dougborg/harness-kit/tree/main/.out-of-scope) for an earlier decision on the same idea. From a project that uses harness-kit, the `harness-issue` skill files this for you.
 
-  - type: textarea
-    id: use-case
+  - type: checkboxes
+    id: read-scope
     attributes:
-      label: Use case
-      description: What problem does this solve? When would you use it?
+      label: Before filing
+      options:
+        - label: I've read `SCOPE.md` and checked `.out-of-scope/`, and neither covers this.
+          required: true
 
   - type: dropdown
     id: type
     attributes:
       label: Type
       options:
+        - Change to an existing skill or agent
         - New skill
         - New agent
-        - Improvement to existing skill/agent
-        - Meta-harness enhancement
+        - Meta-harness (audit, bootstrap, update, retro, hoist)
         - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: The change you want, as concretely as you can.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: The session where this would have helped, what happened there, and why an existing skill doesn't cover it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sketch
+    attributes:
+      label: Suggested change
+      description: A sketch of the fix or the new skill's steps, if you have one.

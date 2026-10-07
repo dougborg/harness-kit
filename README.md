@@ -3,7 +3,8 @@
 A self-improving agent harness for
 [Claude Code](https://code.claude.com) and
 [Codex](https://developers.openai.com/codex), distributed with native plugin
-packaging for both hosts.
+packaging for both hosts. [`SCOPE.md`](SCOPE.md) says what it takes on and
+what it has already decided against.
 
 ## What's included
 
