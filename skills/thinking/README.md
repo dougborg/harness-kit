@@ -18,3 +18,4 @@ You can type them, and the agent also reaches for them when a task fits.
 
 - **[domain-modeling](./domain-modeling/SKILL.md)**: Sharpen domain terms and record them in GLOSSARY.md and ADRs.
 - **[grilling](./grilling/SKILL.md)**: Stress-test a plan one round of questions at a time.
+- **[research](./research/SKILL.md)**: Research a question against primary sources, with citations.

@@ -43,6 +43,9 @@ jobs:
       - name: Run poll-ci decision tests
         run: ./scripts/test-poll-ci.sh
 
+      - name: Run wayfinder frontier test
+        run: ./scripts/test-wayfinder-frontier.sh
+
       - name: Smoke-test Codex marketplace installation
         run: ./scripts/test-codex-plugin-install.sh
 
