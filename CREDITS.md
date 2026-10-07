@@ -36,6 +36,9 @@ License. Adapted material so far:
   rejected ideas.
 - `teach`, with its mission, resources, and learning-record formats.
 - `loop-me` (experimental), from the in-progress upstream skill.
+- The optional engineering skills `prototype` (logic and UI branches),
+  `improve-codebase-architecture` with its HTML report format, and `wizard`
+  with its bash wizard template.
 - The `pr-body` skill, from `pr`. Its menu of summary visuals is credited
   there to Dex Horthy's `show-me` skill
   ([humanlayer/skills](https://github.com/humanlayer/skills)).

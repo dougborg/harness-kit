@@ -76,7 +76,8 @@ Question`), sized to one session, labelled `wayfinder:<type>`:
   ticket.
 - **prototype** (with a person): a cheap, rough artifact to react to (an
   outline, a stub, a throwaway page) when "how should it look or behave" is
-  the question. Link the artifact from the ticket.
+  the question. For a state model or a screen, call the Skill tool with
+  "prototype". Link the artifact from the ticket.
 - **task** (alone or with a person): work that must happen before a decision
   can be made, such as signing up for a service to judge its API. It is the
   one type that does rather than decides; its answer records what was done

@@ -40,6 +40,7 @@
     "./claude-skills/harness-issue",
     "./claude-skills/implement",
     "./claude-skills/implement-spec",
+    "./claude-skills/improve-codebase-architecture",
     "./claude-skills/issue-close",
     "./claude-skills/issue-create",
     "./claude-skills/issue-restructure",
@@ -49,6 +50,7 @@
     "./claude-skills/open-pr",
     "./claude-skills/pr-body",
     "./claude-skills/pr-comments",
+    "./claude-skills/prototype",
     "./claude-skills/rebase",
     "./claude-skills/research",
     "./claude-skills/review-pr",
@@ -65,6 +67,7 @@
     "./claude-skills/triage",
     "./claude-skills/ui-review",
     "./claude-skills/wait-what",
-    "./claude-skills/wayfinder"
+    "./claude-skills/wayfinder",
+    "./claude-skills/wizard"
   ]
 }
