@@ -55,12 +55,30 @@ done
 # it to Codex, between output-style markers.
 styles=$(mktemp -d)
 trap 'rm -rf "$staging" "$styles"' EXIT
-write_style() { # write_style <skill> <style-name> <description>
+# write_style <skill> <style-name> <description>; the description is written
+# inside YAML double quotes, so it can't contain " or \.
+write_style() {
+  local sources source body
+  sources=("$repo_root"/skills/*/"$1"/SKILL.md)
+  if [ "${#sources[@]}" -ne 1 ] || [ ! -f "${sources[0]}" ]; then
+    echo "$1: output style source must be exactly one skills/<area>/$1/SKILL.md" >&2
+    exit 1
+  fi
+  source=${sources[0]}
+  local unsafe='["\\]'
+  if [[ "$3" =~ $unsafe ]]; then
+    echo "$2: the description can't contain a double quote or a backslash" >&2
+    exit 1
+  fi
+  body=$(sed -n '/^<!-- output-style:begin -->$/,/^<!-- output-style:end -->$/p' "$source" | sed '1d;$d')
+  if [ -z "$body" ]; then
+    echo "${source#"$repo_root"/}: no text between the output-style markers" >&2
+    exit 1
+  fi
   {
     printf -- '---\nname: %s\ndescription: "%s"\nkeep-coding-instructions: true\n---\n\n' "$2" "$3"
-    printf '<!-- Generated from skills/*/%s/SKILL.md by scripts/generate-claude-skills.sh; edit that. -->\n\n' "$1"
-    sed -n '/^<!-- output-style:begin -->$/,/^<!-- output-style:end -->$/p' "$repo_root"/skills/*/"$1"/SKILL.md |
-      sed '1d;$d'
+    printf '<!-- Generated from %s by scripts/generate-claude-skills.sh; edit that. -->\n\n' "${source#"$repo_root"/}"
+    printf '%s\n' "$body"
   } >"$styles/$2.md"
 }
 write_style adhd-mode adhd "Action-first responses for a reader with ADHD: next step first, numbered steps, progress restated, tangents held back."

@@ -108,7 +108,9 @@ turn, so prune it harder than any body:
 The house style is short plain prose. These levers decide whether an agent
 takes the same path through a skill every run.
 
-- **Give each step a completion criterion.** End every step on the condition
+- **Give each step a completion criterion.** (A mode skill, which shapes
+  every response until switched off, has no steps; its exit phrase is its
+  criterion.) End every step on the condition
   that tells the agent it is done ("done when every captured value has a
   destination"). A vague bound ("once you understand the code") invites the
   agent to finish early, pulled by the steps it can see ahead. Sharpen the
