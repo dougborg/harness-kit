@@ -122,8 +122,11 @@ for agent in sorted((root / ".codex/agents").glob("*.toml")):
 
 # A script that calls a sibling through $SCRIPT_DIR needs that file beside it
 # in every copy: the Claude projection copies only the helpers a skill names,
-# so a sibling call can break there without failing anywhere else.
-sibling_call = re.compile(r'\$\{?SCRIPT_DIR\}?/([A-Za-z0-9._-]+\.sh)')
+# so a sibling call can break there without failing anywhere else. The check
+# relies on the house convention of naming the script's own directory
+# SCRIPT_DIR; it matches "$SCRIPT_DIR/x.sh", "${SCRIPT_DIR}/x.sh", and
+# "$SCRIPT_DIR"/x.sh.
+sibling_call = re.compile(r'\$\{?SCRIPT_DIR\}?"?/([A-Za-z0-9._-]+\.sh)')
 missing = sorted(
     f"{script.relative_to(root)} calls {name}"
     for top in ("skills", "claude-skills")
