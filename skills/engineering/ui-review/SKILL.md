@@ -1,122 +1,48 @@
 ---
 name: ui-review
 description: >-
-  Audits web UI for accessibility and UX against WCAG 2.1 AA, reporting
-  violations as `[CRITICAL|IMPORTANT|MINOR] file:line`.
-when_to_use: >-
-  When the user asks about accessibility, a11y, WCAG, screen readers, keyboard
-  navigation, color contrast, or wants a UX pass over components.
+  Audits web UI components for accessibility and UX against WCAG 2.1 AA,
+  reporting each violation as `[CRITICAL|IMPORTANT|MINOR] file:line` with a
+  specific fix. Use when the user asks about accessibility, a11y, WCAG, screen
+  readers, keyboard navigation, or color contrast, or wants a UX pass over
+  components.
 allowed-tools: Read, Grep, Glob
 ---
 
-# /ui-review — Accessibility & UX Audit
+# UI Review
 
-Accessibility and UX audit for web components. Reports violations as `[CRITICAL|IMPORTANT|MINOR] file:line` based on WCAG 2.1 AA.
+Audit web components (HTML, CSS, or framework code) against WCAG 2.1 AA and
+report each violation with its severity, location, and fix.
 
-## PURPOSE
+Three rules carry the most weight:
 
-Audit UI components for accessibility and UX compliance. Report violations with severity and fix guidance.
+- **Every interactive element is keyboard-accessible**: anything clickable is
+  reachable with Tab and activates with Enter or Space.
+- **Focus rings stay visible**: keep a `:focus-visible` outline such as
+  `outline: 2px solid`; `outline: none` hides focus from keyboard users.
+- **Color is never the only signal**: status, errors, and links also carry
+  text or an icon.
 
-## CRITICAL
+## 1. Check the components
 
-- **Every interactive element must be keyboard-accessible** — if it can be clicked, it must be reachable via Tab and activatable via Enter/Space.
-- **Never suppress focus rings** — `:focus-visible` outline must always be visible. Use `outline: 2px solid`, never `outline: none`.
-- **Color must never be the sole indicator** — status, errors, and links need text/icon in addition to color.
-
-## ASSUMES
-
-- Reviewing web/UI components with HTML, CSS, or framework-based code
-- Violations are reported with file:line references
-- Severity levels matter: CRITICAL blocks release, IMPORTANT needed before PR, MINOR nice-to-have
-
-## STANDARD PATH
-
-### 1. Run Accessibility Checklist
-
-Review against checklist (DETAIL: Full Checklist). Check:
+Read the components in scope and check each against
+[checklist.md](checklist.md), which covers:
 
 - Forms: labels, validation, autocomplete
-- Keyboard navigation: tab order, focus visible
-- Color & contrast: WCAG AA ratios
+- Keyboard navigation: tab order, visible focus
+- Color and contrast: WCAG AA ratios
 - Semantic HTML: headings, lists, navigation
-- Images/icons: alt text, aria-hidden
+- Images and icons: alt text, `aria-hidden`
 - Loading states: no layout shift, announcements
-- Motion: prefers-reduced-motion, transitions
+- Motion: `prefers-reduced-motion`, transitions
 
-### 2. Report Findings
+Done when every component in scope has been checked against every checklist
+category.
 
-For each violation:
+## 2. Report
 
-```text
-[SEVERITY] — file:line
-Rule: [rule name]
-Issue: [what is wrong]
-Fix: [specific code change]
-```
-
-### 3. Summary
-
-Count by severity. Verdict: Ready for PR (yes/no).
-
-## EDGE CASES
-
-- [Full checklist] — read DETAIL: Full Checklist for complete list
-- [Specific violation] — read DETAIL sections for each category
-
----
-
-## DETAIL: Full Checklist
-
-### Forms (CRITICAL)
-
-- [ ] Every input has associated `<label>` via `htmlFor`/`id`
-- [ ] Error messages use `role="alert"` and `aria-describedby`
-- [ ] Required fields have `required` attribute AND visual indicator
-- [ ] `aria-invalid="true"` on inputs with errors
-- [ ] Submit button disabled during pending state
-- [ ] `autocomplete` on email, name, tel fields
-
-### Keyboard Navigation (CRITICAL)
-
-- [ ] All interactive elements reachable via Tab
-- [ ] Focus order is logical (top to bottom, left to right)
-- [ ] Modals trap focus while open
-- [ ] `:focus-visible` ring visible — never suppressed
-
-### Color & Contrast (CRITICAL)
-
-- [ ] Body text contrast ratio meets WCAG AA (4.5:1 normal, 3:1 large)
-- [ ] Links not color-alone — must have underline or icon
-- [ ] Error states use red + icon/text, not color alone
-
-### Semantic HTML (IMPORTANT)
-
-- [ ] One `<h1>` per page, logical heading hierarchy
-- [ ] Lists use `<ul>`/`<ol>`, not styled divs
-- [ ] Navigation uses `<nav aria-label="...">`
-- [ ] Data tables use `<table>`, `<th scope="col">`, `<caption>`
-
-### Images & Icons (IMPORTANT)
-
-- [ ] Decorative SVGs have `aria-hidden="true"`
-- [ ] Functional SVGs have `aria-label`
-- [ ] No `<img>` without `alt` attribute
-
-### Loading States (IMPORTANT)
-
-- [ ] Loading skeletons match replaced content shape
-- [ ] No layout shift when content loads
-- [ ] Async operations announce via `aria-live="polite"` or toast
-
-### Motion (IMPORTANT)
-
-- [ ] `prefers-reduced-motion` respected
-- [ ] Hover transitions use `transition-colors` (not `transition-all`)
-- [ ] Modal entrance max 300ms
-
----
-
-## Output Format
+Give each violation a severity: **CRITICAL** blocks release, **IMPORTANT** is
+needed before the PR, **MINOR** is nice to have.
 
 ```text
 [SEVERITY] — file:line
@@ -126,3 +52,6 @@ Fix: [specific code change]
 
 Summary: N critical, M important, P minor. Ready: [YES|NO]
 ```
+
+Done when every violation has a `file:line` and a specific fix, and the
+summary gives the counts by severity and a Ready-for-PR verdict.

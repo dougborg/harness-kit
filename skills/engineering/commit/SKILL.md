@@ -1,76 +1,62 @@
 ---
 name: commit
 description: >-
-  Creates conventional commits with quality gates — runs the project's
-  verification command, stages intentionally, checks for lockfile drift, and
-  writes the message. Owns commit mechanics for the PR workflow skills.
-when_to_use: >-
-  When the user asks to commit, stage, or write a commit message; when another
-  skill (/open-pr, /review-pr) needs the commit mechanics or the uv.lock drift
-  check.
+  Creates conventional commits with quality gates — stages intentionally,
+  checks for uv.lock drift, runs the project's verification command, and
+  writes the message. Owns commit mechanics for the PR workflow skills. Use
+  when the user asks to commit, stage, or write a commit message, and when
+  another skill (open-pr, review-pr) needs the commit mechanics or the uv.lock
+  drift check.
 allowed-tools: Bash(git add*), Bash(git commit*), Bash(git diff*), Bash(git status*), Bash(<shared-scripts-dir>/discover-verification-cmd.sh*), Read
 ---
 
-# /commit — Quality-Gated Conventional Commits
+# Commit
 
-Create conventional commits with automatic validation and quality gates.
+Stage on purpose, verify, and commit with a conventional message. The steps
+are exact because staging and pre-commit hooks fail in quiet ways.
 
-## PURPOSE
-
-Commit changes reliably with validation checks and consistent messaging.
-
-## CRITICAL
-
-- **Never commit secrets** — Run `git diff --cached` before committing. No hardcoded API keys, passwords, credentials, or tokens.
-- **Always validate before committing** — Project verification command must pass. No commits that break tests or linting.
-- **Message must follow conventional format** — `type(scope): description`. Malformed messages create merge and CI problems downstream.
-- **Stage specific files** — Never use `git add -A` or `git add .` blindly. Review `git status` and stage intentionally.
-
-## ASSUMES
-
-- You're in a git repository with a verification command available
-- You can identify which files should be committed (no accidental includes)
-- You know the type of change: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`
-
-## STANDARD PATH
-
-### 1. Stage Changes
-
-Review and stage files intentionally:
+## 1. Stage intentionally
 
 ```bash
-git status                          # See what changed
-git add <file1> <file2> ...         # Stage specific files
-git diff --cached                   # Review staged changes
+git status                     # see what changed
+git add <file1> <file2> ...    # stage the files this commit is about
+git diff --cached              # review exactly what will be committed
 ```
 
-**Never:** `git add -A` or `git add .` — stage intentionally.
+Name each file rather than running `git add -A` or `git add .`, so stray
+files stay out. Keep unrelated changes in separate commits. Read the staged
+diff for secrets: API keys, passwords, credentials, and tokens stay out of
+the commit.
 
-### 2. Auto-Stage Drifted uv.lock (Python+uv Projects Only)
+Done when `git diff --cached` shows only the intended change and no secrets.
 
-**Skip this step unless** both `pyproject.toml` and `uv.lock` exist (Python+uv stack).
+## 2. Stage a drifted uv.lock (Python + uv only)
 
-After staging your intended files, check whether `uv.lock` has unstaged changes:
+Skip this step unless both `pyproject.toml` and `uv.lock` exist. After
+staging, check for unstaged drift:
 
 ```bash
 git status --porcelain -- uv.lock   # " M" or "MM" = unstaged drift
 ```
 
-If it does, stage it alongside the commit:
+If it has drifted, stage it with the commit:
 
 ```bash
 git add uv.lock
 ```
 
-**Always warn the user when you do this**, e.g.:
+Tell the user each time you do this, for example:
 
 > Staging drifted `uv.lock` alongside this commit: pre-commit hooks that run
 > tools under `uv run` regenerate it, and an unstaged `uv.lock` makes
 > pre-commit's auto-stash/pop cycle conflict and abort the commit.
 
-Then proceed. See DETAIL: uv.lock Drift for the failure mode this prevents.
+The drift is legitimate and belongs in the commit; [uv-lock-drift.md](uv-lock-drift.md)
+explains the failure mode and why the lock drifts without dependency changes.
 
-### 3. Run Project Validation
+Done when `uv.lock` shows no unstaged change, or the step does not apply.
+
+## 3. Run the project's verification
 
 Discover the verification command, then run what it prints as a **separate**
 Bash call:
@@ -79,34 +65,32 @@ Bash call:
 <shared-scripts-dir>/discover-verification-cmd.sh
 ```
 
-Do not pipe the discovery into `eval` in the same call — a command containing
-`eval` cannot be statically analyzed, so it falls outside this skill's
-`allowed-tools` and prompts for permission every time.
+Keep the discovery and the run in separate calls rather than piping into
+`eval`: a command containing `eval` cannot be statically analyzed, so it falls
+outside this skill's `allowed-tools` and prompts for permission every time.
 
-**ALL checks must pass.** No commits that break validation.
+Done when every check passes. A commit that breaks tests or linting waits
+until they are fixed.
 
-### 4. Write Commit Message
+## 4. Write the message
 
-Format: `type(scope): description`
+Format: `type(scope): description`, for example `feat(auth): add OAuth2 login
+flow`. A malformed message causes merge and CI problems downstream.
 
-Example:
+- **Type**: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`, and rarely
+  `style` or `perf`.
+- **Scope**: optional; the area of change in the project's own terms. Omit it
+  for project-wide changes.
+- **Description**: imperative mood, no trailing period, 50 characters at most
+  (aim for about 30), specific.
+- **Body**: optional; explains why, wraps at 72 characters, sits after a blank
+  line, and links issues (`Closes #NNN`).
 
-```text
-feat(auth): add OAuth2 login flow
-```
+[message-format.md](message-format.md) has the types table and good and bad
+examples. Done when the subject matches the format and says specifically
+what changed.
 
-See DETAIL: Message Format for all types and examples.
-
-### 5. Create Commit
-
-```bash
-git commit -m "type(scope): description
-
-Optional detailed explanation here.
-Mention related issues: #123, closes #456."
-```
-
-For complex messages, use HEREDOC:
+## 5. Create the commit
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -120,202 +104,23 @@ EOF
 )"
 ```
 
-## EDGE CASES
+A one-line message can go straight into `git commit -m "type(scope):
+description"`; use the HEREDOC for any multi-line body.
 
-- [Complex commit messages] — Read DETAIL: Message Format (when to use HEREDOC, multi-line bodies)
-- [Large changes spanning files] — Read DETAIL: Staging Multiple Files (review each category before committing)
-- [Partial file commits] — Read DETAIL: Staging Hunks (commit part of a file)
-- [Fixing mistakes] — Read DETAIL: Fixing Commit Mistakes (amend, reset, rebase)
-- [Pre-commit aborts with "files were modified by this hook" + uv.lock] — Read DETAIL: uv.lock Drift (stage uv.lock and retry once)
+If pre-commit aborts with "files were modified by this hook" and `uv.lock` is
+in the modified list, stage `uv.lock` (step 2), warn the user, and retry once
+with the same message.
 
----
+Done when `git status` shows the commit landed and nothing intended is left
+unstaged.
 
-## DETAIL: Message Format
+## When the commit needs more
 
-### Conventional Commit Types
+Read [staging-and-fixes.md](staging-and-fixes.md) to stage a large change by
+category, commit part of a file, or undo or amend a commit.
 
-| Type | Use Case | Example |
-| --- | --- | --- |
-| `feat` | New feature or capability | `feat(auth): add two-factor authentication` |
-| `fix` | Bug fix | `fix(api): handle null responses from upstream` |
-| `refactor` | Code restructuring (no behavior change) | `refactor: extract validation into utility` |
-| `docs` | Documentation updates | `docs: clarify API rate limits in README` |
-| `chore` | Maintenance, dependencies, build | `chore: upgrade prettier to latest` |
-| `test` | Test additions or fixes | `test: add edge case coverage for date parsing` |
-| `style` | Formatting, missing semicolons (rarely used) | N/A |
-| `perf` | Performance improvements (rarely used) | `perf: use memoization for expensive calculation` |
+## Related
 
-### Scope
-
-Optional, indicates area of change:
-
-- Use project naming conventions: `auth`, `api`, `ui`, `database`, etc.
-- Omit for project-wide changes
-- Examples: `feat(keyboard): add macro support`, `fix: resolve memory leak`
-
-### Description
-
-- Imperative mood: "add feature" not "added feature" or "adds feature"
-- No period at end
-- ≤50 characters (aim for ~30)
-- Specific: "add password reset flow" not "fix auth stuff"
-
-### Body (Optional)
-
-- Explain **why**, not **what** (code shows the what)
-- Wrap at 72 characters
-- Separated from subject by blank line
-- Link to issues: `Closes #NNN`, `Fixes #NNN`, `Relates to #MMM`
-
-### Example: Good Commit
-
-```text
-feat(keyboard): add macro recording and playback
-
-Users can now record key sequences and replay them with a hotkey.
-This addresses frequent requests for repetitive key patterns.
-
-Macro storage uses ~/.config/daskeyboard/macros.json for
-persistence across sessions.
-
-Testing: Added 12 test cases covering:
-- Basic record/playback
-- Edge cases (empty macros, special keys)
-- Storage persistence
-
-Closes #234
-```
-
-### Example: Bad Commit
-
-```text
-fix stuff                           ← Too vague
-feat: add oauth                     ← Missing scope, too brief
-docs: update                        ← What did you update?
-refactor(everything): big cleanup   ← Scope "everything" is suspicious
-```
-
----
-
-## DETAIL: Staging Multiple Files
-
-When committing changes across many files:
-
-### Review by Category
-
-```bash
-git status | grep -E "modified|new"     # See all changes
-git diff --stat                         # Summary by file
-
-# Stage by category
-git add programs/zsh.nix programs/vim.nix   # Shell config
-git add docs/*.md                           # Documentation
-git diff --cached                           # Review staged
-git commit -m "..."
-```
-
-### Don't Mix Unrelated Changes
-
-Each commit should be coherent:
-
-❌ **Bad**: Single commit with shell config, docs, and bug fix
-✅ **Good**: Three separate commits, one for each type of change
-
-This makes history clearer and simplifies reverting if needed.
-
----
-
-## DETAIL: Staging Hunks
-
-Commit part of a file (not all changes):
-
-```bash
-git add --patch <file>              # Interactive hunk selection
-# Review each hunk, stage with 'y', skip with 'n'
-
-git diff --cached                   # Review staged hunks
-git commit -m "feat: related change"
-```
-
-Use when:
-
-- Multiple unrelated changes in one file
-- You want to split into multiple commits
-- You want to exclude debugging code you accidentally added
-
----
-
-## DETAIL: Fixing Commit Mistakes
-
-### Undo Last Commit (Keep Changes)
-
-```bash
-git reset --soft HEAD~1             # Undo commit, keep staged
-git reset HEAD                       # Unstage all
-# Now fix and re-commit
-```
-
-### Amend Last Commit (Not Yet Pushed)
-
-```bash
-git add <fixed-files>
-git commit --amend                  # Amend with new changes
-# Or: git commit --amend --no-edit   (keep message)
-```
-
-**Never amend commits already pushed.** Use a new commit instead.
-
-### Reset to Before Last Commit
-
-```bash
-git reset --hard HEAD~1             # Discard all changes in last commit
-```
-
-**Use with caution** — this is destructive.
-
----
-
-## DETAIL: uv.lock Drift
-
-### The Failure Mode
-
-In Python+uv projects with pre-commit, an unstaged `uv.lock` triggers an
-auto-stash race that aborts the commit:
-
-1. Pre-commit auto-stashes unstaged changes (including the unstaged `uv.lock` state)
-2. A hook runs a tool under `uv run` (e.g., pytest), which re-syncs `uv.lock`
-3. Pre-commit pops the stash — the stashed `uv.lock` conflicts with the re-synced one
-4. Pre-commit reports "files were modified by this hook" and the commit aborts
-
-Nothing was wrong with the staged content — the abort is purely the stash/pop
-conflict. Staging `uv.lock` before committing eliminates the race.
-
-### Why uv.lock Drifts Without You Touching Dependencies
-
-- A sibling-package release on the base branch bumped a workspace version
-- `uv run` / `uv sync` re-resolved after a `pyproject.toml` change elsewhere
-- A different lockfile revision landed via merge or rebase
-
-The drift is legitimate and belongs in the commit — hiding it just re-triggers
-the race on the next commit.
-
-### Recovery (If the Commit Already Aborted)
-
-If you skipped the pre-flight check and hit the failure:
-
-```bash
-git status --porcelain -- uv.lock   # confirm uv.lock is in the modified list
-git add uv.lock
-git commit ...                      # retry once with the same message
-```
-
-Warn the user that `uv.lock` was staged, same as in the standard path.
-
----
-
-## RELATED
-
-- `/review-pr` — Review pull requests
-- `/open-pr` — Open PR with validation
-- `/rollback` — Recover from failed changes
-- [Conventional Commits Spec](https://www.conventionalcommits.org/)
+- `/review-pr`: review pull requests.
+- `/open-pr`: open a PR with validation.
+- [Conventional Commits spec](https://www.conventionalcommits.org/)
