@@ -87,9 +87,9 @@ linked from the ticket, not pasted in.
 
 Blocking uses GitHub's native links. A ticket is **unblocked** when every
 blocker is closed; the **frontier** is the open, unblocked, unclaimed tickets:
-`<shared-scripts-dir>/sub-issue-frontier.sh <map>`. A session **claims** a ticket by assigning it
-(`gh issue edit <n> --add-assignee @me`) before any other work, so parallel
-sessions skip it. Assigning never fails when someone else is already there,
+`<shared-scripts-dir>/sub-issue-frontier.sh <map>`. A session **claims** a
+ticket by assigning it (`gh issue edit <n> --add-assignee @me`) before any
+other work, so parallel sessions skip it. Assigning never fails when someone else is already there,
 so re-read the assignees after claiming; if anyone else is on it, remove
 yourself and take the next frontier ticket. A ticket still assigned to you
 from an earlier session is yours to resume first.
@@ -134,8 +134,8 @@ and its tickets exist and the frontier is reported.
 The user brings a map. Resolve one ticket per session (research tickets
 excepted).
 
-1. Read the map: the low-resolution view, not every ticket body. Run
-   `sub-issue-frontier.sh <map>` for its tickets.
+1. Read the map: the low-resolution view, not every ticket body. List its tickets
+   with `<shared-scripts-dir>/sub-issue-frontier.sh <map>`.
 2. Choose a ticket: your own unfinished claim first, then the one the user
    named, then the first on the frontier. Claim it and confirm the claim held.
 3. Resolve it, reading related tickets as needed and calling the skills the

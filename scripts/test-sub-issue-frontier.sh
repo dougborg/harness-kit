@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regression test for scripts/shared/sub-issue-frontier.sh, using a
-# canned GraphQL response (WAYFINDER_FIXTURE) instead of the live API.
+# canned GraphQL response (FRONTIER_FIXTURE) instead of the live API.
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -34,7 +34,7 @@ fail=0
 expect() { # expect <name> <fixture-json> <want>
   local got
   printf '%s' "$2" >"$scratch/case.json"
-  got=$(WAYFINDER_FIXTURE="$scratch/case.json" "$script" 1)
+  got=$(FRONTIER_FIXTURE="$scratch/case.json" "$script" 1)
   if [ "$got" = "$3" ]; then
     echo "PASS: $1"
   else
@@ -45,7 +45,7 @@ expect() { # expect <name> <fixture-json> <want>
 }
 
 expect "frontier, claimed, and blocked groups" "$(cat "$scratch/map.json")" "$want"
-expect "map with no sub-issues" \
+expect "parent with no sub-issues" \
   '{"data":{"repository":{"issue":{"subIssues":{"nodes":[]}}}}}' \
   'No sub-issues: this issue has no tickets yet.'
 expect "empty groups print (none)" \
