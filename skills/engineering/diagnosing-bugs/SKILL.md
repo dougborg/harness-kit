@@ -116,6 +116,11 @@ Done when one hypothesis is confirmed by a probe and each of the others is
 ruled out by one, or the evidence sends you back to Phase 3 with new
 hypotheses.
 
+Watch for a spiral: after three rounds of "still broken", stop changing code.
+Name the assumption most likely to be wrong (the bug is where you think, the
+loop tests what you think, the build is the one you changed), and ask the user
+one diagnostic question before the next change.
+
 ## Phase 5: Fix at the root, with a regression test
 
 A report names a symptom. Before editing, list every caller of the function
