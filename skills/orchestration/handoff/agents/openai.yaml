@@ -1,0 +1,5 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Write a handoff document for another session, host, or person."
+policy:
+  allow_implicit_invocation: false

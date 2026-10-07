@@ -67,6 +67,14 @@ for area in {skill.parent for skill in skills}:
         gated = "allow_implicit_invocation: false" in (area / name / "agents/openai.yaml").read_text()
         want = "User-invoked" if gated and name not in claude_only else "Model-invoked"
         assert section == want, f"{readme}: {name} belongs under '## {want}'"
+# The ask-harness router must name every skill, so it never sends people to a
+# skill that's gone or leaves a new one out.
+router = (root / "skills/meta/ask-harness/SKILL.md").read_text()
+unrouted = sorted(skill.name for skill in skills
+                  if skill.name != "ask-harness" and f"`{skill.name}`" not in router
+                  and f"`/{skill.name}`" not in router)
+assert not unrouted, f"skills/meta/ask-harness/SKILL.md doesn't mention: {unrouted}"
+
 names = [skill.name for skill in skills]
 duplicates = sorted({name for name in names if names.count(name) > 1})
 assert not duplicates, f"skill names must be unique across areas: {duplicates}"

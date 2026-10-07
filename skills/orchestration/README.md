@@ -6,6 +6,7 @@ Coordinating several agents and sessions: parallel implementation, shared-work s
 
 Run only when you type them.
 
+- **[handoff](./handoff/SKILL.md)**: Write a handoff document for another session, host, or person.
 - **[implement-spec](./implement-spec/SKILL.md)**: Build a spec's tickets in parallel onto one integration branch.
 
 ## Model-invoked

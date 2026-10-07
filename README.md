@@ -20,6 +20,8 @@ packaging for both hosts.
 
 | Skill | Purpose |
 | --- | --- |
+| `/ask-harness` | Find which skill or flow fits your situation |
+| `/handoff` | Write a handoff document for another session, host, or person |
 | `/harness` | Meta-harness management |
 | `/grill-me` | Relentless interview to sharpen a plan, a round of questions at a time |
 | `/grill-with-docs` | The same interview, also maintaining `GLOSSARY.md` and ADRs |
