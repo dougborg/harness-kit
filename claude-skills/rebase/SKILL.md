@@ -42,14 +42,17 @@ uncommitted work if there is any:
 target=$(${CLAUDE_SKILL_DIR}/preflight.sh "${ARGUMENTS:-origin/main}")
 ```
 
-It exits 1 on a primary branch or a shared published branch. On a shared
-branch it names the other authors: stop and ask the user whether to rebase
-anyway (they should confirm with those collaborators), merge instead, or
-abort. Only on an explicit yes, rerun it as `preflight.sh --allow-shared
-<target>`. It prints the target on stdout and, if it stashed, `STASH_REF=<ref>` on stderr; note that
-ref for step 5. Shell variables don't survive between Bash calls, so write
-the printed target in place of `$target` in later commands. Done when the
-script exits 0 and you have the target.
+It exits 1 on a primary branch, and on a branch with commits from other
+authors, local or already pushed. On a shared branch it names those authors:
+stop and ask the user whether to rebase anyway (after checking with those
+collaborators), merge instead, or abort. Only on an explicit yes, rerun it
+with `--allow-shared`.
+
+It prints the target on stdout. If it stashed (untracked files included), it
+prints `STASH_REF=<commit>` on stderr; note that commit for step 5. Shell
+variables don't survive between Bash calls, so write the printed values in
+place of `$target` and `<STASH_REF>` in later commands. Done when the script
+exits 0 and you have the target.
 
 ## 2. Assess
 
@@ -109,12 +112,16 @@ its pre-rebase state.
 git log --oneline $target..HEAD
 ```
 
-If step 1 stashed, restore it with the literal ref it printed (`$STASH_REF`
-is not set in this shell):
+If step 1 stashed, restore that exact stash by the commit it printed, then
+drop only its entry; the stash list is shared with every worktree, so
+`stash@{0}` may belong to someone else by now:
 
 ```bash
-git stash pop "<STASH_REF from step 1>"
+git stash apply "<STASH_REF>"
+git stash list --format='%gd %H' | awk '$2 == "<STASH_REF>" {print $1}'
 ```
+
+Then run `git stash drop` on the `stash@{n}` that printed.
 
 Discover the verification command, then run what it prints as a **separate**
 Bash call (`eval` in the same call defeats `allowed-tools` matching and
