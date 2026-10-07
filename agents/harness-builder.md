@@ -221,7 +221,7 @@ For each, provide:
 Always recommend these universal skills:
 
 - `/to-spec` and `/to-tickets` — turn a design conversation into a spec issue, then into tracer-bullet sub-issues
-- `/issue-triage` — GitHub issue creation with label taxonomy and milestone assignment
+- `/issue-create`, `/groom` — file issues with real labels and duplicate search; prioritize the backlog
 - `/commit` — quality gate + conventional commit
 - `/ui-review` — accessibility/UX audit (frontend projects)
 

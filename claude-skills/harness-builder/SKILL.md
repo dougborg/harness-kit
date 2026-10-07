@@ -136,7 +136,7 @@ Always recommended:
 If GitHub is detected:
 
 - **`/to-spec`**, **`/to-tickets`** — Turn a design conversation into a spec issue, then into tracer-bullet sub-issues
-- **`/issue-triage`** — Categorize and prioritize issues
+- **`/issue-create`**, **`/groom`** — File issues with real labels; prioritize the backlog
 - **`/standup`** — Generate daily standup from git + GitHub activity
 - **`/agent-standup`** — Reconcile ownership and handoffs across agents and operators
 
