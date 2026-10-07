@@ -32,9 +32,19 @@ Questions:
   each against the tool's signature: copy-pasted hints on structurally similar
   sibling fields are a common category error.
 
+- Does any function return the same value for "nothing there" and "could
+  not tell"? An empty list, `None`, zero, or a sentinel that means both
+  empty and failed (an empty result vs a failed query, a missing file vs an
+  unreadable one, no matches vs a timed-out search, 404 vs a request never
+  sent) lets every caller read an unknown as a negative. Where the
+  difference matters, the indeterminate case is raised or returned as a
+  distinct value.
+
 Red flags:
 
 - Unchecked error returns
+- `except: pass` or `if bad: continue` inside a loop that accumulates
+  results, which turns "couldn't measure this one" into "this one is empty"
 - Shadowed variables
 - Logic inversions (`if !valid` instead of `if valid`)
 - Type assertions without runtime checks
@@ -165,6 +175,14 @@ Questions:
 - Is each test clear about what it tests?
 - Do tests isolate the unit under test?
 - Could these tests pass with a wrong implementation (a mock too loose)?
+- Does each assertion measure the thing its name claims? Trace the subject,
+  not the syntax: a probe named "cowl depth" that samples the plate behind
+  the cowl passes and means nothing.
+- Could something else satisfy the assertion? Aggregates (a size, count,
+  bounding box, hash, or status code) are prone to it: unrelated material
+  can hold them steady while the feature is missing.
+- Does the assertion encode a real requirement? A check that a region stays
+  empty is wrong if parts must cross it for the thing to work.
 
 Red flags:
 
