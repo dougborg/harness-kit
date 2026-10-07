@@ -1,7 +1,7 @@
 # harness-kit development recipes
 
 # Run local validation and lint checks
-check: validate validate-codex validate-hooks test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-codex-install lint-shell lint-md hygiene
+check: validate validate-codex validate-hooks test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-codex-install lint-shell lint-md hygiene
 
 # Validate plugin manifest and structure
 validate:
@@ -42,6 +42,10 @@ test-retro-nudge:
 # Exercise the Codex agent generator against fixture agents
 test-codex-agents:
     ./scripts/test-generate-codex-agents.sh
+
+# Drive the wizard skill's template through its example stage
+test-wizard:
+    ./scripts/test-wizard-template.sh
 
 # Install the repository through an isolated Codex marketplace/profile
 test-codex-install:
