@@ -72,14 +72,18 @@ checks_json() {
   fi
 }
 
-# Prints the number of workflow runs for the head commit that haven't
-# finished; on an API failure, prints "?" so the poll keeps waiting.
+# Prints the number of workflows whose latest run for the head commit hasn't
+# finished. A newer run of the same workflow (a re-run, or a close and reopen)
+# supersedes an older one, so an orphaned older run doesn't hold the poll. On
+# an API failure, prints "?" so the poll keeps waiting.
+latest_unfinished='group_by(.name) | map(max_by(.createdAt))
+  | map(select(.status != "completed")) | length'
 active_runs() {
   if [ -n "$fixtures" ]; then
-    jq '[.[] | select(.status != "completed")] | length' "$fixtures/runs.json"
+    jq "$latest_unfinished" "$fixtures/runs.json"
   else
-    gh run list --commit "$head_sha" --limit 100 --json status \
-      --jq '[.[] | select(.status != "completed")] | length' 2>/dev/null || echo "?"
+    gh run list --commit "$head_sha" --limit 100 --json name,status,createdAt \
+      --jq "$latest_unfinished" 2>/dev/null || echo "?"
   fi
 }
 
