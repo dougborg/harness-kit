@@ -70,10 +70,13 @@ for area in {skill.parent for skill in skills}:
 # The ask-harness router must name every skill, so it never sends people to a
 # skill that's gone or leaves a new one out.
 router = (root / "skills/meta/ask-harness/SKILL.md").read_text()
-unrouted = sorted(skill.name for skill in skills
-                  if skill.name != "ask-harness" and f"`{skill.name}`" not in router
-                  and f"`/{skill.name}`" not in router)
+routed = set(re.findall(r"`/?([a-z][a-z0-9-]*)(?: [^`]*)?`", router))
+skill_names = {skill.name for skill in skills}
+unrouted = sorted(skill_names - routed - {"ask-harness"})
 assert not unrouted, f"skills/meta/ask-harness/SKILL.md doesn't mention: {unrouted}"
+not_skills = {"name"}  # placeholders the router uses in prose
+stale = sorted(name for name in routed - skill_names - not_skills if "-" in name or f"`/{name}" in router)
+assert not stale, f"skills/meta/ask-harness/SKILL.md names skills that don't exist: {stale}"
 
 names = [skill.name for skill in skills]
 duplicates = sorted({name for name in names if names.count(name) > 1})
@@ -82,6 +85,12 @@ assert len(list((root / "skills").rglob("SKILL.md"))) == len(skills), "a SKILL.m
 
 for skill in skills:
     skill_md = skill / "SKILL.md"
+    # An unquoted scalar containing ": " is invalid YAML (the loaders reject it).
+    for line in skill_md.read_text().split("\n---\n", 1)[0].splitlines()[1:]:
+        match = re.match(r"^[a-z_-]+: (.+)$", line)
+        assert not (match and match.group(1)[0] not in "\"'>|[{" and ": " in match.group(1)), (
+            f"{skill_md}: quote this frontmatter value or use >-, it contains ': ': {line}"
+        )
     assert skill_md.is_file(), f"{skill} is not a skill; move utilities outside skills/"
     frontmatter = skill_md.read_text().split("\n---\n", 1)[0]
     assert "disable-model-invocation: true" not in frontmatter, f"{skill} is not Codex-compatible"
