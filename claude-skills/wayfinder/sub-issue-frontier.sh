@@ -5,17 +5,17 @@
 # Usage: sub-issue-frontier.sh <parent-issue-number>
 # Prints three groups: FRONTIER (open, unblocked, unclaimed: takeable now),
 # CLAIMED (open and assigned), and BLOCKED (open, with an open blocker). An
-# empty group prints "(none)"; a map with no sub-issues says so instead, so
-# it can't be mistaken for a finished map.
-# GitHub caps sub-issues at 100 per parent, so one page covers a map; a
+# empty group prints "(none)"; an issue with no sub-issues says so instead,
+# so it can't be mistaken for finished work.
+# GitHub caps sub-issues at 100 per parent, so one page covers one; a
 # ticket with more than 50 blockers would need pagination.
-# Testing: WAYFINDER_FIXTURE=<file> reads the GraphQL response from a file.
+# Testing: FRONTIER_FIXTURE=<file> reads the GraphQL response from a file.
 set -euo pipefail
 
-map="${1:?Usage: sub-issue-frontier.sh <parent-issue-number>}"
+parent="${1:?Usage: sub-issue-frontier.sh <parent-issue-number>}"
 
-if [ -n "${WAYFINDER_FIXTURE:-}" ]; then
-  data=$(cat "$WAYFINDER_FIXTURE")
+if [ -n "${FRONTIER_FIXTURE:-}" ]; then
+  data=$(cat "$FRONTIER_FIXTURE")
 else
   read -r -d '' query <<'GRAPHQL' || true
 query($o: String!, $r: String!, $n: Int!) {
@@ -33,7 +33,7 @@ query($o: String!, $r: String!, $n: Int!) {
 }
 GRAPHQL
   # gh fills in {owner} and {repo} from the current repository.
-  data=$(gh api graphql -F o='{owner}' -F r='{repo}' -F n="$map" -f query="$query")
+  data=$(gh api graphql -F o='{owner}' -F r='{repo}' -F n="$parent" -f query="$query")
 fi
 
 jq -r '

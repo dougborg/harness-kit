@@ -2,7 +2,7 @@
 name: implement-spec
 description: Build a whole spec's tickets in parallel subagents, onto one integration branch.
 argument-hint: "<spec issue>"
-allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh pr *), Bash(git *), Bash(${CLAUDE_SKILL_DIR}/sub-issue-frontier.sh*)
+allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh pr create*), Bash(gh pr ready*), Bash(gh pr view*), Bash(git switch*), Bash(git branch*), Bash(git merge*), Bash(git push*), Bash(git worktree*), Bash(git status*), Bash(git log*), Bash(${CLAUDE_SKILL_DIR}/sub-issue-frontier.sh*)
 disable-model-invocation: true
 ---
 
@@ -24,9 +24,9 @@ and commits rather than pasting their contents.
 ## 1. Read the graph
 
 Read the spec and list its tickets with
-`${CLAUDE_SKILL_DIR}/sub-issue-frontier.sh <spec>`. On Claude Code, check the
-budget skill before a large fan-out. Done when you know the frontier and how
-many implementers to run at once.
+`${CLAUDE_SKILL_DIR}/sub-issue-frontier.sh <spec>`. On Claude Code, call the
+Skill tool with "budget" before a large fan-out. Done when you know the
+frontier and how many implementers to run at once.
 
 ## 2. Explore once (optional)
 
@@ -37,35 +37,42 @@ the implementers.
 
 ## 3. Create the integration branch
 
-Branch from the base. Once the first ticket has merged into it, open a draft PR
-that closes the spec and its tickets, with a body in the pr-body skill's shape.
-Done when the branch exists.
+Branch from the base and push it. Done when the branch exists on the remote.
 
 ## 4. Run implementers across the frontier
 
-For each frontier ticket, claim it (`gh issue edit <n> --add-assignee @me`) and
-start an implementer subagent in its own worktree and branch, in the
+For each frontier ticket, claim it (`gh issue edit <n> --add-assignee @me`),
+then re-read its assignees: assigning never fails when someone else is already
+on it, so if anyone else is, leave it and take the next. Start an implementer
+subagent for each claimed ticket in its own worktree and branch, in the
 background where the host allows. Each implementer:
 
 - checks that its worktree is based on the integration branch, and resets onto
   it if not;
-- calls the Skill tool with "tdd" to build the ticket, and "minimal-change"
-  before adding dependencies or abstractions;
+- calls the Skill tool with "tdd" to build the ticket, and calls it again with
+  "minimal-change" before adding a dependency or an abstraction;
 - runs the project's verification;
 - merges the integration branch's latest tip into its own branch before
   reporting done.
+
+Done when every frontier ticket has an implementer running or reported done
+(or blocked, with the reason).
 
 ## 5. Merge as they land
 
 When an implementer reports done, merge its branch into the integration branch
 with a merger subagent, resolving conflicts there, and run verification on the
-result. Close the ticket the way the repo closes work (the draft PR's closing
-links, or the issue-close skill). If that unblocks tickets, start implementers
-for the new frontier. Done when every ticket is merged and closed.
+result. After the first merge, if the repo closes work through pull requests
+(or the user wants one), open a draft PR from the integration branch that
+closes the spec and its tickets, with a body in the pr-body skill's shape.
+Otherwise call the Skill tool with "issue-close" for each ticket as it lands.
+If a merge unblocks tickets, start implementers for the new frontier. Done when
+every ticket is merged and either linked from the draft PR or closed.
 
 ## 6. Review and finish
 
-Mark the draft PR ready, then call the Skill tool with "review-pr" for the
-standards and spec passes against the whole spec. Fix their findings in a
-single implementer subagent. Done when the review gate is met, CI is green, and
+With a draft PR, mark it ready, then call the Skill tool with "review-pr" for
+the standards and spec passes against the whole spec, and fix their findings
+in a single implementer subagent. Without one, report the integration branch.
+Done when the review gate is met (or the branch is reported), CI is green, and
 every implementer worktree is removed (`git worktree remove`).
