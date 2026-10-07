@@ -68,26 +68,24 @@ Compose rather than duplicate: a global skill plus a project-local wrapper.
 
 ## Hooks
 
-Hooks give zero-token automation: formatters and validators run on every edit
-before Claude reads the result. Recommend them in three stages, in this
-order.
+Recommend `PostToolUse` hooks on Edit and Write in three stages, in this
+order. They run after the edit lands, and only the output a hook hands back
+reaches Claude, so a quiet hook costs no tokens.
 
-**Formatters** fix style silently on every Edit or Write, at zero token cost.
-Examples: `nix run ".#format"` for Nix, `prettier --write` for JavaScript and
-JSON, `ruff check --fix` for Python, `markdownlint --fix` for Markdown.
+- **Formatters** fix style silently. Examples: `nix run ".#format"`,
+  `prettier --write`, `ruff check --fix`, `markdownlint --fix`.
+- **Validators** run only when the edited file matches (a `.nix` file
+  changed), with output capped at 30 lines. Examples: `nix flake check`, a
+  TypeScript or mypy type check, `cargo test --lib` (sampled),
+  `npm test -- --coverage`.
+- **Guidance** points at the right skill or doc, in under 20 lines.
+  Examples: "Check CLAUDE.md for domain constraints", "This touches auth; ask
+  the domain-advisor agent", "Run /pre-flight before switching".
 
-**Validators** run after formatting, only when the edited file matches (for
-example, a `.nix` file changed), with output capped at 30 lines. They cost
-tokens only when they find an error. Examples: `nix flake check`, a TypeScript
-or mypy type check, `cargo test --lib` (sampled), `npm test -- --coverage`.
-
-**Guidance** runs last and points the developer at the right skill or doc, in
-under 20 lines. Examples: "Check CLAUDE.md for domain constraints", "This
-touches auth; ask the domain-advisor agent", "Run /pre-flight before
-switching".
-
-Hooks matching the same event run in parallel, so put stages that must run in
-order into one script. A `.claude/settings.local.json` entry:
+Hooks matching the same event run in parallel
+([hooks reference](https://code.claude.com/docs/en/hooks.md)), so put stages
+that must run in order into one script. A `.claude/settings.local.json`
+entry:
 
 ```json
 {
@@ -96,7 +94,7 @@ order into one script. A `.claude/settings.local.json` entry:
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": ".claude/hooks/post-edit.sh" }
+          { "type": "command", "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit.sh\"" }
         ]
       }
     ]
@@ -104,21 +102,37 @@ order into one script. A `.claude/settings.local.json` entry:
 }
 ```
 
-And the script, reading the edited path from the hook's JSON input:
+The script reads the edited path from the hook's JSON input; make it
+executable with `chmod +x .claude/hooks/post-edit.sh`. A `PostToolUse` hook's
+plain stdout, and its stderr on exit 0, go only to the debug log, so the
+script collects the validator and guidance output and returns it as
+`additionalContext`:
 
 ```bash
 #!/usr/bin/env bash
 file=$(jq -r '.tool_input.file_path // empty')
+[ -n "$file" ] || exit 0
 # 1. Formatter: silent, never fails the hook
 nix run ".#format" -- "$file" >/dev/null 2>&1 || true
+out=""
 # 2. Validator: only for matching files, bounded output
-if [[ "$file" == *.nix ]]; then nix flake check --quiet 2>&1 | head -10; fi
+if [[ "$file" == *.nix ]]; then
+  out+=$(nix flake check --quiet 2>&1 | head -10)
+fi
 # 3. Guidance: only where it applies
 if [[ "$file" == */.claude/skills/* || "$file" == */.claude/agents/* ]]; then
-  echo "Run /harness audit to check the agent harness"
+  out+=$'\nRun /harness audit to check the agent harness'
+fi
+if [ -n "${out//[[:space:]]/}" ]; then
+  jq -n --arg c "$out" \
+    '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $c}}'
 fi
 exit 0
 ```
+
+To make a validator failure block instead, write its output to stderr and
+`exit 2`. The harness skill's hook references carry the same stdout problem,
+tracked in [#137](https://github.com/dougborg/harness-kit/issues/137).
 
 ## Stack detection
 

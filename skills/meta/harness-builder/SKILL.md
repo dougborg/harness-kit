@@ -1,7 +1,7 @@
 ---
 name: harness-builder
 description: Analyze a codebase and recommend an agent harness (agents, skills, hooks).
-allowed-tools: Read, Grep, Glob, Bash(git log*), Bash(git status*), Bash(ls*)
+allowed-tools: Read, Grep, Glob, Write, Edit, Bash(git log*), Bash(git status*), Bash(git add*), Bash(ls*)
 ---
 
 # Harness Builder
@@ -13,14 +13,15 @@ trim, and then generate the files. Use it early in a project's setup. Its
 recommendations are starting points that you are expected to customize.
 
 It needs a git repository (the agent reads history) and a verification
-command such as a test suite, linter, or build. `/harness bootstrap` (or
-`$harness bootstrap` on Codex) runs the same agent as its first step and then
-installs; use this skill when you want the recommendation on its own.
+command such as a test suite, linter, or build. The files it generates are
+the Claude Code side only. `/harness bootstrap` (or `$harness bootstrap` on
+Codex) runs the same agent as its first step and then installs for both
+Claude Code and Codex, with `.harness-lock.json` provenance; use it for a
+full two-host setup, and this skill when you want the recommendation and a
+Claude-side starting point.
 
 What the agent tends to recommend, and how to read it, is in
-[recommendations.md](recommendations.md): agents and model tiers, skills,
-hook stages with an example configuration, and what to do when it misreads
-the stack.
+[recommendations.md](recommendations.md).
 
 ## 1. Run the agent
 
@@ -32,7 +33,9 @@ beside this one, in `<skill-dir>/../harness/`, in the plugin and in project
 copies alike.
 
 Done when the agent has returned its report and the report does not say the
-catalogs were missing; if it does, dispatch it again with the paths.
+catalogs were missing; if it does, dispatch it again with the paths. When the
+report misreads the stack, use the questions under "Stack detection" in
+recommendations.md and fold the answers in.
 
 ## 2. Review the recommendations
 
@@ -40,10 +43,14 @@ The report covers:
 
 - **Stack**: language, frameworks, and the verification command.
 - **Agents**: the analytical work to hand off (always code-reviewer, verifier,
-  test-writer, and domain-advisor).
+  test-writer, and domain-advisor). Judge roles and model tiers against
+  "Agents" in recommendations.md.
 - **Skills**: the workflows to provide (always `/commit`, plus GitHub and
-  frontend tools when detected).
-- **Hooks**: formatters, validators, and guidance for auto-fixing.
+  frontend tools when detected). "Skills" in recommendations.md covers when
+  to extend a global skill and when to write a local one.
+- **Hooks**: formatters, validators, and guidance for auto-fixing. "Hooks" in
+  recommendations.md has a working example; the reasoning behind the stages
+  is in `<skill-dir>/../harness/hooks-patterns.md`.
 - **Domain knowledge**: entity types, ownership, the auth and session system,
   and the side effects of mutating core entities.
 
@@ -76,9 +83,5 @@ passes.
 
 ## Related
 
-- `/harness`: audits harness quality (frontmatter validity, size limits,
-  description signal).
-- `CLAUDE.md`: the generated harness documentation; customize it after
-  generation.
-- `/documentation-writer`: scannable docs.
+- `/harness`: audits harness quality, and bootstraps both hosts.
 - `/skill-writer`: well-structured skills.

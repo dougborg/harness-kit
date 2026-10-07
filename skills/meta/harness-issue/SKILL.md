@@ -75,10 +75,19 @@ gh pr list    -R "$upstream" --state all --limit 20 --search "<keywords>"
 Show the user any related matches and ask: file new, comment on the existing
 thread, or abort. Commenting on an existing thread keeps the discussion in one
 place: post with `gh issue comment` or `gh pr comment`, then skip to step 6.
-When a merged PR already fixes the finding on the default branch (just not
-released yet), tell the user instead of filing. Done when the user has chosen, or no open or recently closed item matches.
+Done when the user has chosen, or no open or recently closed item matches.
 
 ## 5a. Issue mode
+
+First check the finding isn't already fixed on the default branch, merged but
+not yet released: look at the merged PRs from step 4, and search commits
+pushed directly:
+
+```bash
+gh api -X GET search/commits -f q="repo:$upstream <keywords>" --jq '.items[] | "\(.sha[0:7]) \(.commit.message | split("\n")[0])"'
+```
+
+When it is already fixed, tell the user and stop instead of filing.
 
 Compose a title of 70 characters or fewer and this body:
 
@@ -132,6 +141,10 @@ Done when the issue exists and you have its URL.
    `${XDG_CACHE_HOME:-~/.cache}/harness-issue/` (`$HARNESS_UPSTREAM_WORKSPACE`
    overrides the root). It refuses to touch a checkout with unrelated state,
    fast-forwards the default branch, and creates the new branch.
+
+   Without push access to the upstream, fork it now, before anything
+   pushes: run `gh repo fork --remote` in `$workspace`, so pushes go to the
+   fork. `gh pr create` then opens the PR cross-repo by default.
 3. **Check it isn't already fixed**: `git log` in the workspace. When the
    default branch already addresses the finding (merged, just not released),
    tell the user and stop instead of filing.
@@ -140,11 +153,10 @@ Done when the issue exists and you have its URL.
    in the commit body rather than in code comments.
 5. **Open the PR.** From inside `$workspace`, call the Skill tool with
    "open-pr", so the upstream's own validation, self-review, and CI polling
-   run against the upstream's verification command; this skill doesn't
-   repeat them. Put a "Source context" footer in the PR body, matching the
-   Issue mode template. Without push access to the upstream, run
-   `gh repo fork --remote` first and push to the fork; `gh pr create` opens
-   the PR cross-repo by default.
+   run against the upstream's verification command. Leave validation,
+   self-review, and CI polling to open-pr rather than running them here. Put
+   a "Source context" footer in the PR body, matching the Issue mode
+   template.
 
 Done when the PR exists and you have its URL.
 
