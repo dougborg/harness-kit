@@ -58,8 +58,9 @@ chosen.
    render the full relevant state so the user sees what changed.
 6. **Capture it when done.** Fold the validated decision into the real code.
    Commit the prototype itself to a throwaway branch, never main, and link
-   that branch from the issue it served, along with the verdict and the
-   question it settled. Main keeps only the decision.
+   that branch, with the verdict and the question it settled, from the issue
+   it served, or from the commit message or PR that lands the decision when
+   there's no issue. Main keeps only the decision.
 
 Done when the user has given a verdict, the decision is in the real code or
 on its issue, and the prototype lives on its throwaway branch rather than

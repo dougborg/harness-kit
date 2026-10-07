@@ -20,8 +20,10 @@ at each stage, and shows how many stages are left.
 
 The UX is already built in `<skill-dir>/wizard.template.sh`: stage progress,
 confirmation gates, cross-platform URL opening (including WSL), hidden secret
-entry, idempotent `.env` upserts, `gh secret` and `gh variable` writes, and a
-closing summary. Your job is only to scope the procedure and write its
+entry, idempotent `.env` upserts that offer to gitignore the file, `gh secret`
+and `gh variable` writes (to `GH_REPO` when set), and a closing summary. It
+runs on macOS's bash 3.2. The wizard runs in a person's own terminal, never
+in either agent host's shell. Your job is only to scope the procedure and write its
 stages. The library above the `STAGES` marker is the same in every wizard;
 leave it as is.
 
@@ -70,7 +72,10 @@ helpers: `stage`, `say` and `step`, `open_url`, `ask` and `ask_secret`,
 Hold the template's bar: open the URL before asking for its value, use
 `ask_secret` for anything secret, `write_env` every value that persists,
 `set_secret` only the values CI actually reads, and `confirm` before any
-irreversible action. Each `stage` clears the screen, so keep a stage to one
+irreversible action. The script runs under `set -e`, so gate with
+`if confirm "..."; then ...; fi`: a bare `confirm` aborts the wizard on "no".
+`ask` and `ask_secret` re-prompt on an empty answer and abort at end of
+input, on purpose. Each `stage` clears the screen, so keep a stage to one
 task and nothing the human needs scrolls away.
 
 Done when every stage from step 1 is in the script and `TOTAL_STAGES`
@@ -78,10 +83,12 @@ matches.
 
 ## 4. Verify and hand off
 
-Run `bash -n <script>` and `shellcheck <script>`, then `chmod +x <script>`.
-Don't run it yourself: it opens browsers and waits for a person. Trace it
-instead: every value from step 1 is captured and lands where step 1 said, and
-every `set_secret` name matches a `secrets.*` reference in CI exactly.
+Run `bash -n <script>`, and `shellcheck <script>` if it's installed, then
+`chmod +x <script>`. Don't run it yourself: it opens browsers and waits for a
+person. Trace it instead: every value from step 1 is captured and lands where
+step 1 said, every `set_secret` name matches a `secrets.*` reference in CI
+exactly, and the `.env` it writes is gitignored (the wizard offers to add it
+on first write).
 
 Tell the user to run it in their own terminal. Your shell has no terminal
 for them to type into, and the wizard clears the screen as it goes. If it's

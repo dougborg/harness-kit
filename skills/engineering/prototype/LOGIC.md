@@ -22,7 +22,9 @@ branch: go back to the skill and take the UI branch.
 ## 1. State the question
 
 Write the state model and the question in one paragraph, in a visible intro
-at the top of the demo (not just a comment), so it can be checked later.
+at the top of the demo (not just a comment). A demo that answers the wrong
+question is waste, so make it checkable whether the user is watching now or
+opens it later on their own.
 Done when the intro states what the demo explores.
 
 ## 2. Isolate the logic in a portable module
@@ -73,7 +75,8 @@ reset, and the state panel updates on each click.
 
 ## 4. Hand it over
 
-Send the file, or open it for the user. The useful moments are "wait, that
+Open the file for the user and give them its absolute path, since opening a
+browser can fail inside a sandbox; or send it to whoever should try it. The useful moments are "wait, that
 shouldn't be possible" and "huh, I assumed X": bugs in the idea, which is the
 point. Add actions or scenarios when asked. Done when the user has the file
 and knows how to open it.
@@ -81,9 +84,11 @@ and knows how to open it.
 ## 5. Capture the answer and the prototype
 
 Once the question is answered, capture the verdict and the prototype as the
-skill's rules describe. For logic, the validated reducer, machine, or
-functions lift into the real module; the HTML file goes to the throwaway
-branch, where, being one file, it stays trivial to re-run. Done when the
+skill's rules describe, linking the throwaway branch from the issue, or
+from the commit message or PR when there's no issue. For logic, the
+validated reducer, machine, or functions lift into the real module; the HTML
+file goes to the throwaway branch, where, being one file, it stays trivial
+to re-run. Done when the
 module is in the real code and the file is on its branch.
 
 ## Anti-patterns
