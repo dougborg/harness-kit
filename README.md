@@ -32,7 +32,8 @@ packaging for both hosts.
 | `/skill-writer` | Create well-structured skills with progressive disclosure |
 | `/documentation-writer` | Write scannable, layered documentation |
 | `/harness-builder` | Analyze codebases and recommend harness setup |
-| `/feature-spec` | Write feature specifications before implementation |
+| `/to-spec` | Turn the conversation into a spec issue |
+| `/to-tickets` | Split a spec into tracer-bullet sub-issues with blocking links |
 | `/standup` | Generate daily standup from git history |
 | `/agent-standup` | Reconcile ownership, handoffs, and merge order across agents and operators |
 | `/groom` | Backlog grooming: theme buckets, PR train, stale flags, gaps |

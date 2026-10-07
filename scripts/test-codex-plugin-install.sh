@@ -11,7 +11,7 @@ CODEX_HOME="$profile" codex plugin add harness-kit@harness-kit >/dev/null
 version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' \
   "$repo_root/.codex-plugin/plugin.json")
 installed="$profile/plugins/cache/harness-kit/harness-kit/$version"
-test -f "$installed/skills/project-management/feature-spec/SKILL.md"
+test -f "$installed/skills/project-management/to-spec/SKILL.md"
 test -f "$installed/skills/meta/harness/SKILL.md"
 test -x "$installed/scripts/shared/discover-verification-cmd.sh"
 grep -F '<shared-scripts-dir>/discover-verification-cmd.sh' \

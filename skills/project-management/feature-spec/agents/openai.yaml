@@ -1,5 +1,0 @@
-interface:
-  display_name: "Feature Spec"
-  short_description: "Write a feature spec with testable acceptance criteria."
-policy:
-  allow_implicit_invocation: false

@@ -6,11 +6,12 @@ Tracking and planning work: issues, backlog grooming, specs, standups, and sessi
 
 Run only when you type them.
 
-- **[feature-spec](./feature-spec/SKILL.md)**: Write a feature spec with testable acceptance criteria.
 - **[groom](./groom/SKILL.md)**: Bucket the backlog and recommend a prioritized PR train.
 - **[issue-restructure](./issue-restructure/SKILL.md)**: Split one GitHub issue into many, or merge many into one.
 - **[session-retro](./session-retro/SKILL.md)**: Write a retro doc for the current work session.
 - **[standup](./standup/SKILL.md)**: Generate a personal daily standup report.
+- **[to-spec](./to-spec/SKILL.md)**: Turn the conversation into a spec issue.
+- **[to-tickets](./to-tickets/SKILL.md)**: Split a spec into tracer-bullet sub-issues with blocking links.
 
 ## Model-invoked
 
