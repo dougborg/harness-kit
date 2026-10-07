@@ -20,9 +20,9 @@ the thread and loses its context, and the
 ## 1. Fetch the unresolved comments
 
 ```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh {number})
+ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/fetch-pr-context.sh "$owner_repo" {number}
+${CLAUDE_SKILL_DIR}/fetch-pr-context.sh "$owner_repo" <PR#>
 ```
 
 The script returns comments with their resolved status. Done when you have
@@ -49,7 +49,7 @@ Done when every unresolved comment has a drafted answer.
 ## 3. Reply in thread
 
 ```bash
-${CLAUDE_SKILL_DIR}/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
+${CLAUDE_SKILL_DIR}/reply-to-comment.sh <owner>/<repo> <PR#> <comment_id> 'Fixed — [explanation]'
 ```
 
 Reply to every comment in the same push cycle. Done when every unresolved

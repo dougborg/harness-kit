@@ -51,7 +51,7 @@ When one side deleted a file and the other modified it, check what each did:
 
 ```bash
 git log --oneline --follow $target -- <file>   # deleted on the target?
-git log --oneline HEAD -- <file>                # modified by you?
+git log --oneline -1 REBASE_HEAD -- <file>     # modified by the replayed commit?
 ```
 
 If the target deleted it on purpose (a refactor or migration), accept the
