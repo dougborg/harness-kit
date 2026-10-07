@@ -45,7 +45,7 @@ lint-shell:
 
 # Lint markdown files
 lint-md:
-    markdownlint .
+    ./scripts/lint-md.sh
 
 # Check file hygiene (trailing whitespace + final newline)
 hygiene:

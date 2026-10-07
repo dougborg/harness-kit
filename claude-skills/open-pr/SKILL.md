@@ -164,13 +164,14 @@ final output then.
 | --- | --- | --- |
 | 0 | All checks passed | Step 7 |
 | 1 | A check failed or was cancelled | `gh run view <run-id> --log-failed`, fix, verify locally, commit specific files, push, re-poll |
-| 2 | Script timeout: CI is still running or hasn't started (a queued run, or a required check that hasn't reported, which the TIMEOUT line names) | Re-poll |
+| 2 | Script timeout: CI is still running or hasn't started (a queued run, a required check that hasn't reported, or a PR head GitHub hasn't updated after a push; the TIMEOUT line names which) | Re-poll; for a stale PR head, close and reopen the PR to resync it |
 | 3 | The PR couldn't be read | Check the number and `gh auth status` |
 
 Every terminal outcome ends with a `CI RESULT:` line. Output that ends on a
 `CI POLL:` heartbeat means the process was killed mid-wait and CI state is
 unknown: re-poll rather than reporting "waiting for the monitor" and
-stopping. Fix CI in place on this PR rather than closing and reopening it.
+stopping. Fix failing CI in place on this PR rather than closing and reopening
+it; close and reopen only to resync a stale PR head.
 
 If you return from a scheduled wakeup or a task notification, follow
 [resuming.md](resuming.md) before trusting anything the wakeup prompt says.
