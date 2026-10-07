@@ -55,12 +55,11 @@ each is self-contained.
 | `retro` | `<skill-dir>/retro.md` | Environment audit, gap classification A/B/C/D/E, upstream promotion pass |
 | `hoist` | `<skill-dir>/hoist.md` | Proposing project-local improvements back upstream |
 
-Done when the mode's file is read and its protocol has run to its own end.
+Done when the mode file is read and its final step reports done.
 
 ## Topic references
 
-Read these as needed from any mode. Each is linked only from here; none links
-to another.
+Read these as needed from any mode; each is linked directly from here.
 
 | Topic | Read | When |
 | --- | --- | --- |
@@ -154,7 +153,6 @@ The flag is a lightweight in-flight signal that feeds the next audit.
   codebase and recommend a harness.
 - `/session-retro`: the session-side retrospective (documents the work, not
   the harness); run it alongside retro mode.
-- `/documentation-writer`: scannable, progressive-disclosure docs.
 - `/skill-writer`: authoring guidance for skills and agents; audit checks
   against what it teaches.
 - `/doctor` (bundled with Claude Code, alias `/checkup`): generic setup health

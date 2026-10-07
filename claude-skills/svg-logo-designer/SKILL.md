@@ -20,17 +20,20 @@ Done when each is answered or the user has left it to you.
 ## 2. Sketch concepts
 
 Create 3 to 5 distinct directions that explore different visual metaphors and
-compositions. Done when the user has picked the concepts to develop.
+compositions. The full set is 20 files per concept (five layouts times four
+color treatments), so confirm the scope with the user: which concepts, and
+which layouts and treatments each needs. Done when the user has picked the
+concepts and agreed the set of files to produce.
 
 ## 3. Lay out each concept
 
 For each chosen concept: horizontal, vertical (stacked), square, icon-only,
-and text-only. Done when every chosen concept has all five.
+and text-only. Done when every chosen concept has each agreed layout.
 
 ## 4. Color each layout
 
 Each layout in full color, monochrome dark, monochrome light, and reversed.
-Done when every layout has all four.
+Done when every layout has each agreed treatment.
 
 ## 5. Build the SVG
 
