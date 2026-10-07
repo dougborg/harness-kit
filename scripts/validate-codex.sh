@@ -119,6 +119,19 @@ for agent in sorted((root / ".codex/agents").glob("*.toml")):
         assert data.get(key), f"{agent}: missing {key}"
     if "read-only" in data["description"].lower():
         assert data.get("sandbox_mode") == "read-only", f"{agent}: read-only promise not enforced"
+
+# A script that calls a sibling through $SCRIPT_DIR needs that file beside it
+# in every copy: the Claude projection copies only the helpers a skill names,
+# so a sibling call can break there without failing anywhere else.
+sibling_call = re.compile(r'\$\{?SCRIPT_DIR\}?/([A-Za-z0-9._-]+\.sh)')
+missing = sorted(
+    f"{script.relative_to(root)} calls {name}"
+    for top in ("skills", "claude-skills")
+    for script in (root / top).rglob("*.sh")
+    for name in set(sibling_call.findall(script.read_text()))
+    if not (script.parent / name).is_file()
+)
+assert not missing, "sibling scripts missing beside their caller: " + "; ".join(missing)
 PY
 
 "$repo_root/scripts/generate-claude-skills.sh" --check
