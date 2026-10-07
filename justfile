@@ -1,7 +1,14 @@
 # harness-kit development recipes
 
-# Run local validation and lint checks
-check: validate validate-codex validate-hooks test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-codex-install lint-shell lint-md hygiene
+# Run every check. CI runs the same four groups, one job each, so the list of
+# checks lives only here.
+check: validate-all lint-shell lint-md hygiene
+
+# CI job "Validate plugin": manifests, projections, and every test script
+validate-all: validate validate-codex validate-hooks tests
+
+# Every regression test script
+tests: test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-codex-install
 
 # Validate plugin manifest and structure
 validate:
@@ -51,15 +58,16 @@ test-wizard:
 test-codex-install:
     ./scripts/test-codex-plugin-install.sh
 
-# Lint shell scripts with ShellCheck (-type f skips the shared-script symlinks)
+# Lint shell scripts with ShellCheck: the sources, not the generated copies in
+# claude-skills/ (CI job "ShellCheck")
 lint-shell:
-    find skills scripts -type f -name '*.sh' -exec shellcheck {} +
+    find skills scripts hooks -type f -name '*.sh' -exec shellcheck {} +
 
-# Lint markdown files
+# Lint markdown files (CI job "Markdown lint")
 lint-md *args:
     ./scripts/lint-md.sh {{args}}
 
-# Check file hygiene (trailing whitespace + final newline)
+# Check file hygiene: trailing whitespace and a final newline (CI job "File hygiene")
 hygiene:
     #!/usr/bin/env bash
     set -euo pipefail
