@@ -157,8 +157,9 @@ Done when you hold the list of unresolved comments.
 
 Read the code each comment points at and classify it: **fix needed**,
 **already fixed** in an earlier commit, or **acknowledge** (valid but
-deferred, which needs a GitHub issue). Done when every comment has a class
-and every deferral has an issue.
+deferred, which needs a GitHub issue; call the Skill tool with
+"issue-create", which reuses an existing issue when one already covers it).
+Done when every comment has a class and every deferral has an issue.
 
 ### 3.3 Fix
 
