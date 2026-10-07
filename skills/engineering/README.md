@@ -1,12 +1,13 @@
 # Engineering
 
-Building and shipping code: test-driven development, debugging, module design, commits, pull requests, review, rebasing, and UI checks.
+Building and shipping code: test-driven development, debugging, module design and architecture review, prototypes, commits, pull requests, review, rebasing, UI checks, and setup wizards.
 
 ## User-invoked
 
 Run only when you type them.
 
 - **[implement](./implement/SKILL.md)**: Build a ticket test-first, through to an open PR.
+- **[improve-codebase-architecture](./improve-codebase-architecture/SKILL.md)**: Find deepening opportunities, report them visually, and grill one.
 - **[pr-comments](./pr-comments/SKILL.md)**: Reply to PR review comments in thread context.
 - **[rebase](./rebase/SKILL.md)**: Rebase a branch onto its target and resolve conflicts.
 
@@ -21,6 +22,8 @@ You can type them, and the agent also reaches for them when a task fits.
 - **[minimal-change](./minimal-change/SKILL.md)**: Find the smallest change that solves the problem.
 - **[open-pr](./open-pr/SKILL.md)**: Validate, push, and open a pull request, then shepherd CI and review.
 - **[pr-body](./pr-body/SKILL.md)**: Write a PR description: visual summary, evidence, merge danger.
+- **[prototype](./prototype/SKILL.md)**: Build throwaway code that answers one design question.
 - **[review-pr](./review-pr/SKILL.md)**: Review a pull request or work through its feedback.
 - **[tdd](./tdd/SKILL.md)**: Red-green test-driven development, one vertical slice at a time.
 - **[ui-review](./ui-review/SKILL.md)**: Audit web UI for WCAG 2.1 AA accessibility and UX.
+- **[wizard](./wizard/SKILL.md)**: Generate a bash wizard for steps only a human can do.

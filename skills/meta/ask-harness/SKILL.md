@@ -19,8 +19,9 @@ for it by name.
    hard-to-reverse decisions as ADRs. Use `/grill-me` when there's no repo to
    record into. Both run the `grilling` skill underneath.
 2. **Settle what talk can't.** When a question needs a runnable answer, build a
-   cheap throwaway artifact to react to (a wayfinder prototype ticket, in a
-   bigger effort); when it needs outside facts, the `research` skill reads
+   cheap throwaway artifact to react to with `prototype` (a state-model demo
+   or UI variants; in a bigger effort, a wayfinder prototype ticket); when it
+   needs outside facts, the `research` skill reads
    primary sources and cites them.
 3. **Specify.** For work that spans sessions, `/to-spec` turns the
    conversation into a spec issue, and `/to-tickets` splits it into
@@ -51,6 +52,9 @@ rather than pushing on.
 - **Something's broken**: `diagnosing-bugs` builds a fast check that goes red
   on the bug before any theory, then fixes the root cause with a regression
   test.
+- **The code has got hard to change**: `/improve-codebase-architecture`
+  finds shallow modules worth deepening, shows them in a visual report, and
+  grills through the one you pick.
 - **Too big and foggy for one session**: `/wayfinder` charts a map of decision
   tickets and settles them one per session; when the way is clear, it hands
   off to `/to-spec`.
@@ -86,6 +90,8 @@ rather than pushing on.
 - `/loop-me` (experimental): find recurring work worth delegating and spec
   it as workflows.
 - `ui-review`: accessibility and UX audit of web UI.
+- `wizard`: a script that walks a person through steps only they can do,
+  such as creating accounts and copying API keys into `.env` and CI secrets.
 - `documentation-writer` and `/svg-logo-designer`: docs and logos.
 - `skill-writer`, `/harness`, `/harness-builder`, `harness-issue`: maintain
   the harness itself.

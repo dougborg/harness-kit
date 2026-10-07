@@ -1,0 +1,3 @@
+interface:
+  display_name: "Prototype"
+  short_description: "Build throwaway code that answers one design question."
