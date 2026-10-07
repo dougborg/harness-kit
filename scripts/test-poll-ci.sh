@@ -102,8 +102,21 @@ live tip-unknown 0 STUB_RUNS=ok
 live remote-unreadable 0 STUB_RUNS=ok STUB_REMOTE=fail
 live fork-pr-skips-check 0 STUB_RUNS=ok STUB_CROSS_REPO=true STUB_REMOTE_TIP=def456
 # #147: a PR conflicting with its base gets no CI runs; say so, don't time out.
-live conflict 4 STUB_RUNS=ok STUB_MERGEABLE=CONFLICTING
+# CI that already finished keeps its verdict; only unfinished CI stops early.
+live conflict 4 STUB_RUNS=ok STUB_MERGEABLE=CONFLICTING STUB_REMOTE_TIP=def456
+live conflict-after-green 0 STUB_RUNS=ok STUB_MERGEABLE=CONFLICTING
+live conflict-after-failure 1 STUB_RUNS=ok STUB_MERGEABLE=CONFLICTING \
+  'STUB_CHECKS=[{"name":"ShellCheck","bucket":"fail"}]'
 live mergeable-unknown 0 STUB_RUNS=ok STUB_MERGEABLE=UNKNOWN
+live mergeable-null 0 STUB_RUNS=ok STUB_MERGEABLE=null
+conflict_line=$(env PATH="$scratch/bin:$PATH" POLL_CI_INTERVAL=0 STUB_RUNS=ok \
+  STUB_MERGEABLE=CONFLICTING STUB_REMOTE_TIP=def456 "$script" 1 0 2>&1 | tail -n 1 || true)
+if [[ "$conflict_line" == *"conflicts with main"* && "$conflict_line" == *"Rebase onto main"* ]]; then
+  echo "PASS: conflict names the base and the fix"
+else
+  echo "FAIL: conflict message: $conflict_line"
+  fail=1
+fi
 stale_line=$(env PATH="$scratch/bin:$PATH" POLL_CI_INTERVAL=0 STUB_RUNS=ok \
   STUB_REMOTE_TIP=def456 "$script" 1 0 2>&1 | tail -n 1 || true)
 if [[ "$stale_line" == *"PR head abc123 is behind the branch tip def456"* &&
