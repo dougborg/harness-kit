@@ -34,8 +34,11 @@ configuration adapt that catalog without forking its workflow guidance.
   `scripts/generate-claude-skills.sh` instead of editing the projection.
 - `.codex-plugin/` packages the Codex plugin.
 - `.agents/plugins/` contains the repository Codex marketplace.
-- `agents/` contains Claude Code subagent definitions.
-- `.codex/agents/` contains Codex subagent definitions.
+- `agents/` contains the canonical subagent definitions, used directly by
+  Claude Code.
+- `.codex/agents/` holds the Codex subagent definitions, generated from
+  `agents/`; edit `agents/` and run `scripts/generate-codex-agents.sh`.
+  Codex reasoning effort is set per agent in that script.
 - `hooks/` contains plugin lifecycle hooks backed by scripts in
   `scripts/shared/`.
 

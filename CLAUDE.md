@@ -29,7 +29,7 @@ skills/                  Canonical open-format skills used by Codex
     <skill>/*.md         Reference files, siblings of SKILL.md (one level deep only)
 claude-skills/           Generated flat Claude projection; never edit directly
 scripts/shared/          Cross-skill shell scripts
-agents/                  Agent .md files
+agents/                  Agent .md files (canonical; .codex/agents/ is generated)
 hooks/                   hooks.json for lifecycle hooks
 ```
 
