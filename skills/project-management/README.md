@@ -13,6 +13,7 @@ Run only when you type them.
 - **[to-spec](./to-spec/SKILL.md)**: Turn the conversation into a spec issue.
 - **[to-tickets](./to-tickets/SKILL.md)**: Split a spec into tracer-bullet sub-issues with blocking links.
 - **[triage](./triage/SKILL.md)**: Move incoming issues through triage states to agent-ready briefs.
+- **[wayfinder](./wayfinder/SKILL.md)**: Plan a large effort as a map of decision tickets.
 
 ## Model-invoked
 

@@ -33,6 +33,7 @@ packaging for both hosts.
 | `/documentation-writer` | Write scannable, layered documentation |
 | `/harness-builder` | Analyze codebases and recommend harness setup |
 | `/to-spec` | Turn the conversation into a spec issue |
+| `/wayfinder` | Plan work too big for one session as a map of decision tickets |
 | `/to-tickets` | Split a spec into tracer-bullet sub-issues with blocking links |
 | `/standup` | Generate daily standup from git history |
 | `/agent-standup` | Reconcile ownership, handoffs, and merge order across agents and operators |

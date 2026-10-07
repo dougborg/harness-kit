@@ -45,6 +45,7 @@
     "./claude-skills/pr-body",
     "./claude-skills/pr-comments",
     "./claude-skills/rebase",
+    "./claude-skills/research",
     "./claude-skills/review-pr",
     "./claude-skills/session-retro",
     "./claude-skills/shortcut-ledger",
@@ -57,6 +58,7 @@
     "./claude-skills/to-tickets",
     "./claude-skills/triage",
     "./claude-skills/ui-review",
-    "./claude-skills/wait-what"
+    "./claude-skills/wait-what",
+    "./claude-skills/wayfinder"
   ]
 }

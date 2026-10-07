@@ -25,6 +25,8 @@ License. Adapted material so far:
 - `to-spec` and `to-tickets` (tracer-bullet slices with blocking edges, and
   expand-contract for wide refactors), replacing harness-kit's
   `feature-spec`.
+- `wayfinder` (a map of decision tickets with fog of war, resolved one per
+  session) and `research`.
 - `triage`, with its agent-brief format and the `.out-of-scope/` record of
   rejected ideas.
 - The `pr-body` skill, from `pr`. Its menu of summary visuals is credited
