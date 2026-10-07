@@ -6,8 +6,9 @@ Parts of harness-kit's authoring guidance and skills are adapted from
 [mattpocock/skills](https://github.com/mattpocock/skills), used under the MIT
 License. Adapted material so far:
 
-- The `skill-writer` skill's body-writing guidance (completion criteria,
-  leading words, positive framing, no-op and sediment pruning) and its
+- The `skill-writer` skill's body-writing guidance (context pointers,
+  completion criteria, leading words, positive framing, no-op and sediment
+  pruning, splitting by branch) and its
   invocation rules (user-invoked vs model-invoked skills, composition by
   calling the Skill tool), from `writing-for-agents` and `.agents/invocation.md`.
 - The `thinking` area: `grilling` (adapted to ask through `AskUserQuestion` on
@@ -33,6 +34,8 @@ License. Adapted material so far:
   across its frontier onto one integration branch).
 - `triage`, with its agent-brief format and the `.out-of-scope/` record of
   rejected ideas.
+- `teach`, with its mission, resources, and learning-record formats.
+- `loop-me` (experimental), from the in-progress upstream skill.
 - The `pr-body` skill, from `pr`. Its menu of summary visuals is credited
   there to Dex Horthy's `show-me` skill
   ([humanlayer/skills](https://github.com/humanlayer/skills)).

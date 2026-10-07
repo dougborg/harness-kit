@@ -46,6 +46,8 @@ what it has already decided against.
 | `/groom` | Backlog grooming: theme buckets, PR train, stale flags, gaps |
 | `/ui-review` | Accessibility and UX audit (WCAG 2.1 AA) |
 | `/svg-logo-designer` | Generate SVG logos |
+| `/teach` | Learn a topic over several sessions: lessons, references, and learning records |
+| `/loop-me` | Experimental: spec the recurring workflows worth delegating |
 
 **4 agents**, provided as Claude Markdown definitions and Codex project TOML:
 

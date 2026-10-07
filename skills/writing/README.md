@@ -1,12 +1,13 @@
 # Writing
 
-Documents and design for people: documentation and logos.
+Documents and design for people: documentation, logos, and lessons.
 
 ## User-invoked
 
 Run only when you type them.
 
 - **[svg-logo-designer](./svg-logo-designer/SKILL.md)**: Generate SVG logo concepts and variations.
+- **[teach](./teach/SKILL.md)**: Learn a topic over several sessions in a guided workspace.
 
 ## Model-invoked
 
