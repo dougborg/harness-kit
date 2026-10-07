@@ -20,7 +20,7 @@ lint_file() {
   esac
 }
 
-if [ -n "${1:-}" ] && [ "${1:-}" != "{file_path}" ]; then
+if [ -n "${1:-}" ]; then
   lint_file "$1"
   exit 0
 fi

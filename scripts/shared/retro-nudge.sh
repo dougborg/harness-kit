@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Stop hook: after a session that touched more than three files (unstaged,
+# Stop hook: when the repo has more than three changed files (unstaged,
 # staged, or committed in the last four hours), suggest a harness retro.
 # A Stop hook's plain stdout only reaches the debug log, so the nudge goes out
 # as a JSON systemMessage, which is shown to the user without making the
 # agent carry on. Stop fires after every turn, so the nudge shows once per
 # session, keyed on the session_id in the hook's JSON input. Exits 0 always
-# (hook safety).
+# (hook safety); without jq it can't tell sessions apart, so it stays quiet.
+command -v jq >/dev/null 2>&1 || exit 0
 session=$(jq -r '.session_id // empty' 2>/dev/null | tr -cd 'A-Za-z0-9-')
 marker=""
 if [ -n "$session" ]; then

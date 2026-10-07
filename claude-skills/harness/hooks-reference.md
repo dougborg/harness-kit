@@ -82,9 +82,9 @@ Declaring `"hooks": "./hooks/hooks.json"` in `plugin.json` **and** placing the f
 | `Stop` | When Claude finishes responding | No |
 | `SubagentStart` | When a subagent is spawned | Yes (agent type) |
 | `SubagentStop` | When a spawned subagent ends | Yes (agent type) |
-| `SessionStart` | When a session begins or resumes | Yes (`startup`, `resume`, `clear`, `compact`) |
-| `Notification` | When a notification would be shown | No |
-| `PreCompact` | Before automatic context compaction | No |
+| `SessionStart` | When a session begins or resumes | Yes (`startup`, `resume`, `clear`, `compact`, `fork`) |
+| `Notification` | When a notification would be shown | Yes (notification type) |
+| `PreCompact` | Before context compaction | Yes (`manual`, `auto`) |
 
 ## Matcher Syntax
 
@@ -121,8 +121,8 @@ gets the event as JSON on stdin; read the edited path with
 
 Where a hook's output goes depends on the event:
 
-- **Plain stdout** reaches Claude's context only for `SessionStart` and
-  `UserPromptSubmit`. For `PostToolUse`, `Stop`, and most other events it
+- **Plain stdout** reaches Claude's context only for `SessionStart`,
+  `UserPromptSubmit`, `UserPromptExpansion`, and `PostModelSwitch`. For `PostToolUse`, `Stop`, and most other events it
   goes only to the debug log, as does stderr on exit 0.
 - **`additionalContext`** in `hookSpecificOutput` adds text to Claude's
   context. On `Stop`, it makes Claude continue the turn.
