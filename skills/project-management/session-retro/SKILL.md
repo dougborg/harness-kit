@@ -4,33 +4,26 @@ description: Capture a work session as a structured retro doc in docs/sessions/
 allowed-tools: Bash(git log*), Bash(git config*), Bash(gh issue*), Bash(gh pr*), Bash(gh search*), Bash(ls*), Read, Glob, Write
 ---
 
-# /session-retro — Session Retrospective Document
+# Session Retro
 
-Walk through the current session and produce a permanent cause-and-effect record:
-what the user set out to do, what happened, what worked, what didn't, and what
-issues came out of it.
+Turn the current session into a permanent cause-and-effect record: what the
+user set out to do, what happened, what worked, what didn't, and which issues
+came out of it.
 
-## PURPOSE
+This audits the session's work and produces a doc plus project issues. The
+harness itself (skills, agents, hooks, checks, steering files, tools) is the
+harness skill's retro mode, which produces harness fixes and harness-kit
+issues. The two are complements, best run back-to-back at the end of a
+session.
 
-Capture live-session learnings as a structured doc plus pending-issue checklist.
+Every entry traces to the conversation, `git log`, or `gh` output. Invent no
+activity: a retro that records what didn't happen teaches the wrong lesson.
 
-## CRITICAL
+## 1. Reconstruct the session
 
-- **Audits the session, not the harness** — harness gaps go to `/harness retro`; run both at end-of-session
-- **Never invent activity** — every entry must trace to conversation context, `git log`, or `gh` output
-- **Respect the project's docs layout** — default `docs/sessions/`, but follow existing conventions
-
-## ASSUMES
-
-- You're in a git repository; `gh` is installed and authenticated
-- The session's conversation context is available (it is the primary source for chronology and observations)
-
-## STANDARD PATH
-
-### 1. Reconstruct the Session
-
-Combine conversation context with recorded activity. Use the session start time
-(or "today") as the window:
+The conversation is the primary source for chronology and observations, and
+it defines the session, not the clock. Back it with the recorded activity,
+using the session's start (or today) as the window:
 
 ```bash
 git log --since="8 hours ago" --oneline --author="$(git config user.email)"
@@ -38,32 +31,29 @@ gh issue list --author="@me" --state=all --search "created:>=$(date +%Y-%m-%d)"
 gh pr list --author="@me" --state=all --search "created:>=$(date +%Y-%m-%d)"
 ```
 
-### 2. Draft the Doc
+If the session crossed midnight or resumed from an earlier day, widen
+`--since` to the real start. If several distinct sessions happened today,
+scope the doc to this one, mentioning the others under "What happened" only
+where they fed into it.
 
-Write `docs/sessions/YYYY-MM-DD-<slug>.md` (slug = 2-4 word kebab-case session
-theme) using DETAIL: Output Template. Sections: Goal, What happened, What
-worked, What didn't, Issues filed, Lessons / patterns.
+Done when every event you plan to record traces to the conversation or to
+this output.
 
-### 3. Pending-Issues Checklist
+## 2. Pick the location
 
-List observations from the session that deserve an issue but haven't been filed
-yet, as a `- [ ]` checklist at the end of the doc. Offer to file each via
-`/issue-create` (project issues) or `/harness-issue` (harness gaps).
+Default to `docs/sessions/YYYY-MM-DD-<slug>.md`, where the slug is a
+two-to-four word kebab-case theme, dated by the day the session ended. Check
+the project's layout first (`ls`):
 
-### 4. Close the Loop
+- If docs live elsewhere (`documentation/`, `doc/`, a wiki directory), put
+  `sessions/` under that root.
+- If a session, journal, or log directory already exists (`docs/journal/`,
+  `notes/sessions/`), use it and match its filename convention.
+- Create `docs/sessions/` only when nothing comparable exists.
 
-Show the doc to the user, then suggest `/harness retro` if it hasn't run yet —
-the two together capture both the work and the tooling learnings.
+Done when you have a path that follows the project's convention.
 
-## EDGE CASES
-
-- [No docs/ directory or different layout] — read DETAIL: Output Location
-- [Session spans days or start unclear] — read DETAIL: Session Window
-- [Overlap with /harness retro findings] — read DETAIL: Composition with /harness retro
-
----
-
-## DETAIL: Output Template
+## 3. Write the doc
 
 ```markdown
 # Session YYYY-MM-DD — <one-line session theme>
@@ -96,51 +86,32 @@ What the user was trying to do, in one or two sentences.
 
 ## Pending issues
 
-- [ ] Observation still needing an issue — file with /issue-create
+- [ ] Observation still needing an issue — file with issue-create
 ```
 
----
+"Pending issues" lists observations that deserve an issue but haven't been
+filed. A finding can belong to both retros: "the agent fell back to the
+browser" is a session fact, so record it under "What didn't", and leave it to
+the harness retro to classify and route as a possible harness gap.
 
-## DETAIL: Output Location
+Done when every section is filled or explicitly empty, and the doc is
+written.
 
-Default is `docs/sessions/`. Before writing, check the project's actual layout:
+## 4. Close the loop
 
-- If docs live elsewhere (`documentation/`, `doc/`, a wiki directory), put
-  `sessions/` under that root instead.
-- If a session/journal/log directory already exists (e.g. `docs/journal/`,
-  `notes/sessions/`), use it and match its filename convention.
-- Only create `docs/sessions/` when nothing comparable exists.
+Show the user the doc and offer to file the pending issues. For each one they
+pick, call the Skill tool with "issue-create" for a project issue, or with
+"harness-issue" for a harness gap. If the harness retro hasn't run this
+session, suggest the user run it (`/harness retro` on Claude Code,
+`$harness retro` on Codex), so the work and the tooling lessons are both
+captured.
 
----
+Done when the user has seen the doc, each pending issue they chose is filed,
+and the harness retro has run or been suggested.
 
-## DETAIL: Session Window
+## Related
 
-The conversation context defines the session, not the clock. If the session
-spans midnight or resumed from a previous day, widen `--since` to cover the
-real start, and date the doc by the day the session ended. If multiple distinct
-sessions happened today, scope the doc to the current one and note the others
-under "What happened" only if they fed into it.
-
----
-
-## DETAIL: Composition with /harness retro
-
-The two retros are complements, run back-to-back at end-of-session:
-
-| | `/session-retro` | `/harness retro` |
-| --- | --- | --- |
-| Audits | The session's work | The harness (skills/agents/hooks) and its environment (checks, steering files, tools) |
-| Output | `docs/sessions/` doc + project issues | Harness fixes + harness-kit issues |
-
-A finding can surface in both: "the agent fell back to the browser" is a
-session fact (record it under *What didn't*) and possibly a harness gap (let
-`/harness retro` classify and route it). Record here; route there.
-
----
-
-## RELATED
-
-- `/harness retro` — harness-side retrospective; run both at end-of-session
-- `/standup` — daily activity summary (report, not a permanent doc)
-- `/issue-create` — file project issues from the pending checklist
-- `/harness-issue` — file harness gaps upstream
+- `harness` retro mode — the harness-side retrospective.
+- `standup` — a daily activity report, not a permanent doc.
+- `issue-create` — files project issues from the pending checklist.
+- `harness-issue` — files harness gaps upstream.

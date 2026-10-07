@@ -8,111 +8,73 @@ description: >-
 allowed-tools: Bash(gh issue *), Bash(gh search *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---
 
-# /issue-create — File a New GitHub Issue
+# Issue Create
 
-Search for duplicates, decide scope, pick labels, preview the body to the user, then file.
+File one issue without fragmenting a discussion that already exists. The user
+sees the title, body, and labels before anything is posted.
 
-## PURPOSE
-
-File new issues without fragmenting discussion or losing scope clarity.
-
-## CRITICAL
-
-- **Search for duplicates first** — comment on an existing thread instead of fragmenting.
-- **Preview before filing** — show title + body + labels to the user. No silent `gh issue create`.
-- **Pick scope deliberately** — focused vs umbrella. Default focused.
-- **Use real labels** — discover via `gh label list`. Never invent labels.
-
-## ASSUMES
-
-- `gh` CLI authenticated; repo accessible.
-- Repo has labels worth using (skill auto-discovers).
-
-## STANDARD PATH
-
-### 1. Search for duplicates
+## 1. Search for duplicates
 
 ```bash
 gh search issues "<keywords>" --repo <owner>/<repo>
 gh issue list --repo <owner>/<repo> --search "<keywords>" --state all
 ```
 
-If a relevant issue exists, comment there instead and stop. See DETAIL: Duplicate Handling.
+Read each candidate's body and comments; a title alone misleads.
 
-### 2. Decide scope
+- **Same work:** comment on it with your context and a cross-link, and stop.
+  Fragmenting discussion across near-duplicates costs more than over-linking.
+- **Adjacent but distinct:** file the new issue and cross-link both
+  directions.
+- **Unclear:** show both to the user and ask.
 
-Focused ("fix X in file Y") vs umbrella (cross-cutting, with checkboxes). Prefer focused unless the work spans multiple PRs.
+Done when every candidate is classed as same, adjacent, or unrelated.
 
-### 3. Pick labels
+## 2. Decide scope
+
+File **focused** by default: one fix, one file or tight area, one PR closes
+it. File an **umbrella**, tracked with checkboxes, when the work spans three
+or more files or domains, you expect two or more PRs against it, or triage
+needs a single anchor for related conversations. When in doubt, file focused:
+splitting an umbrella later is cheap, and so is merging focused issues (the
+issue-restructure skill, which the user runs).
+
+Done when you can say which shape this is and why.
+
+## 3. Pick labels
 
 ```bash
 gh label list --repo <owner>/<repo>
 ```
 
-Apply: kind (`bug` / `enhancement` / `chore`), area (`mcp-server` / `client` / etc.), priority (`p0`/`p1`/`p2`/`p3`).
+Apply kind (`bug`, `enhancement`, `chore`), area, and priority (`p0`–`p3`)
+from labels that exist. When none fits, file without it and add a line to the
+body: "No `area:*` label exists yet; suggest creating one." Leave
+`gh label create` to the maintainer, because the label set is a repo-config
+decision.
 
-### 4. Draft body
+Done when every label you plan to apply appears in `gh label list`.
 
-Include: context, current behavior, expected behavior, file:line refs, cross-links to related issues / PRs.
+## 4. Draft and preview
 
-### 5. Preview to user
+Write the body: context, current behaviour, expected behaviour, `file:line`
+references, and cross-links to related issues and PRs. Show the user the
+title, body, and labels.
 
-Show title + body + labels. Wait for confirmation.
+Done when the user confirms the draft.
 
-### 6. File
+## 5. File
 
 ```bash
 gh issue create --repo <owner>/<repo> --title "..." --body "..." --label "..."
 ```
 
-Print the URL.
+Done when you've printed the new issue's URL, and any adjacent issue from
+step 1 links back to it.
 
-## EDGE CASES
+## Related
 
-- [Existing issue found during search] — read DETAIL: Duplicate Handling
-- [Scope unclear — focused or umbrella?] — read DETAIL: Scope Decision
-- [Labels missing for the area] — read DETAIL: Missing Labels
-
----
-
-## DETAIL: Duplicate Handling
-
-When `gh search` surfaces a candidate:
-
-1. Read the candidate's body + comments — don't judge by title alone.
-2. If it covers the same work: comment there with your context, cross-link, stop.
-3. If it's adjacent but distinct: file new, cross-link both directions in body.
-4. If unclear: show both to the user and ask.
-
-Fragmenting discussion across near-duplicates is worse than over-linking.
-
----
-
-## DETAIL: Scope Decision
-
-**Focused** — one fix, one file or one tight area, one PR closes it. Default.
-
-**Umbrella** — cross-cutting, multiple PRs, tracked via checkboxes. Use when:
-
-- Work genuinely spans 3+ files or domains
-- You expect 2+ PRs against it
-- Triage needs a single anchor for related conversations
-
-When in doubt, file focused. Splitting an umbrella later is cheap; merging focused issues later is also cheap (`/issue-restructure merge`).
-
----
-
-## DETAIL: Missing Labels
-
-If the repo has no label matching the area / kind / priority:
-
-- File without that label rather than inventing one.
-- Mention in the body: "No `area:*` label exists yet — suggest creating one."
-- Don't `gh label create` from this skill — that's a repo-config decision for the maintainer.
-
-## RELATED
-
-- `/issue-close` — Close an issue (resolved / superseded / duplicate).
-- `/issue-update` — Edit body / labels, reopen, comment.
-- `/issue-restructure` — Split one issue into many, or merge many into one.
-- `/harness-issue` — File upstream against harness-kit specifically.
+- `issue-close` — close as resolved, superseded, or duplicate.
+- `issue-update` — edit the body or labels, comment, reopen.
+- `issue-restructure` — split one issue into many, or merge many into one.
+- `harness-issue` — file upstream against harness-kit specifically.

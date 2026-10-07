@@ -11,64 +11,85 @@ effort: low
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---
 
-# /issue-close — Close an Issue with Context Preserved
+# Issue Close
 
-Close as resolved (default), superseded, or duplicate — never silently, never before mining the comment thread.
+Close an issue without losing what its thread learned or stranding the people
+who read it. Every close carries a comment stating the resolution, and the
+user sees each comment before it posts.
 
-## PURPOSE
+| Arguments | Mode |
+| --- | --- |
+| `<#>` | **resolve**: fixed, wontfix, invalid, or no-repro |
+| `supersede <closing#> <canonical#>` | another issue captures the work; migrate substance first |
+| `dedupe <duplicate#> <keeper#>` | an outright duplicate; no migration |
 
-Close issues without losing substance from comment threads or stranding readers.
-
-## CRITICAL
-
-- **Always fetch body + comments before closing** — comments often carry the latest understanding; the body alone lies. `gh issue view --json comments` returns the first 100 comments; paginate via `gh api` for longer threads (see pre-flight note).
-- **Migrate substance before destroying context** — never close-as-superseded until the closing thread's substance is mined and moved to the canonical issue.
-- **Preview before applying** — show the planned close comment (and any migration comment) to the user and require confirmation before running `gh issue close` or `gh issue comment`.
-- **Cross-link both directions** — both issues reference each other after the close.
-- **Never silent close** — every close carries a comment stating resolution / reason.
-
-## ASSUMES
-
-- `gh` CLI authenticated; all referenced issue numbers accessible.
-
-## STANDARD PATH
-
-### 1. Pre-flight
+## 1. Read the whole thread
 
 ```bash
 gh issue view <#> --json title,body,state,labels,comments
 ```
 
-Read the **comments** field, not just the body. See DETAIL: What To Mine From Comments.
+Read both issues for `supersede` and `dedupe`. The comments often hold the
+latest understanding, so the body alone can mislead. Look for:
 
-For `supersede` and `dedupe`, pre-flight **both** issues.
+- alternative approaches proposed in replies;
+- corrections after filing ("this was wrong, the real issue is …");
+- `file:line` samples added later;
+- cross-links to other issues and PRs;
+- labels triagers added after filing, which are part of the effective scope.
 
-> **Note:** `gh issue view --json comments` returns at most the first 100 comments. If the thread is longer, paginate via
-> `gh api /repos/<owner>/<repo>/issues/<#>/comments?per_page=100&page=N` (or `gh api --paginate`) before mining substance.
+`--json comments` returns at most the first 100; for a longer thread, page
+with `gh api /repos/<owner>/<repo>/issues/<#>/comments?per_page=100&page=N`
+(or `gh api --paginate`) before mining. For threads past 100 comments and
+issues in another repo, read [long-and-cross-repo.md](long-and-cross-repo.md).
 
-### 2. Pick the mode
+Done when you've read every comment on every issue involved.
 
-| Arg form | Mode |
-| --- | --- |
-| `<#>` | `resolve` — fixed / wontfix / invalid / no-repro |
-| `supersede <closing#> <canonical#>` | another issue captures the work; substance migration required |
-| `dedupe <duplicate#> <keeper#>` | outright duplicate; no migration |
+## 2. Resolve
 
-### 3. Mode: resolve
+Name the resolution and draft the comment:
 
-Identify resolution: fixed (PR / commit), wontfix (with reason), invalid (with reason), no-repro (with what was tried). See DETAIL: Resolution Comment Templates.
+```text
+Resolved in #<pr> (commit <sha>). <One sentence on what changed.>
+```
 
-**Preview**: show the drafted close comment to the user. Wait for confirmation. Then:
+```text
+Closing as wontfix. <Reason: design constraint, scope, deprecated path.>
+If circumstances change, reopen with new context.
+```
+
+```text
+Closing as invalid. <Why: misconfigured environment, expected behaviour, etc.>
+```
+
+```text
+Cannot reproduce on <env / commit>. Tried: <steps>. Reopen with a minimal
+repro if you hit this again.
+```
+
+Show the user the comment and wait for confirmation, then:
 
 ```bash
 gh issue close <#> --comment "..."
 ```
 
-### 4. Mode: supersede
+Done when the issue is closed with a comment naming its resolution.
 
-1. Mine the closing issue's comment thread for substance not already on the canonical (alternative approaches, file:line samples, post-filing corrections, cross-links).
-2. Draft the migration comment for `canonical#` (preserves substance with attribution, cross-links source) and the close comment for `closing#` (states *why* superseded, cross-links `canonical#`, notes the original thread remains readable).
-3. **Preview both drafted comments to the user.** Wait for explicit confirmation before posting either.
+## 3. Supersede
+
+Migrate before closing: once the closing issue is shut, its substance is
+effectively lost to anyone reading the canonical one.
+
+1. From step 1, list every item on `closing#` not already on `canonical#`.
+   Each is a migration candidate. Carry late priority and area labels onto
+   `canonical#` if it lacks them, and say in the migration comment where the
+   label change came from.
+2. Draft the migration comment for `canonical#`, preserving the substance with
+   attribution and linking back to `closing#`. Draft the close comment for
+   `closing#`: why it's superseded, a link to `canonical#`, and a note that
+   the original thread stays readable.
+3. Show the user both comments, and wait for confirmation before posting
+   either.
 4. Apply:
 
    ```bash
@@ -76,101 +97,27 @@ gh issue close <#> --comment "..."
    gh issue close <closing#> --comment "..."
    ```
 
-### 5. Mode: dedupe
+Done when every migration candidate is on `canonical#`, and each issue links
+to the other.
 
-1. Confirm genuine overlap, not just keyword similarity.
-2. Keeper is usually older + more discussion. Cross-link from keeper *only* if the duplicate adds context (different repro, different reporter).
-3. **Preview the drafted close comment** to the user. Wait for confirmation. Then:
+## 4. Dedupe
 
-```bash
-gh issue close <duplicate#> --comment "Duplicate of #<keeper>. <Optional: what's preserved>"
-```
+1. Confirm the overlap is genuine, not keyword similarity.
+2. The keeper is usually the older issue with more discussion. Cross-link from
+   the keeper only when the duplicate adds context, such as a different repro
+   or reporter.
+3. Show the user the close comment and wait for confirmation, then:
 
-## EDGE CASES
+   ```bash
+   gh issue close <duplicate#> --comment "Duplicate of #<keeper>. <Optional: what's preserved>"
+   ```
 
-- [Closing issue is in a different repo from canonical] — read DETAIL: Cross-Repo References
-- [Thread has 100+ comments] — read DETAIL: Sampling Long Threads
-- [Triagers added scope-narrowing labels post-filing] — read DETAIL: Respecting Late Labels
-- [Resolution comment templates] — read DETAIL: Resolution Comment Templates
+Done when the duplicate is closed pointing at the keeper, and any context it
+added is linked from the keeper.
 
----
+## Related
 
-## DETAIL: What To Mine From Comments
-
-When pre-flighting, scan for:
-
-- Alternative approaches / options proposed in replies
-- Post-filing corrections ("this was wrong, the real issue is …")
-- File:line samples added later
-- Cross-links to other issues / PRs
-- Labels added by triagers that hint at scope
-
-For `supersede`, every item above that isn't already on `canonical#` is a migration candidate.
-
----
-
-## DETAIL: Resolution Comment Templates
-
-**Fixed by PR/commit:**
-
-```text
-Resolved in #<pr> (commit <sha>). <One sentence on what changed.>
-```
-
-**Wontfix:**
-
-```text
-Closing as wontfix. <Reason — design constraint, scope, deprecated path.>
-If circumstances change, reopen with new context.
-```
-
-**Invalid:**
-
-```text
-Closing as invalid. <Why — misconfigured environment, expected behavior, etc.>
-```
-
-**No-repro:**
-
-```text
-Cannot reproduce on <env / commit>. Tried: <steps>. Reopen with a minimal
-repro if you hit this again.
-```
-
----
-
-## DETAIL: Cross-Repo References
-
-`gh` accepts `owner/repo#N` in issue bodies and comments. Before migrating across repos:
-
-- Confirm both repos are accessible (`gh repo view`).
-- Use the full `owner/repo#N` form in both directions.
-- Watch for private-repo links the other side can't read.
-
----
-
-## DETAIL: Sampling Long Threads
-
-For 100+ comments, sample by chronological clusters:
-
-- **Most recent few** — usually capture current state.
-- **Oldest** — set the original framing.
-- **Middle** — often noise; spot-check for migration candidates.
-
-When in doubt, show the user a sampled list of candidates and ask before migrating.
-
----
-
-## DETAIL: Respecting Late Labels
-
-Labels added by triagers after filing are part of the effective scope. When superseding:
-
-- Carry forward priority / area labels onto `canonical#` if it doesn't already have them.
-- Mention the source of the label change in the migration comment.
-
-## RELATED
-
-- `/issue-create` — File a new issue.
-- `/issue-update` — Reopen, edit body, post comment, retag.
-- `/issue-restructure` — Split / merge issues.
-- `/pr-comments` — Sibling discipline for PR review threads.
+- `issue-create` — file a new issue.
+- `issue-update` — reopen, edit the body, comment, retag.
+- `issue-restructure` — split or merge issues.
+- `pr-comments` — the same discipline for PR review threads.
