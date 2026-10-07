@@ -23,6 +23,16 @@ case "$1 $2" in
 esac
 STUB
 chmod +x "$scratch/bin/gh"
+# Browser-opener stubs, so the example stage never opens a real browser tab;
+# each records the URL it was asked to open in $STUB_GH_DIR/opened.
+cat >"$scratch/bin/open" <<'STUB'
+#!/usr/bin/env bash
+echo "$1" >>"$STUB_GH_DIR/opened"
+STUB
+chmod +x "$scratch/bin/open"
+for opener in xdg-open wslview explorer.exe; do
+  cp "$scratch/bin/open" "$scratch/bin/$opener"
+done
 
 bashes=${WIZARD_BASHES:-bash}
 if [ -z "${WIZARD_BASHES:-}" ] && [ -x /bin/bash ] && [ "$(command -v bash)" != /bin/bash ]; then
@@ -63,6 +73,7 @@ for sh in $bashes; do
   check fresh-env grep -qx "STRIPE_PUBLISHABLE_KEY='pk_test_1'" "$case_dir/.env"
   check fresh-mode [ -n "$(find "$case_dir/.env" -prune -perm 600)" ]
   check fresh-secret [ "$(cat "$case_dir/secret-STRIPE_SECRET_KEY")" = sk_test_2 ]
+  check fresh-browser-stubbed grep -q "dashboard.stripe.com" "$case_dir/opened"
 
   # B1: inside a git work tree with .env not ignored, it offers to ignore it.
   prep gitignore
