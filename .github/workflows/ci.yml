@@ -16,47 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Install Codex
         run: npm install -g @openai/codex
 
-      - name: Validate plugin manifest
-        run: claude plugin validate .
-
-      - name: Validate Codex packaging and projections
-        run: ./scripts/validate-codex.sh
-
-      - name: Validate plugin hooks schema
-        run: ./scripts/shared/validate-hooks-schema.sh hooks/hooks.json
-
-      - name: Run hooks validator regression tests
-        run: ./scripts/shared/test-hooks-schema.sh
-
-      - name: Run cross-host hook tests
-        run: ./scripts/test-cross-host-hooks.sh
-
-      - name: Run poll-review decision tests
-        run: ./scripts/test-poll-review.sh
-
-      - name: Run poll-ci decision tests
-        run: ./scripts/test-poll-ci.sh
-
-      - name: Run sub-issue frontier test
-        run: ./scripts/test-sub-issue-frontier.sh
-
-      - name: Run retro nudge test
-        run: ./scripts/test-retro-nudge.sh
-
-      - name: Run Codex agent generator test
-        run: ./scripts/test-generate-codex-agents.sh
-
-      - name: Run wizard template test
-        run: ./scripts/test-wizard-template.sh
-
-      - name: Smoke-test Codex marketplace installation
-        run: ./scripts/test-codex-plugin-install.sh
+      - name: Validate and test
+        run: just validate-all
 
   shellcheck:
     name: ShellCheck
@@ -64,10 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
-        with:
-          scandir: .
+        run: just lint-shell
 
   markdownlint:
     name: Markdown lint
@@ -75,8 +44,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+
       - name: Run markdownlint
-        run: ./scripts/lint-md.sh
+        run: just lint-md
 
   hygiene:
     name: File hygiene
@@ -84,20 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Check for trailing whitespace
-        run: |
-          if grep -rn '[[:blank:]]$' --include='*.md' --include='*.sh' --include='*.yml' --include='*.json' .; then
-            echo "::error::Trailing whitespace found"
-            exit 1
-          fi
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
 
-      - name: Check files end with newline
-        run: |
-          fail=0
-          while IFS= read -r f; do
-            if [ -s "$f" ] && [ "$(tail -c1 "$f" | wc -l)" -eq 0 ]; then
-              echo "::error file=$f::Missing final newline"
-              fail=1
-            fi
-          done < <(find . -name '.git' -prune -o \( -name '*.md' -o -name '*.sh' -o -name '*.yml' -o -name '*.json' \) -print)
-          exit $fail
+      - name: Check file hygiene
+        run: just hygiene
