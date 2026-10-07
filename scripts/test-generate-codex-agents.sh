@@ -30,6 +30,14 @@ tools:
 ---
 Body with \backslash and """ triple quotes.
 MD
+cat >"$scratch/agents/reader.md" <<'MD'
+---
+name: reader
+description: Reads files.
+tools: Read, Grep
+---
+Read things.
+MD
 cat >"$scratch/agents/writer.md" <<'MD'
 ---
 name: writer
@@ -64,7 +72,8 @@ field() { python3 -c 'import sys,tomllib; print(tomllib.load(open(sys.argv[1],"r
 
 "$gen"
 expect description [ "$(field verifier description)" = "Checks work. Examples: in prose stay." ]
-expect read-only-sandbox [ "$(field verifier sandbox_mode)" = read-only ]
+expect read-only-sandbox [ "$(field reader sandbox_mode)" = read-only ]
+expect sandbox-override [ "$(field verifier sandbox_mode)" = workspace-write ]
 expect effort [ "$(field verifier model_reasoning_effort)" = low ]
 expect writer-no-sandbox [ -z "$(field writer sandbox_mode)" ]
 expect body-round-trip [ "$(field verifier developer_instructions)" = 'Body with \backslash and """ triple quotes.' ]
