@@ -1,0 +1,5 @@
+interface:
+  display_name: "Triage"
+  short_description: "Move incoming issues through triage states to agent-ready briefs."
+policy:
+  allow_implicit_invocation: false

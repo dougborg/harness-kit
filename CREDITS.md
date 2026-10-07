@@ -25,6 +25,8 @@ License. Adapted material so far:
 - `to-spec` and `to-tickets` (tracer-bullet slices with blocking edges, and
   expand-contract for wide refactors), replacing harness-kit's
   `feature-spec`.
+- `triage`, with its agent-brief format and the `.out-of-scope/` record of
+  rejected ideas.
 - The `pr-body` skill, from `pr`. Its menu of summary visuals is credited
   there to Dex Horthy's `show-me` skill
   ([humanlayer/skills](https://github.com/humanlayer/skills)).
@@ -66,6 +68,7 @@ used under the MIT License:
   keep. Its `shortcut:` markers adapt ponytail's `ponytail:` comments.
 - The complexity lens in `code-reviewer` (the `delete`, `reuse`, `stdlib`,
   `native`, `yagni`, and `shrink` tags).
+- The `shortcut-ledger` skill, from `ponytail-debt`.
 
 ```text
 MIT License

@@ -47,6 +47,7 @@
     "./claude-skills/rebase",
     "./claude-skills/review-pr",
     "./claude-skills/session-retro",
+    "./claude-skills/shortcut-ledger",
     "./claude-skills/skill-writer",
     "./claude-skills/standup",
     "./claude-skills/svg-logo-designer",
@@ -54,6 +55,7 @@
     "./claude-skills/to-questionnaire",
     "./claude-skills/to-spec",
     "./claude-skills/to-tickets",
+    "./claude-skills/triage",
     "./claude-skills/ui-review",
     "./claude-skills/wait-what"
   ]
