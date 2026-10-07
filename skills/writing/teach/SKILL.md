@@ -61,10 +61,9 @@ two:
 1. **Ground the mission.** Read `MISSION.md`, `NOTES.md`, and the learning
    records. If the mission is missing or vague, find out why the user wants
    this before teaching anything: call the Skill tool with "grilling". When
-   the user's goal shifts, confirm the new mission with them, update
-   `MISSION.md`, and write a learning record about the shift. Done when
-   `MISSION.md` names a concrete outcome and observable success criteria the
-   user has confirmed.
+   the user's goal shifts, confirm the new mission with them and update
+   `MISSION.md` (step 5 records the shift). Done when `MISSION.md` names a
+   concrete outcome and observable success criteria the user has confirmed.
 2. **Gather knowledge.** While `RESOURCES.md` is thin, finding sources is the
    work: call the Skill tool with "research". Done when every claim the next
    lesson will make traces to an entry in `RESOURCES.md`.
@@ -77,16 +76,18 @@ two:
    inline code. The lesson is short enough to finish in one sitting, beautiful
    (clean typography, Tufte over dashboard), and teaches only the knowledge
    the skill needs before the practice: an in-browser quiz or task, or a list
-   of real-world steps to take (a yoga sequence, a lift). It cites a source for each claim,
-   recommends one primary source to read or watch, links related lessons and
-   references, uses the glossary's terms, and reminds the user to bring
-   follow-up questions to you. In quizzes, every answer has the same length
-   and the correct one moves position, so format gives nothing away. Open the
-   file for the user (`open` on macOS, `xdg-open` on Linux). Done when the
-   lesson is saved, opened, and checked against each of these.
+   of real-world steps to take (a yoga sequence, a lift). It recommends one
+   primary source to read or watch, links related lessons and references, and
+   reminds the user to bring follow-up questions to you. In quizzes, every
+   answer has the same length and the correct one moves position, so format
+   gives nothing away. Open the file for the user (`open` on macOS,
+   `xdg-open` on Linux); otherwise give the user the file path. Done when the
+   lesson file exists in `lessons/`, is opened or its path given, cites a
+   source for each claim, and uses only the glossary's terms for concepts the
+   glossary defines.
 5. **Record what was learned.** After the user works through it, update the
-   workspace: a learning record when the user showed real understanding,
-   disclosed prior knowledge, or corrected a misconception (coverage alone is
-   not learning); glossary terms they can now use; a reference document for
-   material they will look up again; preferences in `NOTES.md`. Done when
-   each of those has been considered and written where it applies.
+   workspace: a learning record when
+   [LEARNING-RECORD-FORMAT.md](LEARNING-RECORD-FORMAT.md) says one is due (a shifted mission is one of its cases), glossary terms
+   the user can now use, a reference document for material they will look up
+   again, and preferences in `NOTES.md`. Done when each of those four was
+   written, or you can say why it didn't apply this session.

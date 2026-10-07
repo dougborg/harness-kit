@@ -113,7 +113,8 @@ takes the same path through a skill every run.
   destination"). A vague bound ("once you understand the code") invites the
   agent to finish early, pulled by the steps it can see ahead. Sharpen the
   bound first; split later steps into another skill or subagent only when the
-  rush persists. A demanding criterion ("every modified model accounted for")
+  rush persists. Hiding later steps works only across a real context
+  boundary (a subagent, a handoff): an inline Skill call leaves them in view. A demanding criterion ("every modified model accounted for")
   drives more legwork than "produce a change list".
 - **Use leading words.** A compact concept the model already knows (_tight_
   loop, _tracer bullet_, _frontier_, _red_) anchors a whole region of behavior
@@ -224,9 +225,15 @@ or another skill must. If yes, keep it model-invoked; a skill that previews
 its side effects before acting (`issue-create`, `issue-close`) is safe to
 leave reachable. If it only ever fires by hand, make it user-invoked.
 
-When user-invoked skills pile up past what anyone remembers, a router skill
-(`ask-harness` here) names them and when to reach for each, so the human
-remembers one.
+A user-invoked skill moves its cost from context to the human, who becomes
+the index that must remember it exists. That load is the price of keeping a
+person in charge, so spend it where their timing matters. When user-invoked
+skills pile up past what anyone remembers, a router skill (`ask-harness`
+here) names them and when to reach for each, so the human remembers one.
+
+Split a model-invoked skill out of another only when it has its own trigger
+word you actually use, or another skill must reach it alone; the new
+description is a permanent context cost.
 
 A user-invoked skill may call model-invoked skills, never another user-invoked
 one. When a step needs a user-invoked skill as a precondition, tell the user to

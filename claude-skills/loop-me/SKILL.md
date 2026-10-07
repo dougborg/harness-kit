@@ -47,12 +47,22 @@ The current directory is the workspace.
 
 - `workflows/*.md`: one spec per workflow, the source of truth.
 - `NOTES.md`: the user's world: the tools they use, the channels they
-  process, and their own names for both. When it is empty or thin, interview
-  the user about their world before specifying anything. Record each fuzzy
-  term as its canonical name as it is sharpened.
+  process, and their own names for both. Record each fuzzy term as its
+  canonical name as it is sharpened.
 
-## Done
+## Run a session
 
-A spec is done when an agent could build the workflow without asking a single
-question. Grill until then. Building and scheduling the workflow is a separate
-job; this skill stops at the spec.
+1. **Map the user's world.** Read `NOTES.md`. When it is empty or thin,
+   interview the user about their tools and channels before specifying
+   anything. Done when `NOTES.md` names the tools and channels the candidate
+   loops run through.
+2. **Find the loops.** If the user named a workflow, start there. Otherwise
+   use the loop lens to list candidates, including ones the user hasn't
+   noticed, and let them pick. Done when the user has chosen the loop to
+   specify.
+3. **Write the spec.** Grill the chosen loop into `workflows/<name>.md`,
+   editing or deleting existing specs as answers change them. Done when an
+   agent could build the workflow without asking a single question.
+
+Building and scheduling the workflow is a separate job; this skill stops at
+the spec.
