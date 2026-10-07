@@ -6,6 +6,7 @@ Building and shipping code: test-driven development, debugging, module design, c
 
 Run only when you type them.
 
+- **[implement](./implement/SKILL.md)**: Build a ticket test-first, through to an open PR.
 - **[pr-comments](./pr-comments/SKILL.md)**: Reply to PR review comments in thread context.
 - **[rebase](./rebase/SKILL.md)**: Rebase a branch onto its target and resolve conflicts.
 

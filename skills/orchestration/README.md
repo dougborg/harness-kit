@@ -1,6 +1,12 @@
 # Orchestration
 
-Coordinating several agents and sessions: shared-work standups and usage budget.
+Coordinating several agents and sessions: parallel implementation, shared-work standups, and usage budget.
+
+## User-invoked
+
+Run only when you type them.
+
+- **[implement-spec](./implement-spec/SKILL.md)**: Build a spec's tickets in parallel onto one integration branch.
 
 ## Model-invoked
 

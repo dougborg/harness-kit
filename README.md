@@ -34,6 +34,8 @@ packaging for both hosts.
 | `/harness-builder` | Analyze codebases and recommend harness setup |
 | `/to-spec` | Turn the conversation into a spec issue |
 | `/wayfinder` | Plan work too big for one session as a map of decision tickets |
+| `/implement` | Build a ticket test-first, through to an open PR |
+| `/implement-spec` | Build a spec's tickets in parallel subagents onto one integration branch |
 | `/to-tickets` | Split a spec into tracer-bullet sub-issues with blocking links |
 | `/standup` | Generate daily standup from git history |
 | `/agent-standup` | Reconcile ownership, handoffs, and merge order across agents and operators |
