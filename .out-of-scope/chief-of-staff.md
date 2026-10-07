@@ -11,4 +11,4 @@ skills that drift apart.
 
 ## Prior requests
 
-- #111: considered while porting mattpocock/skills
+- #111: "epic: integrate mattpocock/skills" (its "Not adopting" list)
