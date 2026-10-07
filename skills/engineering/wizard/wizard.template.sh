@@ -262,21 +262,21 @@ finish() {
 
 TOTAL_STAGES=1
 
-banner "Stripe setup"
+banner "Example service setup"
 
 # ── Example stage: replace with your real steps ───────────────────────────
-stage "Stripe: API keys"
-say "We'll grab your Stripe test keys and store them for local dev + CI."
-open_url "https://dashboard.stripe.com/test/apikeys"
-step "On the API keys page, copy the Publishable key (starts pk_test_)."
-ask STRIPE_PUBLISHABLE_KEY "Paste the publishable key:"
-step "Click 'Reveal test key' on the Secret key row, then copy it."
-ask_secret STRIPE_SECRET_KEY "Paste the secret key:"
-write_env STRIPE_PUBLISHABLE_KEY "$STRIPE_PUBLISHABLE_KEY"
-write_env STRIPE_SECRET_KEY "$STRIPE_SECRET_KEY"
+stage "Example service: API keys"
+say "We'll grab your example service's API keys and store them for local dev + CI."
+open_url "https://example.com/settings/api-keys"
+step "On the API keys page, copy the public key."
+ask EXAMPLE_PUBLIC_KEY "Paste the public key:"
+step "Click 'Reveal' on the secret key, then copy it."
+ask_secret EXAMPLE_SECRET_KEY "Paste the secret key:"
+write_env EXAMPLE_PUBLIC_KEY "$EXAMPLE_PUBLIC_KEY"
+write_env EXAMPLE_SECRET_KEY "$EXAMPLE_SECRET_KEY"
 # confirm gates with `if`: a bare confirm would abort the wizard on "no".
 if confirm "Also store the secret key as a GitHub Actions secret for CI?"; then
-  set_secret STRIPE_SECRET_KEY "$STRIPE_SECRET_KEY"
+  set_secret EXAMPLE_SECRET_KEY "$EXAMPLE_SECRET_KEY"
 fi
 # ──────────────────────────────────────────────────────────────────────────
 
