@@ -29,6 +29,6 @@ the wakeup prompt.
 ## Scheduling a wakeup
 
 Phrase the prompt as the goal, not a task reference:
-`"PR #<n>: continue /open-pr CI wait — re-check gh pr checks and proceed"`,
+`"PR #<n>: continue the open-pr skill's CI wait — re-check gh pr checks and proceed"`,
 not `"check poll task <id>"`. The same applies to every long poll in the
 skill, including the outside-review wait.

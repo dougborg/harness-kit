@@ -54,15 +54,20 @@ on the branch, where CI and history readers see the noise. The script checks
 for this after the rebase, prints the recovery below, and exits non-zero
 without pushing (dougborg/harness-kit#40, #42).
 
-Squash it by hand:
+Squash it by hand. The script's printed recovery writes the editor to
+`/tmp`; put it in the repository's git directory instead, where no other
+session can overwrite it. Get the path with
+`git rev-parse --absolute-git-dir` and write it in place of `<git-dir>`.
+`cat`, `chmod`, and `env` fall outside this skill's `allowed-tools`, so expect
+a permission prompt for each.
 
 ```bash
-cat > /tmp/squash-fixup.sh <<'SH'
+cat > <git-dir>/squash-fixup.sh <<'SH'
 #!/bin/bash
 sed -i.bak '/fixup!/s/^pick /fixup /' "$1"
 SH
-chmod +x /tmp/squash-fixup.sh
-env GIT_SEQUENCE_EDITOR=/tmp/squash-fixup.sh git rebase -i origin/<base>
+chmod +x <git-dir>/squash-fixup.sh
+env GIT_SEQUENCE_EDITOR=<git-dir>/squash-fixup.sh git rebase -i origin/<base>
 ```
 
 Two details matter:

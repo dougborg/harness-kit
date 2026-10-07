@@ -70,8 +70,9 @@ every ticket is merged and either linked from the draft PR or closed.
 
 ## 6. Review and finish
 
-With a draft PR, mark it ready, then call the Skill tool with "review-pr" for
-the standards and spec passes against the whole spec, and fix their findings
+With a draft PR, mark it ready, then call the Skill tool with "review-pr",
+asking for the agent review (its standards and spec passes against the whole
+spec), and fix their findings
 in a single implementer subagent. Without one, report the integration branch.
 Done when the review gate is met (or the branch is reported), CI is green, and
 every implementer worktree is removed (`git worktree remove`).

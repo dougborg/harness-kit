@@ -18,6 +18,10 @@ green, reviewed, findings addressed."
 
 These hold for every step:
 
+- **Verification passes before `gh pr create`**, so you never push broken
+  code.
+- **Self-review every change yourself**; reviewers are a second reader, not
+  the first.
 - **Every review finding gets an outcome:** fixed, deferred to a tracked
   issue, or discussed with the reviewer. Review concerns are the point of
   review, so "not blocking", "acceptable", or "good for future refinement" is
@@ -69,7 +73,8 @@ These hold for every step:
    ```
 
    If one is already open, call the Skill tool with "review-pr" for it rather
-   than stopping to tell the user.
+   than stopping to tell the user. Name no mode: review-pr picks the agent
+   review or addressing feedback from the PR's reviews and unresolved threads.
 
 Done when you're on a feature branch, verification passes in full, and either
 no PR is open for it or the open one is in the review-pr skill's hands.
@@ -149,8 +154,11 @@ ${CLAUDE_SKILL_DIR}/poll-ci.sh <number> [timeout-seconds]
 ```
 
 It waits up to 300s by default. Run it with Bash `timeout: 600000`, or
-`timeout: 900000` with `poll-ci.sh <number> 720` for slow CI, or in the
-background, so the script and not the Bash tool decides when to give up.
+`timeout: 900000` with `poll-ci.sh <number> 720` for slow CI, so the script
+and not the Bash tool decides when to give up and a timeout always produces
+an explicit exit 2. Or run it with `run_in_background: true`: the Bash call
+returns at once and you are re-invoked when the poll completes; read the
+final output then.
 
 | Exit | Meaning | Next |
 | --- | --- | --- |
@@ -200,7 +208,9 @@ when a review is actually expected: someone is in the PR's pending review
 requests (up to its timeout), or Copilot reviews this repo's PRs
 automatically (until Copilot lands, at most `POLL_REVIEW_COPILOT_WAIT`
 seconds after the PR opened). Otherwise it returns `none` at once. When it
-waits, the long-poll rule above applies. It prints exactly one state:
+waits, give it an explicit Bash `timeout` above its own or run it in the
+background, as in step 6, and on a wakeup or notification follow
+[resuming.md](resuming.md). It prints exactly one state:
 
 | State | Exit | Next |
 | --- | --- | --- |
@@ -218,8 +228,11 @@ gh api "repos/$owner_repo/pulls/<number>/reviews" \
   --jq '[.[] | select(.state == "COMMENTED" and .body != "")] | last | .body'
 ```
 
-Done when the state is `none`, `approved`, or `timeout`, or every outside
-comment has been answered through the review-pr skill.
+Done when the state is `none`, `approved`, or `timeout`; or it is
+`summary-only` and the body has been surfaced and any agreed action taken;
+or every outside comment has been answered through the review-pr skill; or
+it is `error` and a re-run after fixing auth or the PR reference gave one of
+those.
 
 ## 9. Summary
 

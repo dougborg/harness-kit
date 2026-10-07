@@ -19,9 +19,9 @@ the thread and loses its context, and the
 ## 1. Fetch the unresolved comments
 
 ```bash
-ctx=$(<shared-scripts-dir>/resolve-github-context.sh {number})
+ctx=$(<shared-scripts-dir>/resolve-github-context.sh <PR#>)
 owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-<shared-scripts-dir>/fetch-pr-context.sh "$owner_repo" {number}
+<shared-scripts-dir>/fetch-pr-context.sh "$owner_repo" <PR#>
 ```
 
 The script returns comments with their resolved status. Done when you have
@@ -48,7 +48,7 @@ Done when every unresolved comment has a drafted answer.
 ## 3. Reply in thread
 
 ```bash
-<shared-scripts-dir>/reply-to-comment.sh {owner}/{repo} {number} {comment_id} 'Fixed — [explanation]'
+<shared-scripts-dir>/reply-to-comment.sh <owner>/<repo> <PR#> <comment_id> 'Fixed — [explanation]'
 ```
 
 Reply to every comment in the same push cycle. Done when every unresolved

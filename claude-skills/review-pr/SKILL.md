@@ -8,7 +8,7 @@ description: >-
   review comments, and whenever the open-pr skill reaches its agent review or
   its outside reviews, or finds an open PR already exists.
 argument-hint: "[PR number or URL]"
-allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git status), Bash(git rev-parse *), Bash(git switch *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(${CLAUDE_SKILL_DIR}/*), Bash(${CLAUDE_SKILL_DIR}/*), Read
+allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(gh issue *), Bash(git status), Bash(git rev-parse *), Bash(git switch *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git rebase *), Bash(git stash *), Bash(git fetch *), Bash(git merge *), Bash(${CLAUDE_SKILL_DIR}/*), Bash(${CLAUDE_SKILL_DIR}/*), Read
 ---
 
 # Review PR
@@ -37,8 +37,14 @@ These hold for both modes:
 
 ## 1. Pick the mode
 
+Read the reviews and the unresolved inline threads; `gh pr view --json`
+shows review states but not the threads:
+
 ```bash
-gh pr view <PR#> --json state,reviews    # no number: the current branch's PR
+gh pr view <PR#> --json number,state,reviews    # no number: the current branch's PR
+ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
+owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
+${CLAUDE_SKILL_DIR}/fetch-unresolved-comments.sh "$owner_repo" <PR#>
 ```
 
 Take the first that matches:
@@ -46,7 +52,7 @@ Take the first that matches:
 - **The caller asked for the agent review** (the open-pr skill does once CI
   passes) → [Agent review](#2-agent-review).
 - **The caller asked to address feedback** (open-pr does when outside reviews
-  arrive), or there are **unresolved comments**, or a **changes-requested**
+  arrive), or the script returns **unresolved comments**, or a **changes-requested**
   review (including one with only a body) →
   [Address feedback](#3-address-feedback).
 - **Overall review only**: a reviewer's review is `COMMENTED` with no inline
@@ -80,7 +86,8 @@ an outcome (your own PR), or the review is posted (someone else's).
 ## 3. Address feedback
 
 Fix, push, then reply to every comment, as one sequence: the replies are what
-close the loop for reviewers, so the work isn't done at "pushed". If the PR
+close the loop for reviewers. Never report done at "pushed"; replying to
+every comment is part of the same step. If the PR
 has merge conflicts or failing CI, sort those out first with
 [recovery.md](recovery.md); merging the base can make comments obsolete.
 
@@ -128,7 +135,9 @@ ${CLAUDE_SKILL_DIR}/fetch-unresolved-comments.sh "$owner_repo" <PR#>
 ```
 
 It returns a JSON array of unresolved comments (id, path, line, body,
-author); resolved threads are already filtered out.
+author); resolved threads are already filtered out. Check that `<PR#>` is the
+PR you're working on before taking comment IDs from it: when fixes live in a
+follow-up PR, the comments to answer are that PR's.
 
 An empty array alongside review activity means a summary-only review: an
 overall `COMMENTED` review with no inline action items. That isn't an error

@@ -14,6 +14,8 @@ Replay the current feature branch's commits onto a target branch (default
 - **Rebase only local feature branches.** If the branch is pushed and others
   work on it, confirm with the user first; the pre-flight script refuses a
   shared branch.
+- **Stash uncommitted work before rebasing**, since a dirty tree makes the
+  rebase fail; the pre-flight script does it for you.
 - **Stash only when `git status --short` shows work to save.** On a clean
   tree `git stash` saves nothing, and a later `git stash pop` pops whatever
   entry is on top, possibly months-old WIP from another branch, causing a
@@ -42,7 +44,9 @@ target=$(${CLAUDE_SKILL_DIR}/preflight.sh "${ARGUMENTS:-origin/main}")
 
 It exits 1 on a primary branch or a shared published branch. It prints the
 target on stdout and, if it stashed, `STASH_REF=<ref>` on stderr; note that
-ref for step 5. Done when the script exits 0 and you have the target.
+ref for step 5. Shell variables don't survive between Bash calls, so write
+the printed target in place of `$target` in later commands. Done when the
+script exits 0 and you have the target.
 
 ## 2. Assess
 
@@ -100,7 +104,13 @@ its pre-rebase state.
 
 ```bash
 git log --oneline $target..HEAD
-[ -n "$STASH_REF" ] && git stash pop "$STASH_REF"   # only if step 1 stashed
+```
+
+If step 1 stashed, restore it with the literal ref it printed (`$STASH_REF`
+is not set in this shell):
+
+```bash
+git stash pop "<STASH_REF from step 1>"
 ```
 
 Discover the verification command, then run what it prints as a **separate**
