@@ -46,6 +46,9 @@ jobs:
       - name: Run sub-issue frontier test
         run: ./scripts/test-sub-issue-frontier.sh
 
+      - name: Run retro nudge test
+        run: ./scripts/test-retro-nudge.sh
+
       - name: Smoke-test Codex marketplace installation
         run: ./scripts/test-codex-plugin-install.sh
 
