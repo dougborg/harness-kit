@@ -10,142 +10,104 @@ argument-hint: "<#> | reopen <#>"
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
 ---
 
-# /issue-update — Update or Reopen an Issue
+# Issue Update
 
-Modify an open issue in place (body / comment / labels) or reopen a closed one with new context — without silently rewriting the original framing.
+Keep an issue accurate as understanding changes, without erasing the history
+that produced it. A reader arriving cold should see the current truth; a
+reader following the thread should see how it got there.
 
-## PURPOSE
+`<#>` updates an open issue; `reopen <#>` reopens a closed one with new
+context.
 
-Keep issues accurate as understanding evolves, without erasing the history that produced the current state.
-
-## CRITICAL
-
-- **Always fetch body + comments before editing** — the comment thread often holds the latest framing; the body alone lies. `gh issue view --json comments` returns the first 100 comments; paginate via `gh api` for longer threads (see pre-flight note).
-- **Never silently rewrite** — when correcting framing, acknowledge what was wrong (e.g., "Note: original framing assumed X, corrected after Y").
-- **Preview before applying** — show drafted body / comment / label diff to the user and require confirmation before running `gh issue edit`, `gh issue comment`, or `gh issue reopen`.
-- **Cross-link newly discovered related issues / PRs** — both directions.
-- **Reopen carries a comment** — never silent reopen; explain what changed.
-
-## ASSUMES
-
-- `gh` CLI authenticated; issue accessible.
-- Existing labels discoverable via `gh label list`.
-
-## STANDARD PATH
-
-### 1. Pre-flight
+## 1. Read the whole thread
 
 ```bash
 gh issue view <#> --json title,body,state,labels,comments
 ```
 
-Read **comments**, not just body. Note alternative approaches, corrections, file:line samples, cross-links, late labels.
+The comments often hold the latest framing, so the body alone can mislead.
+Note alternative approaches, corrections, `file:line` samples, cross-links,
+and labels added after filing. `--json comments` returns at most the first
+100; for a longer thread, page with
+`gh api /repos/<owner>/<repo>/issues/<#>/comments?per_page=100&page=N` (or
+`gh api --paginate`) so a late change of framing isn't missed.
 
-> **Note:** `gh issue view --json comments` returns at most the first 100 comments. Sample/paginate via
-> `gh api /repos/<owner>/<repo>/issues/<#>/comments?per_page=100&page=N` (or `gh api --paginate`) before editing
-> when the thread is long — otherwise late framing changes can be missed.
+Done when you've read every comment, and can say what the thread currently
+believes.
 
-### 2. Pick the mode
+## 2. Update an open issue
 
-| Arg form | Mode |
-| --- | --- |
-| `<#>` | `update` an open issue (body / comment / labels) |
-| `reopen <#>` | reopen a closed issue with new context |
-
-### 3. Mode: update
-
-Decide: edit body / post comment / both / labels-only. See DETAIL: Choosing Edit vs Comment.
-
-**Preview**: show the drafted new body, comment text, and label diff to the user. Wait for explicit confirmation before applying — edits can overwrite framing. Then run only the applicable command(s):
-
-```bash
-gh issue edit <#> --body "$(cat <<'EOF'
-> **Note:** Original framing assumed X. Corrected after #123.
-
-## What
-<corrected body>
-EOF
-)"
-gh issue comment <#> --body "..."
-gh issue edit <#> --add-label "..." --remove-label "..."
-```
-
-Cross-link any newly discovered related issues / PRs.
-
-### 4. Mode: reopen
-
-1. Confirm closure reason from the pre-flight (resolution comment, label, linked PR).
-2. Compose a comment with new context: what changed, why the original close was premature or no longer applies.
-3. **Preview the drafted reopen comment** to the user. Wait for confirmation. Then reopen with the comment attached:
-
-   ```bash
-   gh issue reopen <#> --comment "..."
-   ```
-
-4. Update labels if scope shifted (preview the label diff first).
-
-## EDGE CASES
-
-- [Body is wrong but history should stay visible] — read DETAIL: Choosing Edit vs Comment
-- [Scope shifted significantly] — read DETAIL: Acknowledging Stale Framing
-- [Closed by a merged PR but issue persists] — read DETAIL: Reopen After PR Merge
-- [Adding labels that don't exist yet] — read DETAIL: Missing Labels
-
----
-
-## DETAIL: Choosing Edit vs Comment
+Pick the change:
 
 | Situation | Action |
 | --- | --- |
-| Original framing is wrong | Edit body **and** comment acknowledging the change |
-| New info builds on existing framing | Comment only |
-| Body is wrong, history should stay visible | Edit body with "Note:" header; comment links to old framing |
-| Scope / priority shifted, text fine | Labels only |
+| The original framing is wrong | Edit the body **and** comment acknowledging the change |
+| New information builds on the framing | Comment only |
+| The body is wrong but its history should stay visible | Edit the body under a "Note:" header; the comment links to the old framing |
+| Scope or priority shifted, the text is fine | Labels only |
 
-The principle: readers arriving cold should see current truth; readers tracking history should see how we got here.
-
----
-
-## DETAIL: Acknowledging Stale Framing
-
-When editing a body to correct framing, preserve the correction trail:
+When you correct framing, say what was wrong rather than rewriting silently.
+Open the new body with a note, so cold readers know it's current, thread
+readers see what shifted and why, and nobody re-litigates the original:
 
 ```markdown
 > **Note:** Original framing assumed all suppliers had a stable `code` field.
-> Corrected after #123 — the field is nullable for legacy imports. Rewritten
+> Corrected after #123: the field is nullable for legacy imports. Rewritten
 > below.
 
 ## What
 <corrected body>
 ```
 
-This:
+For a label that doesn't exist, skip it and suggest it in the comment
+("Suggest adding an `area:foo` label; it doesn't exist yet"). Leave
+`gh label create` to the maintainer, because the label set is a repo-config
+decision.
 
-- Tells cold readers the body is current.
-- Tells thread readers what shifted and why.
-- Prevents future contributors from re-litigating the original framing.
+Show the user the drafted body, the comment, and the label diff, and wait for
+confirmation: an edit can overwrite framing. Then run only the commands that
+apply:
 
----
+```bash
+gh issue edit <#> --body "$(cat <<'EOF'
+<new body>
+EOF
+)"
+gh issue comment <#> --body "..."
+gh issue edit <#> --add-label "..." --remove-label "..."
+```
 
-## DETAIL: Reopen After PR Merge
+Cross-link any related issues or PRs you found, in both directions.
 
-If the closing PR shipped but the issue persists (regression, partial fix, scope creep discovered post-merge):
+Done when the confirmed changes are applied and every newly found related
+issue or PR links both ways.
 
-1. Read the merged PR's diff and comments — confirm what it actually shipped.
-2. State the gap precisely in the reopen comment: "PR #X shipped Y but Z still reproduces because …"
-3. Consider whether the right move is `reopen` or a fresh issue (`/issue-create`) that links back. Fresh issue is usually cleaner if the gap has a different root cause.
+## 3. Reopen a closed issue
 
----
+1. Confirm why it closed, from the thread: the resolution comment, a label,
+   or the linked PR.
+2. If a merged PR closed it but the problem persists (a regression, a partial
+   fix, scope found after merge), read that PR's diff and comments to confirm
+   what it actually shipped. When the gap has a different root cause, a fresh
+   issue that links back is usually cleaner than a reopen: call the Skill tool
+   with "issue-create" instead and stop here.
+3. Draft a comment saying what changed and why the close was premature or no
+   longer applies. After a merged PR, name the gap precisely: "PR #X shipped Y,
+   but Z still reproduces because …".
+4. Show the user the comment, and wait for confirmation. Reopen with the
+   comment attached, so the reopen is never silent:
 
-## DETAIL: Missing Labels
+   ```bash
+   gh issue reopen <#> --comment "..."
+   ```
 
-If you want to add a label that doesn't exist:
+5. If the scope shifted, preview the label diff and apply it.
 
-- Skip it and mention in the comment: "Suggest adding `area:foo` label — doesn't exist yet."
-- Don't `gh label create` from this skill; that's a repo-config decision.
+Done when the issue is open with a comment explaining why, and its labels
+match its scope.
 
-## RELATED
+## Related
 
-- `/issue-create` — File a new issue.
-- `/issue-close` — Close as resolved / superseded / duplicate.
-- `/issue-restructure` — Split / merge issues.
+- `issue-create` — file a new issue.
+- `issue-close` — close as resolved, superseded, or duplicate.
+- `issue-restructure` — split or merge issues.

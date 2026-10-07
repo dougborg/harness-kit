@@ -8,31 +8,14 @@ allowed-tools: Bash(git log*), Bash(git config*), Bash(gh pr*), Bash(gh issue*),
 disable-model-invocation: true
 ---
 
-# /standup — Daily Standup Report
+# Standup
 
-Generate a standup report summarizing what changed since yesterday.
+One person's report: what changed since yesterday, what's in flight, and
+what's blocked. Shared ownership, handoffs, dependency collisions, and merge
+coordination across several agents or operators belong to the agent-standup
+skill instead.
 
-For shared ownership, handoffs, dependency collisions, or merge coordination
-across multiple agents or operators, use `/agent-standup` instead.
-
-## PURPOSE
-
-Create a daily standup summary: yesterday's work, today's plans, blockers.
-
-## CRITICAL
-
-- **Report must be honest** — Include blockers, incomplete tasks, and dependencies. Hiding issues delays detection.
-- **Time window is consistent** — Always "since yesterday" using git/GitHub timestamps, not manual estimation.
-
-## ASSUMES
-
-- You're in a git repository with GitHub integration
-- GitHub CLI (`gh`) is installed and authenticated
-- You commit at least daily and assign yourself to issues/PRs
-
-## STANDARD PATH
-
-### 1. Gather Activity
+## 1. Gather activity
 
 ```bash
 git log --since="1 day ago" --oneline --author="$(git config user.email)"
@@ -40,7 +23,15 @@ gh pr list --author="@me" --state=open
 gh issue list --assignee="@me" --state=open
 ```
 
-### 2. Format Report
+Take the window from these timestamps, always "since yesterday", rather than
+estimating, so every day's report covers the same span. Only commits under
+your git email and issues assigned to you show up; when a section comes back
+empty, say so rather than filling it from memory.
+
+Done when you have yesterday's commits, your open PRs, and your assigned
+issues.
+
+## 2. Write the report
 
 ```text
 ## Standup — [Date]
@@ -55,10 +46,12 @@ gh issue list --assignee="@me" --state=open
 - [none | what's blocking]
 ```
 
-### 3. Output
+Infer "Today" from the open PRs and issues. Report blockers, unfinished
+tasks, and dependencies plainly: a hidden blocker is one nobody can help with.
 
-Present the report. Infer "Today" from open PRs and issues.
+Done when every section has an entry, with "none" under Blockers when nothing
+blocks.
 
 ## Related
 
-- `/agent-standup` — reconcile multi-agent and multi-operator work.
+- `agent-standup` — reconcile multi-agent and multi-operator work.
