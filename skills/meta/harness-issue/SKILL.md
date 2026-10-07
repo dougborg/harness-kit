@@ -72,6 +72,11 @@ gh issue list -R "$upstream" --state all --limit 20 --search "<keywords>"
 gh pr list    -R "$upstream" --state all --limit 20 --search "<keywords>"
 ```
 
+Search by topic, not by the title you were about to write: the same work is
+often filed under a different framing (an issue saying "the standard is
+documented but unenforced" can duplicate one saying "set up the testing
+stack"). Try two or three phrasings of the underlying need.
+
 Show the user any related matches and ask: file new, comment on the existing
 thread, or abort. Commenting on an existing thread keeps the discussion in one
 place: post with `gh issue comment` or `gh pr comment`, then skip to step 6.

@@ -92,9 +92,12 @@ git diff --cached
 Look for bugs and unhandled edge cases, missing error handling, security
 problems (secrets, injection, unsafe deserialization), missing tests, leftover
 debug code (`print()`, `console.log`, `TODO`/`FIXME` without an issue ref),
-and naming drift. Fix what you find and re-run verification. File a GitHub
-issue for each out-of-scope problem before opening the PR. Done when you have
-read the whole diff and every finding is fixed or filed.
+and naming drift. Fix what you find and re-run verification. For each
+out-of-scope problem, call the Skill tool with "issue-create" before opening
+the PR: it searches the backlog first, and adding your findings to an
+existing issue beats filing a near-duplicate. Done when you have read the
+whole diff and every finding is fixed, filed, or commented onto the issue
+that already tracks it.
 
 ## 3. Simplify
 

@@ -21,6 +21,10 @@ gh issue list --repo <owner>/<repo> --search "<keywords>" --state all
 ```
 
 Read each candidate's body and comments; a title alone misleads.
+Search by topic, not by the title you were about to write: the same work is
+often filed under a different framing (an issue saying "the standard is
+documented but unenforced" can duplicate one saying "set up the testing
+stack"). Try two or three phrasings of the underlying need.
 
 - **Same work:** comment on it with your context and a cross-link instead,
   after showing the user that comment, and stop. Fragmenting discussion
