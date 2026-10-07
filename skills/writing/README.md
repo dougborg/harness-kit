@@ -1,6 +1,7 @@
 # Writing
 
-Documents and design for people: documentation, logos, lessons, and the shape of responses.
+Documents and design for people: documentation, logos, lessons, and
+response style.
 
 ## User-invoked
 
