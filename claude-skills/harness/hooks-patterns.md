@@ -115,7 +115,7 @@ Context a `SessionStart` hook injects reaches the main session only. Subagents s
 
 So put rules that general-purpose and custom agents need in `CLAUDE.md` or `AGENTS.md`, and pass anything `Explore` or `Plan` must know in the prompt you dispatch them with. When a rule has to be injected by a hook (it is dynamic, or computed at start), pair the `SessionStart` hook with a `SubagentStart` hook. `SubagentStart` takes a `matcher` on the agent type (`general-purpose`, `Explore`, a plugin agent name) and cannot block the subagent.
 
-Codex works the same way, per its [hooks docs](https://learn.chatgpt.com/docs/hooks): `SessionStart` applies to the main session only, and `SubagentStart` (matcher on `agent_type`) injects `additionalContext` into a spawned agent and cannot block it. `AGENTS.md` reaches spawned agents (verified on codex-cli 0.160). Project hooks in `.codex/hooks.json` load only when the project's `.codex/` layer is trusted; the hook behaviour itself was taken from the docs, not reproduced.
+Per its [hooks docs](https://learn.chatgpt.com/docs/hooks), Codex works the same way: `SessionStart` applies to the main session only, and `SubagentStart` (matcher on `agent_type`) injects `additionalContext` into a spawned agent and cannot block it. `AGENTS.md` reaches spawned agents (verified on codex-cli 0.160). Project hooks in `.codex/hooks.json` load only when the project's `.codex/` layer is trusted; the hook behaviour itself was taken from the docs, not reproduced.
 
 ## Why This Matters
 
