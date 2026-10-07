@@ -44,8 +44,8 @@ lint-shell:
     find skills scripts -type f -name '*.sh' -exec shellcheck {} +
 
 # Lint markdown files
-lint-md:
-    ./scripts/lint-md.sh
+lint-md *args:
+    ./scripts/lint-md.sh {{args}}
 
 # Check file hygiene (trailing whitespace + final newline)
 hygiene:
