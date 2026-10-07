@@ -1,35 +1,51 @@
-name: Bug Report
-description: Report a bug in harness-kit
+name: Bug report
+description: A skill, agent, hook, or script did the wrong thing in a real session.
 labels: [bug]
 body:
-  - type: textarea
-    id: description
+  - type: markdown
     attributes:
-      label: Description
-      description: What happened? What did you expect to happen?
+      value: |
+        Check [`SCOPE.md`](https://github.com/dougborg/harness-kit/blob/main/SCOPE.md) and [`.out-of-scope/`](https://github.com/dougborg/harness-kit/tree/main/.out-of-scope) first. From a project that uses harness-kit, the `harness-issue` skill (`/harness-issue` on Claude Code, `$harness-issue` on Codex) files this report for you.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: What happened, and what you expected instead.
     validations:
       required: true
 
-  - type: input
-    id: skill
+  - type: textarea
+    id: where
     attributes:
-      label: Skill or agent
-      description: Which skill or agent is affected?
-      placeholder: e.g., /open-pr, code-reviewer agent
+      label: Where
+      description: The file, skill or agent, and harness-kit version (from `.harness-lock.json`, or `unknown`).
+      placeholder: |
+        - File: `skills/engineering/open-pr/SKILL.md`
+        - Skill / agent: `open-pr`
+        - harness-kit version: `0.6.0`
+    validations:
+      required: true
 
   - type: textarea
-    id: reproduce
+    id: why
     attributes:
-      label: Steps to reproduce
-      description: How can we reproduce this?
+      label: Why it matters
+      description: The impact, such as wasted tokens, a wrong result, or a blocked task.
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Repro
+      description: The smallest steps that show the problem.
       value: |
         1.
         2.
         3.
 
-  - type: textarea
-    id: context
+  - type: input
+    id: host
     attributes:
-      label: Environment
-      description: Claude Code version, OS, etc.
-      placeholder: claude --version
+      label: Host and version
+      description: Claude Code or Codex, and its version.
+      placeholder: claude --version / codex --version

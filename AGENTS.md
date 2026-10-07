@@ -3,6 +3,8 @@
 harness-kit is a self-improving agent harness for Claude Code and Codex. The
 shared skill catalog lives in `skills/`; host-specific packaging and agent
 configuration adapt that catalog without forking its workflow guidance.
+`SCOPE.md` defines what is in scope; `.out-of-scope/` records rejected ideas
+in the triage skill's format.
 
 ## Development
 

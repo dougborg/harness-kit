@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: What harness-kit does and doesn't take on
+    url: https://github.com/dougborg/harness-kit/blob/main/SCOPE.md
+    about: Read SCOPE.md and the earlier decisions in .out-of-scope/ before filing.
