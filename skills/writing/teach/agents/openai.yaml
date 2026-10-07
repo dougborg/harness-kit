@@ -1,0 +1,5 @@
+interface:
+  display_name: "Teach"
+  short_description: "Learn a topic over several sessions in a guided workspace."
+policy:
+  allow_implicit_invocation: false

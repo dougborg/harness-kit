@@ -8,6 +8,7 @@ Run only when you type them.
 
 - **[handoff](./handoff/SKILL.md)**: Write a handoff document for another session, host, or person.
 - **[implement-spec](./implement-spec/SKILL.md)**: Build a spec's tickets in parallel onto one integration branch.
+- **[loop-me](./loop-me/SKILL.md)**: Experimental: spec the recurring workflows worth delegating.
 
 ## Model-invoked
 

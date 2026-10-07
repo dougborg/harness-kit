@@ -82,6 +82,10 @@ rather than pushing on.
   questionnaire.
 - `/wait-what`: the last message didn't land; re-explain it plainly.
 - `/handoff`: move the work to another host, directory, or person.
+- `/teach`: learn a topic over several sessions, with lessons and a record
+  of what you've learned.
+- `/loop-me` (experimental): find recurring work worth delegating and spec
+  it as workflows.
 - `ui-review`: accessibility and UX audit of web UI.
 - `documentation-writer` and `/svg-logo-designer`: docs and logos.
 - `skill-writer`, `/harness`, `/harness-builder`, `harness-issue`: maintain
