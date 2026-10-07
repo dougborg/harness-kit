@@ -1,7 +1,7 @@
 # harness-kit development recipes
 
 # Run local validation and lint checks
-check: validate validate-codex validate-hooks test-hooks test-cross-host-hooks test-poll-review test-codex-install lint-shell lint-md hygiene
+check: validate validate-codex validate-hooks test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-codex-install lint-shell lint-md hygiene
 
 # Validate plugin manifest and structure
 validate:
@@ -26,6 +26,10 @@ test-cross-host-hooks:
 # Exercise poll-review.sh decision logic against canned GraphQL responses
 test-poll-review:
     ./scripts/test-poll-review.sh
+
+# Exercise poll-ci.sh against canned check, run, and required-check lists
+test-poll-ci:
+    ./scripts/test-poll-ci.sh
 
 # Install the repository through an isolated Codex marketplace/profile
 test-codex-install:
