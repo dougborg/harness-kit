@@ -3,9 +3,9 @@
 # .codex/agents/ is generated: one without a matching agents/*.md is removed.
 #
 # name and the description (minus Claude's <example> blocks) carry over; an
-# agent whose tools can't edit files gets sandbox_mode = "read-only"; the
-# Markdown body becomes developer_instructions. model_reasoning_effort is
-# Codex-only and set per agent below.
+# agent whose tools can't edit files gets sandbox_mode = "read-only" unless
+# set per agent below; the Markdown body becomes developer_instructions.
+# model_reasoning_effort is Codex-only and set per agent below.
 #
 # Usage: generate-codex-agents.sh [--check]
 set -euo pipefail
@@ -22,6 +22,10 @@ root, mode = Path(sys.argv[1]), sys.argv[2]
 out_dir = root / ".codex/agents"
 # Codex reasoning effort per agent; the rest get "high".
 effort = {"verifier": "low"}
+# Codex sandbox per agent where tools alone don't decide it. The verifier
+# edits nothing but runs the project's checks, and those write temp files
+# and caches, which a read-only sandbox refuses (#143).
+sandbox = {"verifier": "workspace-write"}
 writers = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 
 
@@ -80,7 +84,9 @@ def render(path):
         f"model_reasoning_effort = {basic_string(effort.get(name, 'high'))}",
     ]
     # No tools: field means every tool on Claude, so no sandbox here either.
-    if tools and not tools & writers:
+    if name in sandbox:
+        lines.append(f"sandbox_mode = {basic_string(sandbox[name])}")
+    elif tools and not tools & writers:
         lines.append('sandbox_mode = "read-only"')
     lines.append(f'developer_instructions = """\n{instructions}"""')
     text = "\n".join(lines) + "\n"
@@ -97,9 +103,9 @@ sources = sorted((root / "agents").glob("*.md"))
 if not sources:
     fail("no agents/*.md found")
 wanted = dict(render(p) for p in sources)
-unknown = sorted(set(effort) - set(wanted))
+unknown = sorted((set(effort) | set(sandbox)) - set(wanted))
 if unknown:
-    fail("effort set for unknown agents: " + ", ".join(unknown))
+    fail("effort or sandbox set for unknown agents: " + ", ".join(unknown))
 
 stale = []
 if mode != "--check":

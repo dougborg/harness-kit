@@ -55,6 +55,12 @@ Run these checks in order. Stop early if a critical check fails.
 
 Run the discovered verification command. **ALL must pass.** If this fails, report the failures and stop.
 
+A failure caused by the environment rather than the code, such as "Operation
+not permitted", a blocked network fetch, or an unwritable cache outside the
+workspace (common in a Codex sandbox), is not a code failure. Report that
+check as NOT RUN with the error, and name the command the caller should run
+outside the sandbox.
+
 ### 2. Git Status Clean
 
 ```bash
