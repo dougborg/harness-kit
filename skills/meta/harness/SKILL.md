@@ -1,55 +1,50 @@
 ---
 name: harness
 description: >-
-  Self-improving meta-harness for agent harnesses. Modes: audit, bootstrap,
-  update, add, retro, hoist — each reads its own protocol reference.
+  Audits, bootstraps, updates, and improves a project's agent harness: the
+  skills, agents, hooks, and instructions for Claude Code and Codex. Modes:
+  audit, bootstrap, update, add, retro, hoist; each reads its own protocol
+  reference.
 when_to_use: >-
   When the user asks to audit, bootstrap, update, or retro a harness; when
-  setting up Claude Code and Codex project harnesses; and when a harness mode hands off to
-  another mode (retro to hoist).
+  setting up Claude Code and Codex project harnesses; when adding skills from
+  another marketplace; and when a harness mode hands off to another mode
+  (retro to hoist).
 argument-hint: "[audit|bootstrap|update|add|retro|hoist]"
 allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(<shared-scripts-dir>/discover-verification-cmd.sh*), Read, Glob, Write, Edit
 ---
 
-# /harness — Self-Improving Meta-Harness
+# Harness
 
-Unified command for harness management. Auto-detects mode or use subcommands to audit, bootstrap, retro, or hoist agent harnesses.
+Quality gates for an agent harness: the skills, agents, hooks, and docs that
+teach agents how to work in a project. Harness quality is agent quality; a
+stale or badly structured skill gets followed exactly as written.
 
-## PURPOSE
+The skill works on a project that has harness content in `.claude/`,
+`.agents/`, or `.codex/`, or one you are bootstrapping. It expects the
+harness-kit plugin to be installed (it supplies the base skills and agents),
+the project's verification command to be runnable, and `.harness-lock.json`
+to record which files came from upstream and which are project-local.
 
-Establish quality gates on agent harnesses — skills, agents, hooks, and documentation — to catch gaps and inconsistencies before they affect productivity.
+## Pick the mode
 
-## CRITICAL
+On Claude Code the modes are `/harness <mode>`; on Codex, `$harness <mode>`.
 
-- **Run `/harness audit` before shipping a skill** — it catches the failures nothing else does: invalid frontmatter, unrestricted "read-only" agents, oversized or vague skills. Audit is advisory, not a gate; weigh its judgment calls rather than obeying them
-- **Fix audit defects, weigh audit recommendations** — a frontmatter field that is silently ignored is a defect; a description that reads vague is a call you make
-- **Harness quality === agent quality** — Skills teach and guide; if skills are poorly structured or out-of-date, agents will follow bad patterns
-
-## ASSUMES
-
-- You have `.claude/`, `.agents/`, or `.codex/` harness content (or you are bootstrapping a new project)
-- You can run the verification command for your project stack (cargo test, npm test, nix flake check, etc.)
-- The harness-kit plugin is installed (provides base skills/agents and this `/harness` skill)
-- `.harness-lock.json` tracks which files came from upstream vs project-local
-
-## STANDARD PATH
-
-Auto-detect and run the appropriate mode:
-
-```bash
-/harness              # Auto-detect: bootstrap if no harness, audit if exists
-/harness audit        # Audit the current harness (delegates setup health to /doctor)
-/harness bootstrap    # Analyze project, install skills/agents from plugin, generate project-specific additions
-/harness update       # Pull latest from upstream sources, smart-merge with local changes
-/harness add <repo>   # Add skills from another plugin marketplace
-/harness retro        # Post-session retrospective
-/harness hoist        # Propose upstream PR for generic improvements
+```text
+harness              Auto-detect: bootstrap if no harness, audit if one exists
+harness audit        Audit the current harness (delegates setup health to /doctor)
+harness bootstrap    Analyze the project, install skills and agents from the plugin, generate project-specific additions
+harness update       Pull the latest from upstream sources and smart-merge with local changes
+harness add <repo>   Add skills from another plugin marketplace
+harness retro        Post-session retrospective on the environment
+harness hoist        Propose generic local improvements back upstream
 ```
 
-If none of `.claude/`, `.agents/`, or `.codex/` contains harness content, run
-`bootstrap`. Otherwise run `audit`.
+With no mode given, run `bootstrap` if none of `.claude/`, `.agents/`, or
+`.codex/` holds harness content, and `audit` otherwise.
 
-**Read the file for the selected mode before doing any work.** Each is self-contained; do not read the others.
+Read the file for the selected mode before doing any work, and only that one;
+each is self-contained.
 
 | Mode | Read | What it covers |
 | --- | --- | --- |
@@ -60,50 +55,60 @@ If none of `.claude/`, `.agents/`, or `.codex/` contains harness content, run
 | `retro` | `<skill-dir>/retro.md` | Environment audit, gap classification A/B/C/D/E, upstream promotion pass |
 | `hoist` | `<skill-dir>/hoist.md` | Proposing project-local improvements back upstream |
 
-Topic references, read as needed from any mode (all reachable in one hop from here — no reference file links to another):
+Done when the mode's file is read and its protocol has run to its own end.
+
+## Topic references
+
+Read these as needed from any mode. Each is linked only from here; none links
+to another.
 
 | Topic | Read | When |
 | --- | --- | --- |
-| Skill/agent design patterns | `<skill-dir>/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
-| Hook staging and exit codes | `<skill-dir>/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks, exit-code safety) |
-| Bundled skills + official plugin catalog | `<skill-dir>/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
+| Skill and agent design patterns | `<skill-dir>/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
+| Hook staging and exit codes | `<skill-dir>/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks); a hook that exits non-zero on a no-op is covered under Hook Exit Code Safety |
+| Bundled skills and official plugin catalog | `<skill-dir>/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
 | Multi-agent architecture patterns | `<skill-dir>/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
 | Plugin `hooks.json` schema | `<skill-dir>/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
 | Release Please setup | `<skill-dir>/release-please-reference.md` | Recommending automated semver releases for a Conventional Commits + GitHub project |
 
-## EDGE CASES
+## Treat the audit as advice
 
-- [Auditing existing harness] — Read `<skill-dir>/audit.md`
-- [Setting up new project] — Read `<skill-dir>/bootstrap.md`
-- [Syncing with upstream, or adding external skills] — Read `<skill-dir>/update.md`
-- [Session reflection] — Read `<skill-dir>/retro.md`
-- [Sharing generic tools upstream] — Read `<skill-dir>/hoist.md`
-- [Design guidance for skills/agents] — Read `<skill-dir>/design-principles.md`
-- [Hook exits non-zero on no-op] — Read `<skill-dir>/hooks-patterns.md` → Hook Exit Code Safety
+Run `harness audit` before shipping a skill. It catches what nothing else
+does: invalid frontmatter, unrestricted "read-only" agents, oversized or vague
+skills. Fix its defects (a frontmatter field the runtime silently ignores is a
+defect) and weigh its recommendations (whether a description reads vague is
+your call). It is advisory, not a gate.
 
----
+## Classify every finding
 
-## Gap Classification (all modes)
+Every finding from audit or retro gets a type, which decides where the fix
+goes:
 
-Every finding from audit or retro gets a type — it determines where the fix goes:
+- **Type A**: content gap in an existing skill. Fix the skill.
+- **Type B**: skill missing entirely. Add it.
+- **Type C**: the builder template would not have generated this. Fix the
+  builder; this double loop is the most valuable fix.
+- **Type D**: a lightweight pattern not worth a skill. Store it in memory or
+  `.claude/patterns/` (retro only).
+- **Type E**: an environment change (a check, hook, CI job, standard, doc
+  pointer, or access grant) made in the project; also Type C when the builder
+  should have recommended it (retro only).
 
-- **Type A** — Content gap in an existing skill → fix the skill
-- **Type B** — Skill missing entirely → add the skill
-- **Type C** — The builder template would not have generated this → fix the builder (double-loop; most valuable)
-- **Type D** — Lightweight pattern, not worth a skill → store in memory or `.claude/patterns/` (retro only)
-- **Type E** — Environment change (a check, hook, CI job, standard, doc pointer, or access grant) made in the project; also Type C when the builder should have recommended it (retro only)
+For a file sourced from upstream (per `.harness-lock.json`), a Type A or a
+generic Type B is usually an upstream fix, not only a local one.
 
-For a file sourced from upstream (per `.harness-lock.json`), a Type A or generic Type B is usually an upstream fix, not just a local one.
+## Fix gaps as you meet them
 
-## Self-Corrective Improvement
+When any session (not only harness work) exposes a behavioral gap in the
+harness:
 
-When you encounter a behavioral gap during any session (not just harness work):
+1. Fix the immediate issue in the current task.
+2. Decide the scope: upstream (a generic workflow that helps every project) or
+   project-local (domain-specific).
+3. Hand the fix to a background subagent and keep working.
 
-1. **Fix the immediate issue** in the current task
-2. **Determine scope** — upstream (generic workflow, benefits all projects) or project-local (domain-specific)?
-3. **Spawn a background subagent** to make the fix while you continue working:
-
-**Upstream fix** — clone the harness-kit repo (or other upstream source), fix, and open a PR:
+An upstream fix clones harness-kit (or the other upstream source), fixes it,
+and opens a PR. On Claude Code:
 
 ```text
 Agent(
@@ -115,37 +120,43 @@ Agent(
     3. Fix skills/<area>/[skill]/SKILL.md (find it with ls skills/*/[skill])
        or agents/[agent].md, then run scripts/generate-claude-skills.sh.
        A new skill goes in a topic-area folder and that area's README.md.
-       If fixing inline bash,
-       extract to a script instead of patching in place.
+       If fixing inline bash, extract it to a script instead of patching
+       in place.
     4. Commit, push, open PR with gh
     5. Clean up: rm -rf /tmp/harness-fix"
 )
 ```
 
-**Project-local fix** — fix the host-specific file tracked in
-`.harness-lock.json`, commit normally, and mark it `modified: true`.
+On Codex, give the same prompt to a subagent. A project-local fix edits the
+host-specific file tracked in `.harness-lock.json`, commits normally, and
+marks the file `modified: true`.
 
-**Continue working** — the upstream PR will be reviewed and merged separately. After merge, `/harness update` will pull the fix into all projects.
+The upstream PR is reviewed and merged separately; `harness update` then pulls
+the fix into every project. Encode behavioral gaps in skills through PRs
+rather than memories, because memories fade and skills persist. Done when the
+current task is unblocked and the fix is either committed locally or running
+in a background subagent.
 
-Behavioral gaps get encoded in skills via PRs, not memories. Memories fade; skills persist. Inline bash gets extracted into scripts.
+## Flag suspect guidance
 
-## Andon Cord Pattern
-
-Any time during a session, flag a suspect skill:
+Whenever guidance in a skill looks outdated or wrong, flag it in your reply
+and carry on working:
 
 ```markdown
 > ⚠️ FLAGGED: [brief reason this guidance may be outdated or wrong]
 ```
 
-Lightweight in-flight signal that feeds the next audit. Don't stop work — just flag it.
+The flag is a lightweight in-flight signal that feeds the next audit.
 
----
+## Related
 
-## RELATED
-
-- Siblings of this file in `<skill-dir>/`: `audit.md`, `bootstrap.md`, `update.md`, `retro.md`, `hoist.md` (mode protocols); `design-principles.md`, `hooks-patterns.md` (cross-mode topics). All are one level deep — none of them link to each other.
-- `harness-builder` agent — Used by bootstrap mode to analyze codebases and recommend harness setup
-- `/session-retro` — Session-side retrospective (documents the work, not the harness); run alongside retro mode
-- `/documentation-writer` — Write scannable, progressive-disclosure docs
-- `/skill-writer` — Authoring guidance for skills and agents; audit checks against what it teaches
-- `/doctor` (bundled with Claude Code, alias `/checkup`) — Generic setup health: installation, PATH, unused skills, slow hooks, CLAUDE.md bloat. Audit invokes it rather than duplicating it
+- The `harness-builder` agent: bootstrap mode dispatches it to analyze a
+  codebase and recommend a harness.
+- `/session-retro`: the session-side retrospective (documents the work, not
+  the harness); run it alongside retro mode.
+- `/documentation-writer`: scannable, progressive-disclosure docs.
+- `/skill-writer`: authoring guidance for skills and agents; audit checks
+  against what it teaches.
+- `/doctor` (bundled with Claude Code, alias `/checkup`): generic setup health
+  such as installation, PATH, unused skills, slow hooks, and CLAUDE.md bloat.
+  Audit invokes it rather than duplicating it.
