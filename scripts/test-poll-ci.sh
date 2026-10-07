@@ -61,10 +61,12 @@ mkdir -p "$scratch/bin"
 cat >"$scratch/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 case "$1 $2" in
-"pr view") [ "${STUB_PR_VIEW:-ok}" = ok ] || exit 1; echo "abc123 main" ;;
+"pr view") [ "${STUB_PR_VIEW:-ok}" = ok ] || exit 1; echo "abc123 main feature" ;;
 "api repos/{owner}/{repo}/rules/branches/main") echo '[]' ;;
-"pr checks") echo '[{"name":"CodeQL","bucket":"pass"}]' ;;
-"run list") exit 1 ;;
+"pr checks")
+  if [ -n "${STUB_CHECKS:-}" ]; then printf '%s\n' "$STUB_CHECKS"
+  else echo '[{"name":"CodeQL","bucket":"pass"}]'; fi ;;
+"run list") [ "${STUB_RUNS:-fail}" = ok ] || exit 1; echo 0 ;;
 *) exit 1 ;;
 esac
 STUB
@@ -80,5 +82,19 @@ live() { # live <name> <want-exit> [env...]
 }
 live pr-unreadable 3 STUB_PR_VIEW=fail
 live runs-unreadable 2
+live head-current 0 STUB_RUNS=ok POLL_CI_EXPECTED_HEAD=abc123
+# #131: GitHub hasn't caught up with a push, so the checks shown are the old
+# commit's; wait rather than pass on them, or fail on them.
+live head-stale 2 STUB_RUNS=ok POLL_CI_EXPECTED_HEAD=def456
+live head-stale-old-failure 2 STUB_RUNS=ok POLL_CI_EXPECTED_HEAD=def456 \
+  'STUB_CHECKS=[{"name":"ShellCheck","bucket":"fail"}]'
+stale_line=$(env PATH="$scratch/bin:$PATH" POLL_CI_INTERVAL=0 STUB_RUNS=ok \
+  POLL_CI_EXPECTED_HEAD=def456 "$script" 1 0 2>&1 | tail -n 1 || true)
+if [[ "$stale_line" == *"PR head abc123 is behind the branch tip def456"* ]]; then
+  echo "PASS: head-stale names both commits"
+else
+  echo "FAIL: head-stale message: $stale_line"
+  fail=1
+fi
 
 exit "$fail"

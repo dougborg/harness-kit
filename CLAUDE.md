@@ -49,6 +49,10 @@ they are not repeated here. After changing `skills/`, run
 claude plugin validate .
 ```
 
+It warns that `CLAUDE.md` at the plugin root isn't loaded as plugin context.
+That's expected: this file guides development of the repo, not plugin users,
+and the plugin ships its guidance as skills (#112).
+
 ## Distribution
 
 ```bash
