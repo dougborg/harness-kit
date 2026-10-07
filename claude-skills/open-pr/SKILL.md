@@ -166,7 +166,7 @@ final output then.
 | 1 | A check failed or was cancelled | `gh run view <run-id> --log-failed`, fix, verify locally, commit specific files, push, re-poll |
 | 2 | Script timeout: CI is still running or hasn't started (a queued run, a required check that hasn't reported, or a PR head GitHub hasn't updated after a push; the TIMEOUT line names which) | Re-poll; for a stale PR head, close and reopen the PR to resync it |
 | 3 | The PR couldn't be read | Check the number and `gh auth status` |
-| 4 | The PR conflicts with its base, so GitHub runs no CI for it | Rebase onto the base, resolve, verify locally, push, re-poll; closing and reopening won't help |
+| 4 | CI hasn't finished and the PR conflicts with its base, so GitHub won't run it (finished CI keeps its pass or fail) | Rebase onto the base, resolve, verify locally, push, re-poll; closing and reopening won't help |
 
 Every terminal outcome ends with a `CI RESULT:` line. Output that ends on a
 `CI POLL:` heartbeat means the process was killed mid-wait and CI state is
