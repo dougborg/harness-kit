@@ -38,7 +38,8 @@ configuration adapt that catalog without forking its workflow guidance.
   Claude Code.
 - `.codex/agents/` holds the Codex subagent definitions, generated from
   `agents/`; edit `agents/` and run `scripts/generate-codex-agents.sh`.
-  Codex reasoning effort is set per agent in that script.
+  Codex reasoning effort is set per agent in that script; an agent not
+  listed there gets `high`.
 - `hooks/` contains plugin lifecycle hooks backed by scripts in
   `scripts/shared/`.
 

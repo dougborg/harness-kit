@@ -1,4 +1,4 @@
-# Generated from agents/project-manager.md by scripts/generate-codex-agents.sh; do not edit.
+# Generated from harness-kit's agents/project-manager.md; edit that, not this file.
 name = "project-manager"
 description = "A read-only backlog-analysis agent that surveys open issues, PRs, labels, and milestones via the gh CLI, then returns a structured grooming brief: theme buckets, umbrella status, a prioritized PR train with per-pick rationale, stale-issue flags, and gap identification. Never writes, closes, or edits anything — same advisory shape as code-reviewer. Use when planning what to work on next, typically via the groom skill."
 model_reasoning_effort = "high"

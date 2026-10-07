@@ -1,4 +1,4 @@
-# Generated from agents/harness-builder.md by scripts/generate-codex-agents.sh; do not edit.
+# Generated from harness-kit's agents/harness-builder.md; edit that, not this file.
 name = "harness-builder"
 description = "Analyze any codebase and recommend a ChernyCode-style agent harness. Discovers stack, workflows, and domain knowledge to encode."
 model_reasoning_effort = "high"
@@ -78,7 +78,7 @@ Adapt recommendations based on detected stack:
 - **Multiple agents or operators?** → Recommend: `agent-standup` skill
 - **Frontend present?** → Recommend: design harness (`.impeccable.md` seed) + `ui-review` skill
 - **Preferred component library?** → Note target in `.impeccable.md` — do NOT encode existing design; let `/impeccable:init` guide new direction
-- **Any stack detected** → Match against `external-plugins.md`, bundled skills first (already available, no install: `/verify` and `/run-skill-generator` for build/launch, `/code-review` and `/security-review` for review, `/batch` for fan-out), then official Anthropic plugin recommendations (language → LSP plugin, MCP server → `mcp-server-dev`, Agent SDK → `agent-sdk-dev`, legacy code → `code-modernization`, ...)
+- **Any stack detected** → Match against `external-plugins.md`, Claude Code bundled skills first (already available, no install: `/verify` and `/run-skill-generator` for build/launch, `/code-review` and `/security-review` for review, `/batch` for fan-out), then official Anthropic plugin recommendations (language → LSP plugin, MCP server → `mcp-server-dev`, Agent SDK → `agent-sdk-dev`, legacy code → `code-modernization`, ...)
 
 ### 6. Domain Knowledge
 
@@ -217,7 +217,7 @@ For each, provide:
 Always recommend these universal skills:
 
 - `/to-spec` and `/to-tickets` — turn a design conversation into a spec issue, then into tracer-bullet sub-issues
-- `/issue-create`, `/triage`, `/groom` — file issues with real labels and duplicate search; move incoming issues to agent-ready briefs; prioritize the backlog
+- The `issue-create`, `triage`, and `groom` skills — file issues with real labels and duplicate search; move incoming issues to agent-ready briefs; prioritize the backlog
 - `/commit` — quality gate + conventional commit
 - `/ui-review` — accessibility/UX audit (frontend projects)
 
@@ -267,9 +267,9 @@ Generated skills follow the house style taught by the `skill-writer` skill: shor
 - Exact numbered commands only for fragile operations; prose everywhere else.
 - Depth pushed into sibling reference files, linked one level deep from `SKILL.md`.
 
-Call the Skill tool with "skill-writer" when generating or reviewing a skill, and with "documentation-writer" for human-facing docs.
+Use the `skill-writer` skill when generating or reviewing a skill, and the `documentation-writer` skill for human-facing docs.
 
-### Recommended Hooks (`.claude/settings.json`)
+### Recommended Hooks (Claude Code, `.claude/settings.json`)
 
 Hooks are always **project-local** — configured in `.claude/settings.local.json`. They reference project-specific tools and file patterns that vary across codebases. Each project gets hooks tailored to its stack during bootstrap.
 
@@ -340,8 +340,8 @@ Add `## Self-Improvement` section:
 
 ```markdown
 ## Self-Improvement
-Run `/harness retro` after significant sessions to log lessons and improve the harness.
-Run `/harness` periodically to audit for gaps as the codebase evolves.
+Run the `harness` skill in retro mode (`/harness retro` on Claude Code, `$harness retro` on Codex) after significant sessions to log lessons and improve the harness.
+Run the `harness` skill in audit mode periodically to find gaps as the codebase evolves.
 When the harness doesn't cover a domain well: fix the builder template (Type C gap), not just the skill.
 ```
 

@@ -1,4 +1,4 @@
-# Generated from agents/code-reviewer.md by scripts/generate-codex-agents.sh; do not edit.
+# Generated from harness-kit's agents/code-reviewer.md; edit that, not this file.
 name = "code-reviewer"
 description = "A read-only code review agent with two passes. The standards pass examines a diff for design, readability, security, and testing problems, documented-standard violations, code smells, and what could be deleted. The spec pass checks the diff against the issues it closes. Use after implementation is complete, before opening or merging a PR."
 model_reasoning_effort = "high"
