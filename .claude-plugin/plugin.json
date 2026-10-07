@@ -36,6 +36,8 @@
     "./claude-skills/harness",
     "./claude-skills/harness-builder",
     "./claude-skills/harness-issue",
+    "./claude-skills/implement",
+    "./claude-skills/implement-spec",
     "./claude-skills/issue-close",
     "./claude-skills/issue-create",
     "./claude-skills/issue-restructure",

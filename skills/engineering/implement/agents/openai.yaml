@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implement"
+  short_description: "Build a ticket test-first, through to an open PR."
+policy:
+  allow_implicit_invocation: false

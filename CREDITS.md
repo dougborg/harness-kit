@@ -27,6 +27,8 @@ License. Adapted material so far:
   `feature-spec`.
 - `wayfinder` (a map of decision tickets with fog of war, resolved one per
   session) and `research`.
+- `implement` and `implement-spec` (a spec's tickets as a task graph worked
+  across its frontier onto one integration branch).
 - `triage`, with its agent-brief format and the `.out-of-scope/` record of
   rejected ideas.
 - The `pr-body` skill, from `pr`. Its menu of summary visuals is credited

@@ -2,7 +2,7 @@
 name: to-tickets
 description: Split a spec into tracer-bullet sub-issues with blocking links.
 argument-hint: "[spec issue]"
-allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh label *)
+allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh label *), Bash(<shared-scripts-dir>/sub-issue-frontier.sh*)
 ---
 
 # To Tickets
@@ -85,4 +85,7 @@ snippet from a prototype.
 
 Done when every approved ticket is filed with its parent and blocking links,
 and you've reported the **frontier**: the tickets with no open blockers, ready
-to start now.
+to start now (`<shared-scripts-dir>/sub-issue-frontier.sh <spec>`).
+
+Next step: suggest the user run the implement skill for one ticket at a time,
+or the implement-spec skill to build the whole graph in parallel.

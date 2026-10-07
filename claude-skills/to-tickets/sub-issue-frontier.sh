@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# List a wayfinder map's child tickets by state, in map order.
+# List a parent issue's sub-issues by state, in order: a wayfinder map's
+# decision tickets, or a spec's implementation tickets.
 #
-# Usage: frontier.sh <map-issue-number>
+# Usage: sub-issue-frontier.sh <parent-issue-number>
 # Prints three groups: FRONTIER (open, unblocked, unclaimed: takeable now),
 # CLAIMED (open and assigned), and BLOCKED (open, with an open blocker). An
 # empty group prints "(none)"; a map with no sub-issues says so instead, so
@@ -11,7 +12,7 @@
 # Testing: WAYFINDER_FIXTURE=<file> reads the GraphQL response from a file.
 set -euo pipefail
 
-map="${1:?Usage: frontier.sh <map-issue-number>}"
+map="${1:?Usage: sub-issue-frontier.sh <parent-issue-number>}"
 
 if [ -n "${WAYFINDER_FIXTURE:-}" ]; then
   data=$(cat "$WAYFINDER_FIXTURE")
@@ -37,7 +38,7 @@ fi
 
 jq -r '
   if (.data.repository.issue.subIssues.nodes | length) == 0 then
-    "No sub-issues: this map has no tickets yet (or it is not a map)."
+    "No sub-issues: this issue has no tickets yet."
   else
   [.data.repository.issue.subIssues.nodes[] | select(.state == "OPEN")
    | . + {open_blockers: [.blockedBy.nodes[] | select(.state == "OPEN") | .number]}]

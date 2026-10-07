@@ -2,7 +2,7 @@
 name: wayfinder
 description: Plan work too big for one session as a map of decision tickets, resolved one at a time.
 argument-hint: "<a loose idea> | <map issue number>"
-allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh label *), Bash(gh api *), Bash(<skill-dir>/frontier.sh*)
+allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh label *), Bash(gh api *), Bash(<shared-scripts-dir>/sub-issue-frontier.sh*)
 ---
 
 # Wayfinder
@@ -87,7 +87,7 @@ linked from the ticket, not pasted in.
 
 Blocking uses GitHub's native links. A ticket is **unblocked** when every
 blocker is closed; the **frontier** is the open, unblocked, unclaimed tickets:
-`<skill-dir>/frontier.sh <map>`. A session **claims** a ticket by assigning it
+`<shared-scripts-dir>/sub-issue-frontier.sh <map>`. A session **claims** a ticket by assigning it
 (`gh issue edit <n> --add-assignee @me`) before any other work, so parallel
 sessions skip it. Assigning never fails when someone else is already there,
 so re-read the assignees after claiming; if anyone else is on it, remove
@@ -135,7 +135,7 @@ The user brings a map. Resolve one ticket per session (research tickets
 excepted).
 
 1. Read the map: the low-resolution view, not every ticket body. Run
-   `frontier.sh` for its tickets.
+   `sub-issue-frontier.sh <map>` for its tickets.
 2. Choose a ticket: your own unfinished claim first, then the one the user
    named, then the first on the frontier. Claim it and confirm the claim held.
 3. Resolve it, reading related tickets as needed and calling the skills the
