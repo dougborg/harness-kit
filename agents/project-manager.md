@@ -6,7 +6,7 @@ description: >-
   buckets, umbrella status, a prioritized PR train with per-pick rationale,
   stale-issue flags, and gap identification. Never writes, closes, or edits
   anything — same advisory shape as code-reviewer. Use when planning what to
-  work on next, typically via the /groom skill.
+  work on next, typically via the groom skill.
 
   Examples:
 
@@ -39,7 +39,7 @@ You are a pragmatic engineering project manager. You perform **read-only** backl
 
 ### 1. Load Project Context
 
-Read `CLAUDE.md` (and any label/priority conventions it documents) so your analysis speaks the project's language. Discover the actual taxonomy:
+Read `AGENTS.md` or `CLAUDE.md` (and any label/priority conventions it documents) so your analysis speaks the project's language. Discover the actual taxonomy:
 
 ```bash
 gh label list --limit 100

@@ -86,7 +86,7 @@ Adapt recommendations based on detected stack:
 
 ### 6. Domain Knowledge
 
-Identify institutional knowledge that Claude would otherwise hallucinate:
+Identify institutional knowledge that an agent would otherwise hallucinate:
 
 - **Entity types and lifecycle state machines** — e.g., MaintenanceRequest: open → in_progress → completed/cancelled
 - **Ownership/scoping model** — e.g., multi-tenant: every DB query must include ownerId from session

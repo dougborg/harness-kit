@@ -122,3 +122,4 @@ for agent in sorted((root / ".codex/agents").glob("*.toml")):
 PY
 
 "$repo_root/scripts/generate-claude-skills.sh" --check
+"$repo_root/scripts/generate-codex-agents.sh" --check
