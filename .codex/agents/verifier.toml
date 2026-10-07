@@ -1,4 +1,4 @@
-# Generated from agents/verifier.md by scripts/generate-codex-agents.sh; do not edit.
+# Generated from harness-kit's agents/verifier.md; edit that, not this file.
 name = "verifier"
 description = "Lightweight verification agent that runs after implementation to confirm everything is clean. Checks that validation passes, acceptance criteria are met, no debug code remains, and git status is clean. Use as a final gate before opening a PR."
 model_reasoning_effort = "low"

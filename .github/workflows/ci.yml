@@ -49,6 +49,9 @@ jobs:
       - name: Run retro nudge test
         run: ./scripts/test-retro-nudge.sh
 
+      - name: Run Codex agent generator test
+        run: ./scripts/test-generate-codex-agents.sh
+
       - name: Smoke-test Codex marketplace installation
         run: ./scripts/test-codex-plugin-install.sh
 
