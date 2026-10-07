@@ -89,5 +89,17 @@ expect orphan-removed [ ! -e "$out/orphan.toml" ]
 
 printf -- '---\nname: odd\ndescription: x\ntools: Read, {Edit}\n---\nx\n' >"$scratch/agents/odd.md"
 rejects unreadable-tool-fails
+rm "$scratch/agents/odd.md"
+
+# A mistyped sandbox override fails here, not at Codex runtime.
+cp "$gen" "$gen.orig"
+sed -i.bak 's/"verifier": "workspace-write"/"verifier": "workspace_write"/' "$gen"
+rejects bad-sandbox-mode-fails
+cp "$gen.orig" "$gen"
+
+# An override for an agent that doesn't exist fails too.
+mv "$scratch/agents/verifier.md" "$scratch/verifier.md"
+rejects override-for-unknown-agent-fails
+mv "$scratch/verifier.md" "$scratch/agents/verifier.md"
 
 exit "$fail"

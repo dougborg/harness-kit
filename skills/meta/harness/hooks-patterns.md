@@ -115,7 +115,7 @@ Context a `SessionStart` hook injects reaches the main session only. Subagents s
 
 So put rules that general-purpose and custom agents need in `CLAUDE.md` or `AGENTS.md`, and pass anything `Explore` or `Plan` must know in the prompt you dispatch them with. When a rule has to be injected by a hook (it is dynamic, or computed at start), pair the `SessionStart` hook with a `SubagentStart` hook. `SubagentStart` takes a `matcher` on the agent type (`general-purpose`, `Explore`, a plugin agent name) and cannot block the subagent.
 
-Codex differs in one way: a spawned agent copies the parent's conversation by default. Verified on codex-cli 0.160 (2026-10-07) with the same codeword test, run through `codex exec`:
+Codex differs in one way: a spawned agent copies the parent's conversation by default. Verified on codex-cli 0.160 (2026-10-07) with the same three-codeword test, run through `codex exec`. "In the copied history" means the spawned agent sees the main session's earlier context, not a fresh injection:
 
 | Source | Main session | Spawned agent, default (`fork_turns: "all"`) | Spawned agent, `fork_turns: "none"` |
 | --- | --- | --- | --- |
@@ -125,7 +125,7 @@ Codex differs in one way: a spawned agent copies the parent's conversation by de
 
 So the same rule holds: put what every agent needs in `AGENTS.md`, or inject it with `SubagentStart`, and don't rely on `SessionStart` reaching a spawned agent. `SubagentStart` matches on `agent_type` and cannot block the agent, per the [hooks docs](https://learn.chatgpt.com/docs/hooks).
 
-Codex runs a hook only after it is trusted, and this applies to user-level hooks in `~/.codex/` as well as project hooks in `.codex/hooks.json` (which also need the project's `.codex/` layer trusted). Review and trust them once in an interactive session. For a one-off test in a throwaway `CODEX_HOME`, `codex exec --dangerously-bypass-hook-trust` runs them without stored trust.
+On codex-cli 0.160, Codex runs a hook only after it is trusted, and this applies to user-level hooks in `~/.codex/` as well as project hooks in `.codex/hooks.json` (which also need the project's `.codex/` layer trusted). Review and trust them once in an interactive session. For a one-off test in a throwaway `CODEX_HOME`, `codex exec --dangerously-bypass-hook-trust` runs them without stored trust.
 
 ## Why This Matters
 

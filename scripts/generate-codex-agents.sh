@@ -25,7 +25,10 @@ effort = {"verifier": "low"}
 # Codex sandbox per agent where tools alone don't decide it. The verifier
 # edits nothing but runs the project's checks, and those write temp files
 # and caches, which a read-only sandbox refuses (#143).
+# An override replaces the tools-based choice, so revisit it if the agent's
+# tools change.
 sandbox = {"verifier": "workspace-write"}
+sandbox_modes = {"read-only", "workspace-write", "danger-full-access"}
 writers = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 
 
@@ -106,6 +109,9 @@ wanted = dict(render(p) for p in sources)
 unknown = sorted((set(effort) | set(sandbox)) - set(wanted))
 if unknown:
     fail("effort or sandbox set for unknown agents: " + ", ".join(unknown))
+bad = sorted(f"{name}={mode}" for name, mode in sandbox.items() if mode not in sandbox_modes)
+if bad:
+    fail("unknown sandbox mode: " + ", ".join(bad))
 
 stale = []
 if mode != "--check":
