@@ -62,7 +62,7 @@ cat >"$scratch/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 case "$1 $2" in
 "pr view") [ "${STUB_PR_VIEW:-ok}" = ok ] || exit 1
-  echo "abc123 main feature ${STUB_CROSS_REPO:-false}" ;;
+  echo "abc123 main feature ${STUB_CROSS_REPO:-false} ${STUB_MERGEABLE:-MERGEABLE}" ;;
 "api repos/{owner}/{repo}/rules/branches/main") echo '[]' ;;
 "pr checks")
   if [ -n "${STUB_CHECKS:-}" ]; then printf '%s\n' "$STUB_CHECKS"
@@ -101,6 +101,9 @@ live head-stale-old-failure 2 STUB_RUNS=ok STUB_REMOTE_TIP=def456 \
 live tip-unknown 0 STUB_RUNS=ok
 live remote-unreadable 0 STUB_RUNS=ok STUB_REMOTE=fail
 live fork-pr-skips-check 0 STUB_RUNS=ok STUB_CROSS_REPO=true STUB_REMOTE_TIP=def456
+# #147: a PR conflicting with its base gets no CI runs; say so, don't time out.
+live conflict 4 STUB_RUNS=ok STUB_MERGEABLE=CONFLICTING
+live mergeable-unknown 0 STUB_RUNS=ok STUB_MERGEABLE=UNKNOWN
 stale_line=$(env PATH="$scratch/bin:$PATH" POLL_CI_INTERVAL=0 STUB_RUNS=ok \
   STUB_REMOTE_TIP=def456 "$script" 1 0 2>&1 | tail -n 1 || true)
 if [[ "$stale_line" == *"PR head abc123 is behind the branch tip def456"* &&

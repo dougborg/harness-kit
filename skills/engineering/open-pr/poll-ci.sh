@@ -6,6 +6,8 @@
 # Exit 1: a check failed or was cancelled (prints failed check details)
 # Exit 2: timeout reached (checks still running or not started — NON-terminal)
 # Exit 3: error — the PR couldn't be read from GitHub
+# Exit 4: the PR conflicts with its base, so GitHub won't run its pull_request
+#         workflows; rebase onto the base and push
 #
 # Output contract: every terminal outcome prints a final line starting with
 # "CI RESULT:". While waiting, the script prints a "CI POLL:" heartbeat each
@@ -42,8 +44,8 @@ fixtures="${POLL_CI_FIXTURE_DIR:-}"
 elapsed=0
 
 pr_head() {
-  gh pr view "$pr_number" --json headRefOid,baseRefName,headRefName,isCrossRepository \
-    --jq '"\(.headRefOid) \(.baseRefName) \(.headRefName) \(.isCrossRepository)"'
+  gh pr view "$pr_number" --json headRefOid,baseRefName,headRefName,isCrossRepository,mergeable \
+    --jq '"\(.headRefOid) \(.baseRefName) \(.headRefName) \(.isCrossRepository) \(.mergeable)"'
 }
 
 # The branch's tip on origin, or nothing when it can't be read (no origin,
@@ -56,6 +58,7 @@ remote_tip() {
 head_sha=""
 head_ref=""
 cross_repo="false"
+mergeable="UNKNOWN"
 if [ -n "$fixtures" ]; then
   required=$(cat "$fixtures/required.json")
 else
@@ -63,7 +66,7 @@ else
     echo "CI RESULT: ERROR for PR #${pr_number} — couldn't read the PR from GitHub (check the number and gh auth)" >&2
     exit 3
   fi
-  read -r head_sha base head_ref cross_repo <<<"$pr_info"
+  read -r head_sha base head_ref cross_repo mergeable <<<"$pr_info"
   # Required checks from the branch's effective rules (rulesets). A branch
   # with no rules returns an empty list; a failed call means the gate is
   # unknown, so say so rather than silently dropping it.
@@ -101,7 +104,13 @@ active_runs() {
 
 while true; do
   if [ -z "$fixtures" ] && pr_info=$(pr_head 2>/dev/null); then
-    read -r head_sha base head_ref cross_repo <<<"$pr_info" # follow a push made during the poll
+    read -r head_sha base head_ref cross_repo mergeable <<<"$pr_info" # follow a push made during the poll
+  fi
+  # A PR that conflicts with its base gets no pull_request workflow runs, so
+  # waiting would only time out on checks that never start.
+  if [ "$mergeable" = CONFLICTING ]; then
+    echo "CI RESULT: CONFLICT for PR #${pr_number} after ${elapsed}s — the PR conflicts with ${base}, so GitHub won't run its CI. Rebase onto ${base}, resolve, and push; closing and reopening won't help." >&2
+    exit 4
   fi
   stale=""
   if [ -z "$fixtures" ] && [ "$cross_repo" != true ]; then
