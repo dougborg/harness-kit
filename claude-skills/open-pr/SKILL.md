@@ -161,7 +161,7 @@ when every addition in the diff has been checked against the ladder.
 ${CLAUDE_SKILL_DIR}/poll-ci.sh <number> [timeout-seconds]
 ```
 
-Exit 0 = passed, exit 1 = failed (fix, commit, push, re-poll), exit 2 = script timeout — CI is **still running**, not done; re-poll.
+Exit 0 = passed, exit 1 = failed or cancelled (fix, commit, push, re-poll), exit 2 = script timeout — CI is **still running or not started** (a queued run, or a required check that hasn't reported, which the TIMEOUT line names); re-poll, exit 3 = the PR couldn't be read (check the number and `gh auth status`).
 
 ### Outliving the Bash tool timeout (REQUIRED)
 
