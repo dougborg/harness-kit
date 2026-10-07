@@ -1,0 +1,5 @@
+interface:
+  display_name: "Ask Harness"
+  short_description: "Find which skill or flow fits your situation."
+policy:
+  allow_implicit_invocation: false

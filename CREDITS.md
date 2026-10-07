@@ -27,6 +27,8 @@ License. Adapted material so far:
   `feature-spec`.
 - `wayfinder` (a map of decision tickets with fog of war, resolved one per
   session) and `research`.
+- `handoff`, and the `ask-harness` router with its phase-boundaries guide,
+  from `handoff` and `ask-matt`.
 - `implement` and `implement-spec` (a spec's tickets as a task graph worked
   across its frontier onto one integration branch).
 - `triage`, with its agent-brief format and the `.out-of-scope/` record of

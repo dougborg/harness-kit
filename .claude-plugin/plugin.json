@@ -22,6 +22,7 @@
   ],
   "skills": [
     "./claude-skills/agent-standup",
+    "./claude-skills/ask-harness",
     "./claude-skills/budget",
     "./claude-skills/code-reviewer",
     "./claude-skills/codebase-design",
@@ -33,6 +34,7 @@
     "./claude-skills/grill-with-docs",
     "./claude-skills/grilling",
     "./claude-skills/groom",
+    "./claude-skills/handoff",
     "./claude-skills/harness",
     "./claude-skills/harness-builder",
     "./claude-skills/harness-issue",

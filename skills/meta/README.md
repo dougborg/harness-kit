@@ -6,6 +6,7 @@ Maintaining the agent setup itself: auditing and bootstrapping harnesses, author
 
 Run only when you type them.
 
+- **[ask-harness](./ask-harness/SKILL.md)**: Find which skill or flow fits your situation.
 - **[harness-builder](./harness-builder/SKILL.md)**: Analyze a codebase and recommend an agent harness.
 
 ## Model-invoked

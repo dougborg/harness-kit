@@ -18,6 +18,9 @@ configuration adapt that catalog without forking its workflow guidance.
   documenting Codex invocation. In shared prose, prefer “the `name` skill.”
 - Keep Claude-only behavior, such as quota inspection through `claude -p`, out
   of Codex workflows.
+- When a skill is added, renamed, removed, or changes where it fits in the
+  flow, update the `ask-harness` router; `just check` fails if it misses a
+  skill.
 
 ## Repository layout
 
