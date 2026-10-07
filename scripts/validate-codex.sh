@@ -16,7 +16,12 @@ import tomllib
 
 root = pathlib.Path(sys.argv[1])
 manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
-assert manifest["name"] == root.name
+# The Codex and Claude manifests name the same plugin. (Not the checkout's
+# folder name: worktrees and forks live in differently named directories.)
+claude_name = json.loads((root / ".claude-plugin/plugin.json").read_text())["name"]
+assert manifest["name"] == claude_name, (
+    f".codex-plugin name {manifest['name']!r} differs from .claude-plugin name {claude_name!r}"
+)
 assert manifest["skills"] == "./skills/"
 
 market = json.loads((root / ".agents/plugins/marketplace.json").read_text())
