@@ -1,0 +1,5 @@
+interface:
+  display_name: "ADHD Mode"
+  short_description: "Action-first responses for a reader with ADHD, until told to stop."
+policy:
+  allow_implicit_invocation: false

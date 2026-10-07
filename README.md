@@ -46,6 +46,7 @@ what it has already decided against.
 | `/groom` | Backlog grooming: theme buckets, PR train, stale flags, gaps |
 | `/ui-review` | Accessibility and UX audit (WCAG 2.1 AA) |
 | `/svg-logo-designer` | Generate SVG logos |
+| `/adhd-mode` | Action-first responses for a reader with ADHD; on Claude Code also the `harness-kit:adhd` output style |
 | `/teach` | Learn a topic over several sessions: lessons, references, and learning records |
 | `/loop-me` | Experimental: spec the recurring workflows worth delegating |
 

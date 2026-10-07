@@ -51,13 +51,34 @@ for source in "$repo_root"/skills/*/*; do
   fi
 done
 
+# Output styles are Claude-only, so their text lives in the skill that carries
+# it to Codex, between output-style markers.
+styles=$(mktemp -d)
+trap 'rm -rf "$staging" "$styles"' EXIT
+write_style() { # write_style <skill> <style-name> <description>
+  {
+    printf -- '---\nname: %s\ndescription: "%s"\nkeep-coding-instructions: true\n---\n\n' "$2" "$3"
+    printf '<!-- Generated from skills/*/%s/SKILL.md by scripts/generate-claude-skills.sh; edit that. -->\n\n' "$1"
+    sed -n '/^<!-- output-style:begin -->$/,/^<!-- output-style:end -->$/p' "$repo_root"/skills/*/"$1"/SKILL.md |
+      sed '1d;$d'
+  } >"$styles/$2.md"
+}
+write_style adhd-mode adhd "Action-first responses for a reader with ADHD: next step first, numbered steps, progress restated, tangents held back."
+
 if [ "${1:-}" = "--check" ]; then
   if ! diff -qr "$staging" "$output"; then
     echo "Claude skill projection is stale; run scripts/generate-claude-skills.sh" >&2
     exit 1
   fi
+  if ! diff -qr "$styles" "$repo_root/output-styles"; then
+    echo "Output styles are stale; run scripts/generate-claude-skills.sh" >&2
+    exit 1
+  fi
   exit
 fi
+
+rm -rf "$repo_root/output-styles"
+mv "$styles" "$repo_root/output-styles"
 
 rm -rf "$output"
 mv "$staging" "$output"

@@ -21,6 +21,7 @@
     "./agents/project-manager.md"
   ],
   "skills": [
+    "./claude-skills/adhd-mode",
     "./claude-skills/agent-standup",
     "./claude-skills/ask-harness",
     "./claude-skills/budget",
