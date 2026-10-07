@@ -26,7 +26,7 @@ Invoke them by typing `/` plus the name. Claude invokes some automatically; `/ve
 | `/run` | — | Launches and drives the app so a change can be seen working. |
 | `/run-skill-generator` | `scripts/shared/discover-verification-cmd.sh` | Records the actual build/launch recipe as a per-project skill at `.claude/skills/run-<name>/`. Strictly more capable than script-based command discovery. Bootstrap should recommend running it once per project. |
 | `/batch` | ad-hoc worktree fan-out | Decomposes work into 5–30 independent units and spawns subagents in isolated git worktrees. The merge-train / migration orchestration pattern, built in. |
-| `/simplify` | `minimal-change` (used by `/open-pr` Phase 3) | Reuse, simplification, and altitude cleanups on the working diff — quality only, no bug hunting. Compose: an optional extra pass alongside Phase 3. |
+| `/simplify` | `minimal-change` (`/open-pr` applies it to every diff) | Reuse, simplification, and altitude cleanups on the working diff — quality only, no bug hunting. Compose: an optional extra pass alongside `minimal-change`. |
 | `/loop` (alias `/proactive`) | polling patterns in `/open-pr` | Runs a prompt repeatedly, on an interval or self-paced. |
 | `/goal` | verification gating | Sets a condition a separate evaluator re-checks after every turn until it holds. |
 | `/context` | `/budget` | Visualizes real context usage with optimization suggestions — the actual measurement `/budget` approximates. |
@@ -103,7 +103,7 @@ A `code-review` plugin still exists in the marketplace, but the bundled `/code-r
 | --- | --- | --- | --- |
 | `pr-review-toolkit` | Specialized review agents (comments, tests, error handling, type design) | `/review-pr`, `/pr-comments` | Pick one. harness-kit's `/review-pr` handles the full feedback-response loop; the toolkit adds per-dimension specialists. |
 | `commit-commands` | Commit, push, and PR creation commands | `/commit`, `/open-pr` | Pick one, or compose: harness-kit `/commit` adds project quality gates; `commit-commands` is a lighter generic flow. |
-| `code-simplifier` | Simplifies recently modified code while preserving behavior | `minimal-change` (`/open-pr` Phase 3) | Compose freely — same goal, invoked at different times. |
+| `code-simplifier` | Simplifies recently modified code while preserving behavior | `minimal-change` (applied by `/open-pr`) | Compose freely — same goal, invoked at different times. |
 | `feature-dev` | Feature workflow: exploration, architecture, quality review agents | `/to-spec`, `/to-tickets` | Compose: `/to-spec` and `/to-tickets` write the spec and tickets; `feature-dev` drives implementation. Or pick one end-to-end flow. |
 | `claude-code-setup` | Analyzes codebase, recommends hooks/skills/MCP servers/subagents | `/harness bootstrap` | Pick one — both scaffold the project harness. harness-kit adds provenance tracking (`.harness-lock.json`), update/retro/hoist loops. |
 | `claude-md-management` | Audit CLAUDE.md quality, capture session learnings | `/harness retro` + bootstrap's CLAUDE.md generation | Compose: retro captures harness gaps; claude-md-management focuses on CLAUDE.md hygiene. |

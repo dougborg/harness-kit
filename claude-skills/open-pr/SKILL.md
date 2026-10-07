@@ -1,86 +1,82 @@
 ---
 name: open-pr
 description: >-
-  Open a PR for the current feature branch — validate, self-review, simplify,
-  organize commits, push, create the PR, wait for CI, run an independent agent
-  review and fix its findings, then answer any outside (Copilot or human)
-  review.
-when_to_use: >-
-  When implementation is complete and ready for review — the user asks to open,
-  raise, or submit a PR — and when /harness-issue hands off in PR mode.
+  Opens a pull request for the current feature branch and sees it through:
+  validate, self-review, simplify, organize commits, push, create the PR, wait
+  for CI, run an independent agent review and fix its findings, then answer
+  any outside (Copilot or human) review. Use when implementation is complete
+  and ready for review, when the user asks to open, raise, or submit a PR, and
+  when the harness-issue skill hands off in PR mode.
 argument-hint: "[base branch]"
 allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git reset *), Bash(git rev-list *), Bash(git rev-parse *), Bash(${CLAUDE_SKILL_DIR}/*), Bash(${CLAUDE_SKILL_DIR}/*), Read
 ---
 
-# /open-pr — Open a Pull Request
+# Open PR
 
-Take the current feature branch from "implementation done" to "PR open, CI green, reviewed, findings addressed."
+Take the current feature branch from "implementation done" to "PR open, CI
+green, reviewed, findings addressed."
 
-## PURPOSE
+These hold for every step:
 
-Ship a feature branch end-to-end: validate, self-review, push, create PR, wait for CI, run our own agent review, and answer outside review when there is any.
+- **Every review finding gets an outcome:** fixed, deferred to a tracked
+  issue, or discussed with the reviewer. Review concerns are the point of
+  review, so "not blocking", "acceptable", or "good for future refinement" is
+  not an outcome, and green CI or passing tests do not override a finding.
+  Merge only when every comment is resolved.
+- **Fix checks at the cause.** Commit hooks, type checkers, and linters run
+  every time; `--no-verify`, `noqa`, and `type: ignore` are not fixes.
+- **Stage specific files by name**, never `git add -A` or `git add .`, so
+  secrets, scratch files, and unrelated changes stay out.
+- **Pass commit messages and PR bodies through a HEREDOC.**
+- **Read review state with the polling scripts.** `gh pr view --json` returns
+  only top-level PR comments and misses inline review threads.
+- **Give every long poll a way to outlive the Bash tool.** Its default 120s
+  timeout silently kills `poll-ci.sh`, `poll-review.sh`, and
+  `gh pr checks --watch`, leaving truncated output that looks like a status
+  report, and no notification follows. Pass an explicit Bash `timeout` well
+  above the script's own, or run it with `run_in_background: true`.
+- **Delegate review to the review-pr skill**, both the agent review and
+  outside comments, rather than duplicating either workflow here.
 
-## CRITICAL
+## 1. Pre-flight
 
-- **Validate before opening** — the project's verification command must pass before `gh pr create`. Don't push broken code.
-- **Self-review the full diff** — read every change before opening; never skip this and rely on reviewers.
-- **Stage specific files** — never `git add -A` or `git add .`. Intentional staging prevents accidentally committing secrets, scratch files, or unrelated changes.
-- **Use polling scripts for CI and review state** — never check review comments with `gh pr view --json`. That endpoint only returns top-level PR comments, not inline review comments attached to code lines. Use `poll-review.sh` which queries review threads and review states via the correct APIs.
-- **The Bash tool's default 120s timeout silently kills long polls** — every watch/poll invocation (`poll-ci.sh`, `poll-review.sh`, `gh pr checks --watch`) MUST either pass an explicit Bash `timeout` well above the script's own timeout, or run with `run_in_background: true`. A foreground poll on the default timeout dies mid-wait with truncated output that looks like a status report — and no notification is coming.
-- **Never merge with unaddressed review comments** — every comment gets fixed, deferred with a tracked issue, or discussed. CI green does not override review feedback.
-- **No `--no-verify`** — never bypass commit hooks, type checkers, or linters. If a check fails, fix the cause.
-
-## STANDARD PATH
-
-The skill runs nine phases. Each phase is short; phase headings below are the navigation index.
-
-1. **Pre-flight** — ensure feature branch, run validation, check for existing PR
-2. **Self-review** — read the full diff, check for bugs/secrets/debug code
-3. **Simplify** — hold the diff against `minimal-change`'s ladder
-4. **Organize commits** — logical commits; mechanics via `/commit`'s standard path
-5. **Push and create PR** — `gh pr create` with HEREDOC body
-6. **Wait for CI** — `poll-ci.sh`; fix in place if anything fails
-7. **Agent review** — `review-pr` Mode A runs the standards and spec passes; fix findings, record them on the PR
-8. **Outside reviews** — `poll-review.sh` returns at once when nobody is expected; answer any via `review-pr`
-9. **Summary** — report PR URL, CI status, review outcome
-
-## Phase 1: Pre-flight
-
-1. **Ensure feature branch** — auto-create if on `main`:
+1. Make sure you're on a feature branch:
 
    ```bash
    branch=$(${CLAUDE_SKILL_DIR}/ensure-feature-branch.sh)
    ```
 
-   The script handles three scenarios automatically:
-   - **Unpushed commits on main** → infers branch name from commit, creates branch, resets main
-   - **Staged/unstaged changes** → stashes, creates branch, pops
-   - **Clean state** → exits 1 ("No changes to create a PR from.")
+   On `main`/`master` (or a Claude Code `worktree-*` branch) it derives a
+   branch: unpushed commits on main get a branch named from the commit and
+   main is reset; staged or unstaged changes are stashed, moved to a new
+   branch, and popped; a clean state exits 1 ("No changes to create a PR
+   from.").
 
-2. **Determine base branch** — use `$ARGUMENTS` if provided, otherwise `main`.
+2. The base branch is `$ARGUMENTS` if given, otherwise `main`.
 
-3. **Discover and run validation:**
+3. Discover the verification command, then run the command it prints as a
+   **separate** Bash call; `eval` in the same call defeats `allowed-tools`
+   matching and prompts every time:
 
    ```bash
    ${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh
    ```
 
-   Then run the command it prints as a **separate** Bash call — never `eval` it
-   in the same call, which defeats `allowed-tools` matching and prompts.
-
-   **ALL must pass.** Fix any failures before proceeding.
-
-4. **Check for existing PR**:
+4. Check for an existing PR:
 
    ```bash
    gh pr view --json number,url,state
    ```
 
-   If a PR already exists and is open, auto-delegate to `/review-pr` — do not stop and tell the user.
+   If one is already open, call the Skill tool with "review-pr" for it rather
+   than stopping to tell the user.
 
-## Phase 2: Self-review
+Done when you're on a feature branch, verification passes in full, and either
+no PR is open for it or the open one is in the review-pr skill's hands.
 
-Review **every change** in the diff:
+## 2. Self-review
+
+Read every change, committed and not:
 
 ```bash
 git diff <base>...HEAD
@@ -88,121 +84,110 @@ git diff
 git diff --cached
 ```
 
-Check for:
+Look for bugs and unhandled edge cases, missing error handling, security
+problems (secrets, injection, unsafe deserialization), missing tests, leftover
+debug code (`print()`, `console.log`, `TODO`/`FIXME` without an issue ref),
+and naming drift. Fix what you find and re-run verification. File a GitHub
+issue for each out-of-scope problem before opening the PR. Done when you have
+read the whole diff and every finding is fixed or filed.
 
-- Bugs, logic errors, edge cases, missing null checks
-- Missing error handling
-- Security concerns (secrets, injection, unsafe deserialization)
-- Missing or inadequate tests
-- Leftover debug code (`print()`, `console.log`, `TODO`/`FIXME` without issue refs)
-- Code quality and naming consistency
-
-Fix any issues found, then re-run validation.
-
-## Phase 3: Simplify
+## 3. Simplify
 
 Call the Skill tool with "minimal-change" and hold the diff against its
 ladder: could each addition be deleted, or replaced by existing code, the
 standard library, a native platform feature, or an installed dependency?
 Apply the cuts, keep everything under the skill's "Always keep", and mark any
-deliberate shortcut in the skill's `shortcut:` format. Re-run validation after any change. Done
-when every addition in the diff has been checked against the ladder.
+deliberate shortcut in the skill's `shortcut:` format. Re-run verification
+after any change. Done when every addition in the diff has been checked
+against the ladder.
 
-## Phase 4: Organize commits
+## 4. Organize commits
 
-1. Review current state:
+Look at what you have:
 
-   ```bash
-   git log <base>..HEAD --oneline
-   git status
-   ```
+```bash
+git log <base>..HEAD --oneline
+git status
+```
 
-2. Organize changes into logical commits:
-   - If all uncommitted: group into meaningful commits (separate feature from tests, refactoring from new functionality)
-   - If commits exist and are well-organized: just commit remaining changes
-   - If messy (WIP, fixup): clean up
+Group uncommitted work into logical commits (feature apart from tests,
+refactoring apart from new behaviour), not one giant squash. If the existing
+commits are already well organized, commit only what remains; if they are
+messy (WIP, fixup), clean them up. Create each commit by calling the Skill
+tool with "commit": it owns intentional staging, the uv.lock drift check for
+Python+uv projects, the conventional message, and HEREDOC creation. Skip its
+verification step unless code changed since step 1. Done when `git status` is
+clean and every commit is a coherent unit.
 
-3. **Create each commit via `/commit`'s STANDARD PATH** — it owns the commit
-   mechanics: intentional staging (never `git add -A` or `git add .`), the
-   uv.lock drift check for Python+uv projects (see DETAIL: uv.lock Drift in
-   the commit skill), conventional message format, and HEREDOC commit
-   creation. Validation already ran in Phase 1 — skip `/commit`'s validation
-   step unless code changed since.
+## 5. Push and create the PR
 
-## Phase 5: Push and create PR
+```bash
+git push -u origin <branch>
+```
 
-1. Push:
+Call the Skill tool with "pr-body" for the body's shape (a visual summary,
+before-and-after evidence, merge danger, test plan). Link the issue the branch
+implements with `Closes #<issue>`, or `Refs #<issue>` when it only partly
+addresses it: the agent review's spec pass checks the diff against the closing
+issues, and without one it has only the PR description.
 
-   ```bash
-   git push -u origin <branch>
-   ```
+```bash
+gh pr create --base <base> --title "feat(scope): short description" --body "$(cat <<'EOF'
+<body in the pr-body shape, ending with the Closes line>
 
-2. Write the body: call the Skill tool with "pr-body" for its shape (a
-   visual summary, before-and-after evidence, merge danger, test plan). Link
-   the issue the branch implements with `Closes #<issue>` (or `Refs #<issue>`
-   when it only partly addresses it): Phase 7's spec pass reviews the diff
-   against the closing issues, and without one it can only use the PR
-   description. Then create the PR with a HEREDOC body:
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
 
-   ```bash
-   gh pr create --base <base> --title "feat(scope): short description" --body "$(cat <<'EOF'
-   <body in the pr-body shape, ending with the Closes line>
+Done when the PR exists and you have printed its URL.
 
-   🤖 Generated with [Claude Code](https://claude.com/claude-code)
-   EOF
-   )"
-   ```
-
-3. Print the PR URL.
-
-## Phase 6: Wait for CI
+## 6. Wait for CI
 
 ```bash
 ${CLAUDE_SKILL_DIR}/poll-ci.sh <number> [timeout-seconds]
 ```
 
-Exit 0 = passed, exit 1 = failed or cancelled (fix, commit, push, re-poll), exit 2 = script timeout — CI is **still running or not started** (a queued run, or a required check that hasn't reported, which the TIMEOUT line names); re-poll, exit 3 = the PR couldn't be read (check the number and `gh auth status`).
+It waits up to 300s by default. Run it with Bash `timeout: 600000`, or
+`timeout: 900000` with `poll-ci.sh <number> 720` for slow CI, or in the
+background, so the script and not the Bash tool decides when to give up.
 
-### Outliving the Bash tool timeout (REQUIRED)
+| Exit | Meaning | Next |
+| --- | --- | --- |
+| 0 | All checks passed | Step 7 |
+| 1 | A check failed or was cancelled | `gh run view <run-id> --log-failed`, fix, verify locally, commit specific files, push, re-poll |
+| 2 | Script timeout: CI is still running or hasn't started (a queued run, or a required check that hasn't reported, which the TIMEOUT line names) | Re-poll |
+| 3 | The PR couldn't be read | Check the number and `gh auth status` |
 
-`poll-ci.sh` waits up to 300s by default (pass a second argument for longer), but the Bash tool's **default 120s timeout kills the call first** — silently. The truncated output (a heartbeat listing pending checks) is NOT a result, and no completion notification will ever arrive from a killed foreground call. Every invocation MUST use one of:
+Every terminal outcome ends with a `CI RESULT:` line. Output that ends on a
+`CI POLL:` heartbeat means the process was killed mid-wait and CI state is
+unknown: re-poll rather than reporting "waiting for the monitor" and
+stopping. Fix CI in place on this PR rather than closing and reopening it.
 
-1. **Foreground with explicit timeout** — set the Bash tool `timeout` parameter comfortably above the script's own timeout, e.g. `timeout: 600000` (ms) for the default 300s script timeout, or `timeout: 900000` with `poll-ci.sh <number> 720` for slow CI. The script — not the Bash tool — must be the one that decides when to give up, so a timeout always produces an explicit exit 2.
-2. **Background** — invoke with `run_in_background: true`. The Bash call returns immediately and you are re-invoked when the poll completes; read the final output then.
+If you return from a scheduled wakeup or a task notification, follow
+[resuming.md](resuming.md) before trusting anything the wakeup prompt says.
 
-Interpreting output: `poll-ci.sh` ends every terminal outcome with a `CI RESULT:` line. If the output you see ends with a `CI POLL:` heartbeat instead, the process was killed mid-wait — CI state is unknown. Re-poll; never report "waiting for the monitor" and stop.
+Done when the latest poll ends `CI RESULT:` with exit 0.
 
-**If a check fails:** fetch logs with `gh run view <run-id> --log-failed`, fix, validate locally, commit (specific files), push, resume waiting.
+## 7. Agent review
 
-### Resuming after a wakeup or notification
+Our own review is the gate. Outside reviewers are not guaranteed: many repos
+have no required reviewers, and Copilot review is often requested by hand.
+Step 2 was the implementer checking its own work; this step adds an
+independent reader with a fresh context.
 
-If you backgrounded a poll and return later via a scheduled wakeup or task notification, the prompt you wrote was frozen at scheduling time. By the time it fires, task IDs and the state it describes are often stale — a force-push starts a new CI run, a finished poll task no longer exists. On resume:
+Call the Skill tool with "review-pr", passing the PR number and asking for
+the agent review. On a PR you authored it acts as a self-review gate: the
+`code-reviewer` agent runs a standards pass and a spec pass (against the
+PR's linked issues) on `<base>...HEAD`, you fix the findings, and the outcome
+is posted to the PR. When the fixes are pushed, wait for CI again (step 6) so
+the summary reports CI for the reviewed code.
 
-- **Do not trust remembered task IDs** or the state claimed by the wakeup prompt.
-- **Re-derive state fresh** from GitHub:
+Done when the latest agent review has no BLOCKING findings, every finding has
+an outcome, CI is green on the final push, and the PR carries an
+`## Agent review` comment listing each finding and its outcome.
 
-  ```bash
-  gh pr checks <number>
-  gh pr view <number> --json state,reviews,mergeStateStatus
-  ```
-
-- Continue from whichever phase the fresh state indicates (CI running → keep waiting; CI failed → fix; CI green → Phase 7). Phase 7 is done if the PR already has an `## Agent review` comment newer than the latest push (`gh pr view <number> --json comments,commits`); then go to Phase 8.
-
-When scheduling a wakeup, phrase the prompt as the **goal**, not a task reference: `"PR #<n>: continue /open-pr Phase 6 CI wait — re-check gh pr checks and proceed"`, never `"check poll task <id>"`. The same rules apply to any long-running poll in this skill, including Phase 8's outside-review wait.
-
-## Phase 7: Agent review
-
-Our own review is the gate. Outside reviewers are not guaranteed: many repos have no required reviewers and Copilot review is often requested by hand. The Phase 2 read-through is the implementer checking its own work; this phase adds an independent reader with a fresh context.
-
-Call the Skill tool with "review-pr", passing the PR number. On a PR you authored it runs Mode A as a self-review gate: the `code-reviewer` agent runs a standards pass and a spec pass (against the PR's linked issues) on `<base>...HEAD`, you fix the findings, and the outcome is posted to the PR.
-
-When the fixes are pushed, wait for CI again (Phase 6) so the summary reports the CI result for the reviewed code.
-
-Done when the latest agent review has no BLOCKING findings, every finding has an outcome, CI is green on the final push, and the PR carries an `## Agent review` comment listing each finding and its outcome.
-
-## Phase 8: Outside reviews
-
-Check for Copilot or human review with the polling script. It queries review threads and review states through GraphQL; `gh pr view --json` returns only top-level comments and misses inline review threads.
+## 8. Outside reviews
 
 ```bash
 ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <number>)
@@ -210,17 +195,20 @@ owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
 ${CLAUDE_SKILL_DIR}/poll-review.sh "$owner_repo" <number>
 ```
 
-The script waits only when a review is actually expected: someone is in the PR's pending review requests (up to its timeout), or Copilot reviews this repo's PRs automatically (until Copilot lands, at most `POLL_REVIEW_COPILOT_WAIT` seconds after the PR opened). Otherwise it returns `none` immediately. When it does wait, the Bash-timeout and wakeup-resume rules from Phase 6 apply: run it with an explicit Bash `timeout` above the script's own, or with `run_in_background: true`.
-
-It prints exactly one state:
+It queries review threads and review states through GraphQL, and waits only
+when a review is actually expected: someone is in the PR's pending review
+requests (up to its timeout), or Copilot reviews this repo's PRs
+automatically (until Copilot lands, at most `POLL_REVIEW_COPILOT_WAIT`
+seconds after the PR opened). Otherwise it returns `none` at once. When it
+waits, the long-poll rule above applies. It prints exactly one state:
 
 | State | Exit | Next |
 | --- | --- | --- |
-| `none` | 3 | Nothing from outside reviewers to act on: nobody was expected, or Copilot already reviewed and its threads are handled. Go to Phase 9 |
-| `comments` / `changes-requested` | 0 | Call the Skill tool with "review-pr" to work through them (Mode B) |
-| `summary-only` | 0 | A COMMENTED review with no inline comments (common for Copilot follow-ups). Read the body, surface it, act only on what the user agrees needs action |
-| `approved` | 0 | Report it and go to Phase 9 |
-| `timeout` | 2 | An expected reviewer (requested, or automatic Copilot) has not arrived. Report that the agent review is done and outside review is pending |
+| `none` | 3 | Nothing from outside reviewers to act on: nobody was expected, or Copilot already reviewed and its threads are handled. Go to step 9 |
+| `comments` / `changes-requested` | 0 | Call the Skill tool with "review-pr", asking it to address the feedback |
+| `summary-only` | 0 | A COMMENTED review with no inline comments (common for Copilot follow-ups). Read the body, surface it, and act only on what the user agrees needs action |
+| `approved` | 0 | Report it and go to step 9 |
+| `timeout` | 2 | An expected reviewer (requested, or automatic Copilot) hasn't arrived. Report that the agent review is done and outside review is pending |
 | `error` | 4 | The GitHub API kept failing; stderr has the details. Fix auth or the PR reference and re-run |
 
 Read a `summary-only` body with:
@@ -230,35 +218,19 @@ gh api "repos/$owner_repo/pulls/<number>/reviews" \
   --jq '[.[] | select(.state == "COMMENTED" and .body != "")] | last | .body'
 ```
 
-## Phase 9: Summary
+Done when the state is `none`, `approved`, or `timeout`, or every outside
+comment has been answered through the review-pr skill.
 
-Print:
+## 9. Summary
 
-- PR URL
-- Number of commits
-- CI status
-- Agent review: findings by severity and their outcomes
-- Outside review: state from Phase 8, and comments addressed (if any)
-- Current PR state
+Report the PR URL, the number of commits, CI status, the agent review's
+findings by severity with their outcomes, the outside-review state and any
+comments addressed, and the current PR state. Done when the report is
+printed.
 
-## Important Rules
+## Related
 
-- **Never dismiss review findings** — Code quality concerns are the entire point of code review. Never rationalize skipping them ("not blocking", "acceptable", "good for future refinement"). Every finding gets fixed, deferred with a tracked issue, or discussed with the reviewer. "CI is green" and "tests pass" do not override review feedback.
-- **Never merge with unaddressed comments** — All review comments must be resolved before merging. No exceptions.
-- **Validate before opening** — verification must pass before creating the PR
-- **Self-review is mandatory** — always review the full diff
-- **Simplify every diff** — see Phase 3
-- **Logical commits** — organize into meaningful commits, not one giant squash
-- **No bypassed checks** — never use `--no-verify`, `noqa`, or `type: ignore`
-- **Fix CI in-place** — don't close and re-open
-- **Stage specific files** — never `git add -A` or `git add .`
-- **HEREDOC for messages** — always use HEREDOC for commit messages and PR bodies
-- **File issues for deferred work** — if self-review finds out-of-scope issues, create GitHub issues before opening
-- **Delegate to /review-pr** — both the agent review (Mode A) and outside comments (Mode B); don't duplicate either workflow here
-
-## Related Skills
-
-- `/review-pr` — Agent review (Mode A) and addressing review feedback (Mode B)
-- `/commit` — Quality-gated conventional commits
-- `/minimal-change` — The ladder Phase 3 applies
-- `/pr-body` — The PR description shape Phase 5 uses
+- `/review-pr` — the agent review and addressing review feedback
+- `/commit` — quality-gated conventional commits
+- `/minimal-change` — the ladder step 3 applies
+- `/pr-body` — the PR description shape step 5 uses

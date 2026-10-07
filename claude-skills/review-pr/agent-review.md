@@ -1,7 +1,7 @@
-# Agent review (Mode A)
+# Agent review
 
-The full Mode A workflow: two review passes in parallel, presented side by
-side, then either posted (someone else's PR) or fixed (your own PR).
+The full agent-review workflow: two review passes in parallel, presented side
+by side, then either posted (someone else's PR) or fixed (your own PR).
 
 ## Contents
 
@@ -9,6 +9,7 @@ side, then either posted (someone else's PR) or fixed (your own PR).
 - [2. Dispatch the two passes](#2-dispatch-the-two-passes)
 - [3. Present the reports](#3-present-the-reports)
 - [4. Act on the findings](#4-act-on-the-findings)
+- [Large PRs](#large-prs)
 
 ## 1. Fetch the PR and its spec
 
@@ -92,3 +93,25 @@ gh pr review <PR#> --request-changes --body-file <file>   # or --approve / --com
 
 Done when neither report has an open BLOCKING finding and every finding has
 an outcome in the comment.
+
+## Large PRs
+
+For a PR with many files or thousands of lines:
+
+1. Skip boilerplate: generated code, vendor updates, mass-refactor churn.
+2. Sample by category: review logic changes, skip formatting-only files.
+3. Take critical paths first: auth, payments, data mutation, API contracts.
+4. If a full review would take over an hour, ask the author to split it.
+
+Say what you covered and what you skipped:
+
+```text
+This PR is quite large (47 files, 2500 lines). I've reviewed:
+- Core auth changes (critical path)
+- Data mutation logic (sampled 5 files for pattern)
+- Tests (coverage spot-check)
+
+Blocked on: Vendor update changes (auto-generated, skipping).
+Recommendation: For future PRs, split refactors by domain
+(auth, API, database) for focused reviews.
+```

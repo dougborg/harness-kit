@@ -1,228 +1,139 @@
 ---
 name: rebase
-description: >-
-  Rebase a feature branch onto a target branch, resolving conflicts
-  intelligently. Use when a branch is behind and needs updating.
+description: Rebase the current feature branch onto a target branch (default origin/main) and resolve its conflicts.
 argument-hint: "[target branch]"
 allowed-tools: Bash(git rebase*), Bash(git fetch*), Bash(git status*), Bash(git diff*), Bash(git log*), Bash(git add*), Bash(git stash*), Bash(git branch*), Bash(git rev-parse*), Bash(git merge-base*), Bash(git show*), Bash(git checkout*), Bash(GIT_SEQUENCE_EDITOR*), Bash(${CLAUDE_SKILL_DIR}/*), Bash(${CLAUDE_SKILL_DIR}/*), Read, Grep, Glob
 disable-model-invocation: true
 ---
 
-# /rebase — Rebase Branch onto Target
+# Rebase
 
-Rebase the current feature branch onto a target branch, handling conflicts automatically with full context awareness.
+Replay the current feature branch's commits onto a target branch (default
+`origin/main`), resolving conflicts with both sides understood.
 
-## PURPOSE
+- **Rebase only local feature branches.** If the branch is pushed and others
+  work on it, confirm with the user first; the pre-flight script refuses a
+  shared branch.
+- **Stash only when `git status --short` shows work to save.** On a clean
+  tree `git stash` saves nothing, and a later `git stash pop` pops whatever
+  entry is on top, possibly months-old WIP from another branch, causing a
+  surprise conflict. To compare against a ref, use `git diff <ref>` or a
+  separate `git worktree`, not a stash/pop pair.
+- **Resolve each conflict with both sides read.** Picking a side blind drops
+  someone's change.
+- **Fix hook failures at the cause;** `--no-verify` is not a fix.
 
-Update a feature branch by replaying its commits onto a target branch (default: `origin/main`), resolving any conflicts intelligently.
+## 1. Pre-flight
 
-## CRITICAL
+Check no rebase is already in progress; if this succeeds, one is, so finish
+or abort it first:
 
-- **Never rebase shared/published branches** — Only rebase local feature branches. If the branch has been pushed and others are working on it, confirm with the user first.
-- **Stash or commit uncommitted changes first** — Dirty working tree will cause rebase to fail. Stash automatically if needed.
-- **Never stash a clean tree** — On a clean tree, `git stash` silently saves nothing, and a later `git stash pop` pops the topmost *existing* stash entry (possibly months-old WIP from an unrelated branch), causing a surprise merge conflict. Only stash when `git status --short` shows work to save; to compare against a ref, use `git diff <ref>` or a separate `git worktree` — never a stash/pop pair.
-- **Understand both sides of every conflict** — Read `git log` for the target branch changes to the conflicting file before resolving. Never blindly pick one side.
-- **Never use `--no-verify`** — Hooks exist for a reason. Fix issues, don't skip them.
-- **Verify after rebase** — Run the project's validation command after rebase completes to catch integration issues.
+```bash
+git rev-parse -q --verify REBASE_HEAD
+```
 
-## ASSUMES
-
-- You're on a feature branch (not `main`)
-- The target branch exists and is fetchable
-- You have permission to rewrite local history
-
-## STANDARD PATH
-
-### 1. Pre-flight checks
-
-Run the pre-flight script (validates branch, fetches remote, checks for collaboration, stashes if needed):
+Then run the pre-flight script. It refuses `main`/`master`, fetches the
+target's remote, checks whether other authors share the branch, and stashes
+uncommitted work if there is any:
 
 ```bash
 target=$(${CLAUDE_SKILL_DIR}/preflight.sh "${ARGUMENTS:-origin/main}")
 ```
 
-The script exits 1 if on main/master or if other authors are detected on a published branch. It prints the target branch to stdout and stash info to stderr.
+It exits 1 on a primary branch or a shared published branch. It prints the
+target on stdout and, if it stashed, `STASH_REF=<ref>` on stderr; note that
+ref for step 5. Done when the script exits 0 and you have the target.
 
-### 2. Assess the rebase
+## 2. Assess
 
 ```bash
 ${CLAUDE_SKILL_DIR}/assess.sh "$target"
 ```
 
-Shows commits to replay, files that may conflict, and the merge base.
+It shows the commits to replay, the files that may conflict, and the merge
+base. Done when you know how many commits will replay and which files are at
+risk.
 
-### 3. Attempt the rebase
+## 3. Rebase
 
 ```bash
 git rebase $target
 ```
 
-If this succeeds cleanly, skip to step 5.
+Done when it finishes cleanly (go to step 5) or stops on a conflict (step 4).
 
-### 4. Resolve conflicts (if any)
+## 4. Resolve conflicts
 
-When rebase stops for conflicts:
+List the conflicted files:
 
 ```bash
-# See which files have conflicts
 git diff --name-only --diff-filter=U
 ```
 
-For each conflicting file, follow the sequence in DETAIL: Resolving Individual Conflicts. Then:
+For each one:
+
+1. Read the whole file, conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
+   included.
+2. See what the target changed and why: `git log -p $target -- <file>`.
+3. See what the replayed commit changed: `git show REBASE_HEAD -- <file>`.
+4. Edit the file to keep the intent of both sides, and remove every marker.
+5. Stage it: `git add <file>`.
+
+Binary files, lock files, generated files, and delete-versus-modify conflicts
+each have a set strategy in
+[conflict-strategies.md](conflict-strategies.md); read it when you hit one,
+because `--ours` and `--theirs` are swapped during a rebase.
+
+When every file in the current commit is resolved:
 
 ```bash
 git rebase --continue
 ```
 
-Repeat if subsequent commits also conflict.
+Repeat for each commit that stops. Done when the rebase completes.
 
-### 5. Post-rebase verification
+To start over (the conflicts are too tangled to resolve here, the target was
+wrong, or the user asks to stop), `git rebase --abort` restores the branch to
+its pre-rebase state.
+
+## 5. Verify
 
 ```bash
-# Verify commit history looks right
 git log --oneline $target..HEAD
-
-# Restore stashed changes if we stashed in step 1
-[ -n "$STASH_REF" ] && git stash pop "$STASH_REF"
+[ -n "$STASH_REF" ] && git stash pop "$STASH_REF"   # only if step 1 stashed
 ```
 
-Run the project's validation command:
+Discover the verification command, then run what it prints as a **separate**
+Bash call (`eval` in the same call defeats `allowed-tools` matching and
+prompts):
 
 ```bash
 ${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh
 ```
 
-Then run the command it prints as a **separate** Bash call — never `eval` it in
-the same call, which defeats `allowed-tools` matching and prompts.
+A failure here means the rebase is complete but the branch has integration
+problems to fix. Done when the history looks right, any stash is restored,
+and you have the verification result.
 
-Report validation results. If validation fails, the rebase is complete but the branch has integration issues that need fixing.
+## 6. Summary
 
-### 6. Summary
+Report the commits rebased, the conflicts resolved and their files, the
+verification result, and whether the branch needs
+`git push --force-with-lease`. Done when the report is printed.
 
-Print:
+## Squash, drop, or reword without an editor
 
-- Number of commits rebased
-- Number of conflicts resolved (if any)
-- Files that had conflicts (if any)
-- Validation result (pass/fail)
-- Whether force-push is needed (`git push --force-with-lease` reminder)
-
-## EDGE CASES
-
-- [Rebase aborted mid-way] — Read DETAIL: Aborting a Rebase
-- [Resolving individual conflicts] — Read DETAIL: Resolving Individual Conflicts
-- [Complex conflict patterns] — Read DETAIL: Conflict Strategies
-- [Squashing during rebase] — Read DETAIL: Non-Interactive Squash
-
----
-
-## DETAIL: Aborting a Rebase
-
-If a rebase is going badly and you need to start over:
+`squash.sh` drives `git rebase -i` through `GIT_SEQUENCE_EDITOR`, detecting
+GNU or BSD `sed` for the right `sed -i` syntax:
 
 ```bash
-git rebase --abort
+${CLAUDE_SKILL_DIR}/squash.sh squash $target               # squash all commits into one
+${CLAUDE_SKILL_DIR}/squash.sh drop $target <short-sha>     # drop one commit
+${CLAUDE_SKILL_DIR}/squash.sh reword $target <short-sha>   # reword one commit
 ```
 
-This restores the branch to its pre-rebase state. Use when:
+## Related
 
-- Conflicts are too complex to resolve in context
-- You realize the wrong target branch was used
-- The user asks to stop
-
-Always check for a rebase in progress before starting a new one:
-
-```bash
-# Check if a rebase is already in progress
-git rev-parse -q --verify REBASE_HEAD >/dev/null 2>&1
-```
-
----
-
-## DETAIL: Resolving Individual Conflicts
-
-For each conflicting file discovered by `git diff --name-only --diff-filter=U`:
-
-1. **Read the conflict markers** — Use `Read` to see the full file with `<<<<<<<`, `=======`, `>>>>>>>` markers
-2. **Understand the target branch changes** — Run `git log -p $target -- <file>` to see what changed on the target and why
-3. **Understand our changes** — Run `git show REBASE_HEAD -- <file>` to see what changed in the commit being replayed
-4. **Resolve** — Edit the file to integrate both sets of changes. Preserve intent from both sides when possible. Remove all conflict markers.
-5. **Stage** — `git add <file>`
-
-After all conflicts in the current commit are resolved, run `git rebase --continue` to move to the next commit.
-
----
-
-## DETAIL: Conflict Strategies
-
-### Binary files
-
-Binary files can't be merged. Choose one side:
-
-```bash
-# NOTE: In rebase, --ours/--theirs are swapped from merge semantics!
-git checkout --ours <file>      # Keep target branch version (branch we're rebasing onto)
-git checkout --theirs <file>    # Keep rebased commit version (our changes being replayed)
-git add <file>
-```
-
-**Default to `--theirs`** (keep rebased commit version) for most binaries, since we're replaying our commits. Only ask the user if the file is manually-edited content with ambiguous intent (e.g., images, documents).
-
-### Lock files (pnpm-lock.yaml, package-lock.json, Cargo.lock)
-
-Regenerate rather than merge:
-
-```bash
-git checkout --theirs pnpm-lock.yaml   # Take target's version
-pnpm install                            # Regenerate with our deps
-git add pnpm-lock.yaml
-```
-
-### Auto-generated files
-
-For files like `flake.lock`, `.terraform.lock.hcl`, or similar — take the target version and regenerate:
-
-```bash
-git checkout --theirs <lockfile>
-# Run the appropriate regeneration command
-git add <lockfile>
-```
-
-### Deleted vs Modified
-
-When one side deleted a file and the other modified it:
-
-```bash
-# Check what each side did
-git log --oneline --follow $target -- <file>   # Was it deleted on target?
-git log --oneline HEAD -- <file>                # Did we modify it?
-```
-
-If target deleted it intentionally (refactor, migration), accept the deletion. If our changes are important, keep the file and adapt.
-
----
-
-## DETAIL: Non-Interactive Squash
-
-Use the squash script for non-interactive operations:
-
-```bash
-# Squash all commits into one
-${CLAUDE_SKILL_DIR}/squash.sh squash $target
-
-# Drop a specific commit by SHA
-${CLAUDE_SKILL_DIR}/squash.sh drop $target <short-sha>
-
-# Reword a commit
-${CLAUDE_SKILL_DIR}/squash.sh reword $target <short-sha>
-```
-
-The script automatically detects your sed flavor (GNU or BSD) and applies the correct `sed -i` syntax.
-
----
-
-## RELATED
-
-- `/commit` — Quality-gated conventional commits
-- `/open-pr` — Open PR with validation (often follows rebase)
-- `/review-pr` — Address review feedback
+- `/commit` — quality-gated conventional commits
+- `/open-pr` — open a PR with validation, often after a rebase
+- `/review-pr` — address review feedback
