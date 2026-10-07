@@ -143,6 +143,12 @@ takes the same path through a skill every run.
   removing feels risky. Every edit is a chance to delete a line that no longer
   bears on what the skill does.
 
+- **Shape what the user reads.** In a long workflow, each progress update
+  says where the run stands ("step 3 of 7 done: CI green"), and the final
+  report leads with the outcome, then ends on one concrete next action. The
+  user can't hold the run's state between messages; the report holds it for
+  them. The `adhd-mode` skill carries the full set of these rules.
+
 Each meaning lives in one place. Restating a rule in a second skill doubles its
 maintenance and inflates its weight; point at the owner instead.
 
