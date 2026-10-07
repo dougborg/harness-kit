@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
 # Rebase pre-flight: validate state before starting a rebase.
 #
-# Usage: preflight.sh [target-branch]
-# Output: prints target branch and stash ref (if stashed) to stdout
-# Exit 1: if on primary branch or branch is shared
+# Usage: preflight.sh [--allow-shared] [target-branch]
+# Output: prints the target branch to stdout, and STASH_REF=<ref> to stderr
+#   when it stashed
+# Exit 1: on a primary branch, or on a branch with other authors' commits
+#   (pass --allow-shared only after the user confirms rebasing it anyway)
 #
 # Checks: not on main/master, fetches remote, detects collaboration,
 # stashes uncommitted changes if needed.
 
 set -euo pipefail
 
-# Shared scripts are reachable as symlinks inside this skill's own directory,
-# so they resolve both in the plugin checkout and after /harness bootstrap.
+# is-branch-shared.sh ships beside this script in every copy of the skill.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+allow_shared=false
+if [ "${1:-}" = "--allow-shared" ]; then
+  allow_shared=true
+  shift
+fi
 
 # Confirm not on main
 current=$(git branch --show-current)
@@ -28,9 +35,10 @@ target="${1:-origin/main}"
 remote="${target%%/*}"
 git fetch "$remote"
 
-# Check for collaboration (other authors)
-if [ -x "$SCRIPT_DIR/is-branch-shared.sh" ]; then
-  "$SCRIPT_DIR/is-branch-shared.sh"
+# Check for collaboration (other authors); is-branch-shared.sh names them.
+if [ "$allow_shared" = false ] && ! "$SCRIPT_DIR/is-branch-shared.sh"; then
+  echo "Branch is shared: ask the user before rebasing it. If they confirm, rerun with --allow-shared." >&2
+  exit 1
 fi
 
 # Stash uncommitted changes if needed

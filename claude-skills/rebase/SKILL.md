@@ -42,8 +42,11 @@ uncommitted work if there is any:
 target=$(${CLAUDE_SKILL_DIR}/preflight.sh "${ARGUMENTS:-origin/main}")
 ```
 
-It exits 1 on a primary branch or a shared published branch. It prints the
-target on stdout and, if it stashed, `STASH_REF=<ref>` on stderr; note that
+It exits 1 on a primary branch or a shared published branch. On a shared
+branch it names the other authors: stop and ask the user whether to rebase
+anyway (they should confirm with those collaborators), merge instead, or
+abort. Only on an explicit yes, rerun it as `preflight.sh --allow-shared
+<target>`. It prints the target on stdout and, if it stashed, `STASH_REF=<ref>` on stderr; note that
 ref for step 5. Shell variables don't survive between Bash calls, so write
 the printed target in place of `$target` in later commands. Done when the
 script exits 0 and you have the target.
