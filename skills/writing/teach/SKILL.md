@@ -27,10 +27,11 @@ Create each file the first time it has something to hold.
 - `reference/*.html`: the compressed essence of the lessons (cheat sheets,
   syntax, algorithms, routines), built for quick lookup and printing. Lessons
   are rarely reopened; references are.
-- `GLOSSARY.md`: the topic's canonical terms, in the `domain-modeling`
-  glossary format, with two teaching rules: add a term only once the user can
-  use it correctly, and revise a definition in place when their understanding
-  outgrows it. Every lesson uses its terms.
+- `GLOSSARY.md`: the topic's canonical terms. Before the first entry, call
+  the Skill tool with "domain-modeling" for its glossary format; the topic is
+  the context. Two teaching rules apply on top: add a term only once the user
+  can use it correctly, and revise a definition in place when their
+  understanding outgrows it. Every lesson uses its terms.
 - `assets/`: reusable lesson components (a shared stylesheet first, then
   quiz widgets, simulators, diagram helpers).
 - `NOTES.md`: the user's stated preferences about how they want to be taught.
@@ -75,7 +76,8 @@ two:
    anything a second lesson could reuse becomes a new component there, never
    inline code. The lesson is short enough to finish in one sitting, beautiful
    (clean typography, Tufte over dashboard), and teaches only the knowledge
-   the skill needs before the practice. It cites a source for each claim,
+   the skill needs before the practice: an in-browser quiz or task, or a list
+   of real-world steps to take (a yoga sequence, a lift). It cites a source for each claim,
    recommends one primary source to read or watch, links related lessons and
    references, uses the glossary's terms, and reminds the user to bring
    follow-up questions to you. In quizzes, every answer has the same length
