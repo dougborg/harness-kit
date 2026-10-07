@@ -6,7 +6,7 @@ description: >-
   revisiting it, and flags the ones with no trigger. Use when grooming the
   backlog, when the user asks what shortcuts or deferred work the code
   carries, and before planning work in an area with marked shortcuts.
-allowed-tools: Read, Grep, Glob, Bash(grep *), Bash(git blame *)
+allowed-tools: Read, Grep, Glob, Bash(<shared-scripts-dir>/scan-shortcuts.sh*), Bash(git blame *)
 ---
 
 # Shortcut Ledger
@@ -23,13 +23,15 @@ permanent. It reads and reports; it changes nothing.
 ## Scan
 
 ```bash
-grep -rnE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist \
-  --exclude-dir=build --exclude='*.md' '(#|//|--|/\*|<!--) ?shortcut:' .
+<shared-scripts-dir>/scan-shortcuts.sh [dir]
 ```
 
-Requiring a comment leader keeps prose and config keys that merely contain
+It greps for the marker after a comment leader (`#`, `//`, `--`, `/*`,
+`<!--`), skipping Markdown and dependency and build folders; the groom skill
+runs the same script. Requiring a comment leader keeps prose and config keys that merely contain
 the word out of the ledger, and excluding Markdown keeps documentation that
-shows example markers out. Add leaders your stack uses (`;`, `%`, `'`).
+shows example markers out. If your stack uses another comment leader (`;`,
+`%`, `'`), extend the script's pattern.
 
 ## Report
 

@@ -11,7 +11,7 @@ when_to_use: >-
 context: fork
 agent: harness-kit:project-manager
 background: false
-allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh search *), Bash(gh api *), Bash(git log *), Read, Grep, Glob
+allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh search *), Bash(gh api *), Bash(git log *), Read, Grep, Glob, Bash(${CLAUDE_SKILL_DIR}/scan-shortcuts.sh*)
 disable-model-invocation: true
 ---
 
@@ -59,9 +59,11 @@ manager — run your survey process against the backlog, covering:
 3. Recommend a prioritized train of 5-10 PRs ordered by leverage, with ~2 sentences of rationale each covering user-visible value, effort (S/M/L), risk if deferred, and dependencies unblocked.
 4. Flag stale issues (>90 days inactive with no open PR), duplicates, and superseded issues, each with evidence and a disposition.
 5. Identify gaps — work the project should be tracking but isn't.
-6. Survey the shortcut ledger: call the Skill tool with "shortcut-ledger" and
-   report its totals, plus each marker whose trigger has plainly fired or that
-   has no trigger, as gap candidates.
+6. Survey the shortcut ledger. This fork can't call other skills, so run the
+   shortcut-ledger skill's scan directly with
+   `${CLAUDE_SKILL_DIR}/scan-shortcuts.sh`. Each hit reads `shortcut: <ceiling> | revisit when <trigger>`. Report the
+   totals, and list each marker whose trigger has plainly fired, or that has no
+   `revisit when`, as a gap candidate.
 
 Your agent instructions define the output contract (top-line state, umbrella
 table, PR train, stale list, gaps). Cap the brief at ~1500 words.
@@ -100,7 +102,7 @@ If the backlog exceeds 100, page through with `--limit 100` plus `--search "sort
 
 ## DETAIL: Inline Fallback
 
-If the `project-manager` agent is not installed, the fork cannot start. Drop `context: fork` and `agent:` from this file's frontmatter and run the same protocol inline in the parent conversation: context, backlog pull, theme buckets, umbrellas, scored PR train, stale flags, gaps — same output format, same ~1500-word cap. The contract is identical; only the execution context differs.
+If the `project-manager` agent is not installed, the fork cannot start. Drop `context: fork` and `agent:` from this file's frontmatter and run the same protocol inline in the parent conversation: context, backlog pull, theme buckets, umbrellas, scored PR train, stale flags, gaps, shortcut ledger — same output format, same ~1500-word cap. The contract is identical; only the execution context differs.
 
 ---
 
