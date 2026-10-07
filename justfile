@@ -8,7 +8,11 @@ check: validate-all lint-shell lint-md hygiene
 validate-all: validate validate-codex validate-hooks tests
 
 # Every regression test script
-tests: test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-codex-install
+tests: test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-codex-install
+
+# Exercise rebase preflight against throwaway repos with a local bare origin
+test-rebase-preflight:
+    ./scripts/test-rebase-preflight.sh
 
 # Validate plugin manifest and structure
 validate:
@@ -72,12 +76,19 @@ hygiene:
     #!/usr/bin/env bash
     set -euo pipefail
     fail=0
-    if grep -rn '[[:blank:]]$' --include='*.md' --include='*.sh' --include='*.yml' --include='*.json' . 2>/dev/null; then
-        echo "ERROR: Trailing whitespace found"; fail=1
-    fi
+    # error <file> <line> <message>: a plain line, plus an inline PR
+    # annotation when running under GitHub Actions.
+    error() {
+        echo "ERROR: $1${2:+:$2}: $3"
+        if [ "${GITHUB_ACTIONS:-}" = true ]; then echo "::error file=$1${2:+,line=$2}::$3"; fi
+        fail=1
+    }
+    while IFS=: read -r f line _; do
+        error "${f#./}" "$line" "Trailing whitespace"
+    done < <(grep -rn '[[:blank:]]$' --include='*.md' --include='*.sh' --include='*.yml' --include='*.json' . 2>/dev/null || true)
     while IFS= read -r f; do
         if [ -s "$f" ] && [ "$(tail -c1 "$f" | wc -l)" -eq 0 ]; then
-            echo "ERROR: Missing final newline in $f"; fail=1
+            error "${f#./}" "" "Missing final newline"
         fi
     done < <(find . -name '.git' -prune -o \( -name '*.md' -o -name '*.sh' -o -name '*.yml' -o -name '*.json' \) -print)
     exit $fail
