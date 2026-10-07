@@ -1,76 +1,86 @@
 ---
 name: harness-issue
 description: >-
-  File a bug report, idea, or proposed change against the upstream harness repo
-  resolved from the project's config, from any project that uses harness-kit.
-  Two modes: open an Issue, or open a PR with a draft fix. Searches for
-  duplicates first and always shows the proposed content before filing.
+  Files a bug report, idea, or proposed change against the upstream harness
+  repo resolved from the project's config, from any project that uses
+  harness-kit. Two modes: open an Issue, or open a PR with a draft fix.
+  Searches for duplicates first and shows the proposed content before filing.
+  Use when a harness skill, agent, hook, script, or doc misbehaves or has a
+  gap worth reporting upstream; when the user asks to file harness feedback or
+  propose a harness fix; and when a harness retro finds an upstream-worthy
+  item.
 argument-hint: "[issue|pr]"
 allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh api *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(<skill-dir>/*), Read, Edit, Write
 ---
 
-# /harness-issue — File feedback or a fix on the upstream harness
+# Harness Issue
 
-Open an Issue (for bugs, gaps, ideas) or a Pull Request (for a concrete fix) against the upstream harness repository, from any project that uses harness-kit.
+Turn a lesson from a downstream project into an upstream Issue (a bug, gap,
+or idea) or a Pull Request (a concrete fix) on the harness repository, without
+leaving the project. It closes the loop between the projects that consume
+harness-kit and the harness itself.
 
-## PURPOSE
+It needs `gh`, authenticated with access to the upstream repo, and a user
+present to confirm the preview. PR mode also needs push access to the
+upstream or to a fork of it.
 
-Close the loop between projects that consume harness-kit and the harness itself. When a downstream project hits a bug, finds a gap, or invents an improvement worth sharing, this skill turns that learning into upstream Issues or PRs without leaving the project.
+Two rules hold in every mode. Show the full title and body and get the user's
+confirmation before any `gh issue create` or `gh pr create`, so nothing is
+filed silently. Write only facts you have: when the harness-kit version,
+skill, or commit behind the finding is unknown, ask or write `(unknown)`
+rather than inventing context to look thorough.
 
-## CRITICAL
-
-- **Always search for duplicates first** — file a *new* Issue/PR only after checking open and recent closed items match nothing relevant. Comment on an existing thread when one exists rather than fragmenting discussion.
-- **Always show the proposed content before filing** — preview the title and body to the user, get confirmation. Never `gh issue create` / `gh pr create` silently.
-- **Never invent reproduction details** — if you don't know which harness-kit version, skill, or commit triggered the finding, ask or mark as unknown. Don't fabricate context to look thorough.
-- **PR mode delegates to /open-pr inside the upstream workspace** — don't reimplement validation/self-review/CI-poll. Prepare the workspace, switch into it, and invoke /open-pr there.
-- **Respect the upstream config** — read the upstream repo from `.claude/harness-upstream` (with lock file fallback). Do not hardcode `dougborg/harness-kit` in any user-visible message.
-
-## ASSUMES
-
-- `gh` CLI is installed and authenticated against an account with access to the upstream repo
-- Project is running inside Claude Code (so the user can confirm prompts)
-- For PR mode: the user has push access to the upstream (or their own fork — see EDGE CASES)
-
-## STANDARD PATH
-
-### 1. Resolve upstream
+## 1. Resolve the upstream
 
 ```bash
 upstream=$(<skill-dir>/resolve-upstream.sh)
-echo "Filing against $upstream"
 ```
 
-The script reads `.claude/harness-upstream`, then `.harness-lock.json`, then falls back to the built-in default. `$HARNESS_UPSTREAM` overrides for one-off use.
+The script reads `$HARNESS_UPSTREAM`, then `.claude/harness-upstream` (one
+line, `owner/repo`), then the first source `repo` in `.harness-lock.json`,
+then falls back to its built-in default. Refer to the repo by the resolved
+name in every message to the user rather than a hardcoded
+`dougborg/harness-kit`. Done when `$upstream` holds an `owner/repo` and you
+have told the user which repo you are filing against.
 
-### 2. Choose mode
+## 2. Choose the mode
 
-If `$ARGUMENTS` is `issue` or `pr`, use it. Otherwise ask:
+Use `$ARGUMENTS` when it is `issue` or `pr`. Otherwise ask: "Issue (describe a
+bug, gap, or idea) or PR (propose a concrete change)?" Done when the mode is
+set.
 
-> "Issue (describe a bug/gap/idea) or PR (propose a concrete change)?"
+## 3. Gather the context
 
-### 3. Gather context
+From the conversation, pin down:
 
-From the conversation, extract:
+- **What**: the finding in one sentence.
+- **Where**: the affected skill, agent, hook, script, or doc, with file path
+  and line when known.
+- **Why it matters**: the concrete impact (broke a workflow, surprised a user,
+  blocked a feature).
+- **Repro or suggested fix**: a minimal repro for a bug, a sketch of the fix
+  for an idea.
 
-- **What** — the finding in one sentence
-- **Where** — which skill, agent, hook, script, or doc is affected (file path + line if known)
-- **Why it matters** — concrete impact (broke a workflow, surprised a user, blocked a feature)
-- **How to repro / suggested fix** — minimal repro for bugs; sketch of a fix for ideas
+Sanitize internal paths, customer names, and secrets before they reach the
+draft, and ask the user when you're unsure whether something is sensitive.
+Done when each of the four is filled in, asked about, or marked `(unknown)`.
 
-If any of these are unknown, ask the user or mark `(unknown)` in the issue body — don't fabricate.
-
-### 4. Search for duplicates
+## 4. Search for duplicates
 
 ```bash
 gh issue list -R "$upstream" --state all --limit 20 --search "<keywords>"
 gh pr list    -R "$upstream" --state all --limit 20 --search "<keywords>"
 ```
 
-Show the user any matches that look related. Ask: *file new*, *comment on existing*, or *abort*. If the user picks an existing thread, post a comment via `gh issue comment` / `gh pr comment` and stop.
+Show the user any related matches and ask: file new, comment on the existing
+thread, or abort. Commenting on an existing thread keeps the discussion in one
+place: post with `gh issue comment` or `gh pr comment`, then skip to step 6.
+When a merged PR already fixes the finding on the default branch (just not
+released yet), tell the user instead of filing. Done when the user has chosen, or no open or recently closed item matches.
 
-### 5a. Issue mode
+## 5a. Issue mode
 
-Compose the title (≤70 chars) and body. Body template:
+Compose a title of 70 characters or fewer and this body:
 
 ```markdown
 ## What
@@ -96,7 +106,7 @@ Compose the title (≤70 chars) and body. Body template:
 Surfaced from project `<downstream-repo-name>` (or `unknown`) on `<date>`.
 ```
 
-Show the user the full title + body, get confirmation, then:
+Show the user the full title and body, and after they confirm:
 
 ```bash
 gh issue create -R "$upstream" --title "<title>" --body "$(cat <<'EOF'
@@ -105,12 +115,12 @@ EOF
 )"
 ```
 
-Print the resulting issue URL.
+Done when the issue exists and you have its URL.
 
-### 5b. PR mode
+## 5b. PR mode
 
-1. **Pick a branch name** — short, descriptive (e.g. `fix/hooks-reference-typo`, `feat/issue-template-for-retro`).
-
+1. **Name the branch**: short and descriptive, such as
+   `fix/hooks-reference-typo` or `feat/issue-template-for-retro`.
 2. **Prepare the upstream workspace**:
 
    ```bash
@@ -118,37 +128,48 @@ Print the resulting issue URL.
    cd "$workspace"
    ```
 
-   The script clones the upstream (or reuses an existing checkout under `~/.cache/harness-issue/`), refuses if it would clobber unrelated state, fast-forwards the default branch, and creates the new branch.
+   The script clones the upstream, or reuses a checkout under
+   `${XDG_CACHE_HOME:-~/.cache}/harness-issue/` (`$HARNESS_UPSTREAM_WORKSPACE`
+   overrides the root). It refuses to touch a checkout with unrelated state,
+   fast-forwards the default branch, and creates the new branch.
+3. **Check it isn't already fixed**: `git log` in the workspace. When the
+   default branch already addresses the finding (merged, just not released),
+   tell the user and stop instead of filing.
+4. **Apply the change** in `$workspace` as ordinary editing in the upstream
+   repo. Keep it minimal and focused, and link back to the downstream context
+   in the commit body rather than in code comments.
+5. **Open the PR.** From inside `$workspace`, call the Skill tool with
+   "open-pr", so the upstream's own validation, self-review, and CI polling
+   run against the upstream's verification command; this skill doesn't
+   repeat them. Put a "Source context" footer in the PR body, matching the
+   Issue mode template. Without push access to the upstream, run
+   `gh repo fork --remote` first and push to the fork; `gh pr create` opens
+   the PR cross-repo by default.
 
-3. **Apply the change** in `$workspace`. This is normal editing in the upstream repo's working copy. Make the change minimal and focused — link back to the downstream context in the commit body, not in code comments.
+Done when the PR exists and you have its URL.
 
-4. **Hand off to /open-pr** from inside `$workspace` so the standard validation, self-review, and CI-poll flow runs against the upstream's verification command:
+## 6. Report
 
-   ```text
-   /open-pr
-   ```
+Tell the user the upstream repo, the mode, and the URL of the issue, PR, or
+comment. Done when all three are reported.
 
-   In the PR body, include a "Source context" footer matching the Issue mode template above.
+## Several findings at once
 
-### 6. Return
+When a retro produces several findings, file each as its own Issue or PR so
+triage stays clean. Batch them only when they are genuinely one concern.
 
-Print: the upstream repo, the mode, and the issue/PR URL. If the user picked "comment on existing," print the comment URL.
+## Configuration
 
-## EDGE CASES
+- `.claude/harness-upstream`: one line, `owner/repo`. Overrides the default
+  and the lock file.
+- `$HARNESS_UPSTREAM`: environment override for one-off runs or CI.
+- `$HARNESS_UPSTREAM_WORKSPACE`: root for cached upstream checkouts (default
+  `${XDG_CACHE_HOME:-~/.cache}/harness-issue`).
 
-- **No push access to upstream** — `gh repo fork --remote` first, then push to the fork. The PR workflow stays the same; `gh pr create` cross-repo PRs by default.
-- **Sensitive context in the finding** — if the repro mentions internal paths, customer names, or secrets, sanitize before filing. Ask the user explicitly when unsure.
-- **Already-merged or already-fixed-on-main** — `git log` in the upstream workspace before filing. If the issue is already addressed in `main` (just not released), tell the user instead of filing.
-- **Many small findings at once** (e.g. retro produced 5) — file each as its own Issue/PR. One Issue per finding keeps triage clean. Batch only when items are genuinely a single concern.
+## Related
 
-## RELATED
-
-- `/harness retro` — surfaces upstream-worthy findings during post-session review and invokes this skill on each
-- `/harness hoist` — already-modified upstream files in your project that should be hoisted back. `harness-issue` complements hoist for findings that aren't yet a code diff.
-- `/open-pr` — used inside the upstream workspace during PR mode
-
-## CONFIG
-
-- `.claude/harness-upstream` — one line, `owner/repo`. Overrides the default and the lock file.
-- `$HARNESS_UPSTREAM` — environment override for one-off invocations or CI.
-- `$HARNESS_UPSTREAM_WORKSPACE` — root path for cached upstream checkouts (default `${XDG_CACHE_HOME:-~/.cache}/harness-issue`).
+- `/harness retro`: surfaces upstream-worthy findings during post-session
+  review and hands each one to this skill.
+- `/harness hoist`: hoists upstream files your project has already modified.
+  This skill complements it for findings that aren't yet a code diff.
+- `/open-pr`: runs inside the upstream workspace in PR mode.

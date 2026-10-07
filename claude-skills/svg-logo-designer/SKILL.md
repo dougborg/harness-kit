@@ -1,59 +1,60 @@
 ---
 name: svg-logo-designer
-description: Generate scalable vector graphics (SVG) logos with multiple concepts, layouts, and color variations
+description: Generate SVG logos with multiple concepts, layouts, and color variations.
 allowed-tools: Read, Write, Glob
 disable-model-invocation: true
 ---
 
-# /svg-logo-designer — SVG Logo Designer
+# SVG Logo Designer
 
-Generate scalable vector graphics (SVG) logos with multiple concepts, layouts, and color variations.
+Design a logo as scalable vector graphics: several concepts first, then the
+chosen ones in every layout and color treatment. When the user wants a single
+design rather than a family of variations, skip steps 3 and 4.
 
-## PURPOSE
+## 1. Gather the brief
 
-Create professional SVG logos with multiple design directions, layouts, and color schemes.
+Ask about the brand name, industry, target audience, color preferences, style
+(modern, classic, playful), and logo type (wordmark, icon, or combination).
+Done when each is answered or the user has left it to you.
 
-## CRITICAL
+## 2. Sketch concepts
 
-- **Always use `viewBox` for scalability** — never set fixed `width`/`height` on the root `<svg>` element.
-- **Include `<title>` and `<desc>` for accessibility** — screen readers need these to describe the logo.
-- **Define reusable elements in `<defs>`** — gradients, patterns, and masks go here, not inline.
+Create 3 to 5 distinct directions that explore different visual metaphors and
+compositions. Done when the user has picked the concepts to develop.
 
-## ASSUMES
+## 3. Lay out each concept
 
-- You have Write access to create SVG files
-- Design requires multiple variations (if single design, consider simpler alternatives)
-- SVG expertise available to refine output
+For each chosen concept: horizontal, vertical (stacked), square, icon-only,
+and text-only. Done when every chosen concept has all five.
 
-## STANDARD PATH
+## 4. Color each layout
 
-### 1. Gather Requirements
+Each layout in full color, monochrome dark, monochrome light, and reversed.
+Done when every layout has all four.
 
-Ask about: brand name, industry, target audience, color preferences, style (modern, classic, playful), logo type (wordmark, icon, combination).
+## 5. Build the SVG
 
-### 2. Generate Concepts
-
-Create 3-5 distinct design directions exploring different visual metaphors and composition styles.
-
-### 3. Generate Layouts
-
-For each selected concept: horizontal, vertical/stacked, square, icon-only, text-only.
-
-### 4. Generate Color Variations
-
-Each layout in: full color, monochrome dark, monochrome light, reversed.
-
-### 5. SVG Structure
+Every file follows this structure:
 
 ```svg
 <svg viewBox="0 0 [width] [height]" xmlns="http://www.w3.org/2000/svg">
   <title>Logo Name</title>
   <desc>Brief description for accessibility</desc>
-  <defs><!-- Gradients, patterns --></defs>
+  <defs><!-- Gradients, patterns, masks --></defs>
   <!-- Logo elements -->
 </svg>
 ```
 
-### 6. Deliverables
+- Size the root `<svg>` with `viewBox` alone, without fixed `width` or
+  `height`, so the logo scales to any container.
+- Give it a `<title>` and `<desc>`, which screen readers use to describe the
+  logo.
+- Define gradients, patterns, and masks once in `<defs>` and reference them,
+  rather than repeating them inline.
 
-SVG files for each variation, color specs (HEX/RGB), usage guidelines.
+Done when every file meets all three.
+
+## 6. Deliver
+
+Hand over one SVG file per variation, the color specs (HEX and RGB), and
+usage guidelines. Done when the user has all three.
