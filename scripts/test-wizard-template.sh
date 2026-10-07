@@ -68,12 +68,12 @@ for sh in $bashes; do
   sh_tag=$(basename "$sh")-$RANDOM
 
   # Fresh run outside git: values land quoted in a 0600 .env; the secret is set.
-  run fresh '\npk_test_1\nsk_test_2\ny\n'
+  run fresh '\npub_1\nsec_2\ny\n'
   check fresh-exit [ "$rc" = 0 ]
-  check fresh-env grep -qx "STRIPE_PUBLISHABLE_KEY='pk_test_1'" "$case_dir/.env"
+  check fresh-env grep -qx "EXAMPLE_PUBLIC_KEY='pub_1'" "$case_dir/.env"
   check fresh-mode [ -n "$(find "$case_dir/.env" -prune -perm 600)" ]
-  check fresh-secret [ "$(cat "$case_dir/secret-STRIPE_SECRET_KEY")" = sk_test_2 ]
-  check fresh-browser-stubbed grep -q "dashboard.stripe.com" "$case_dir/opened"
+  check fresh-secret [ "$(cat "$case_dir/secret-EXAMPLE_SECRET_KEY")" = sec_2 ]
+  check fresh-browser-stubbed grep -q "example.com/settings/api-keys" "$case_dir/opened"
 
   # B1: inside a git work tree with .env not ignored, it offers to ignore it.
   prep gitignore
@@ -84,23 +84,23 @@ for sh in $bashes; do
 
   # B2: a saved value with an apostrophe survives a rerun that keeps it.
   prep apostrophe
-  printf "STRIPE_PUBLISHABLE_KEY='pk'\nSTRIPE_SECRET_KEY='it'\\\\''s'\n" >"$scratch/$sh_tag/apostrophe/.env"
+  printf "EXAMPLE_PUBLIC_KEY='pk'\nEXAMPLE_SECRET_KEY='it'\\\\''s'\n" >"$scratch/$sh_tag/apostrophe/.env"
   chmod 600 "$scratch/$sh_tag/apostrophe/.env"
   run apostrophe '\n\n\ny\n'
   check apostrophe-exit [ "$rc" = 0 ]
-  check apostrophe-env grep -qx "STRIPE_SECRET_KEY='it'\\\\''s'" "$case_dir/.env"
-  check apostrophe-secret [ "$(cat "$case_dir/secret-STRIPE_SECRET_KEY")" = "it's" ]
+  check apostrophe-env grep -qx "EXAMPLE_SECRET_KEY='it'\\\\''s'" "$case_dir/.env"
+  check apostrophe-secret [ "$(cat "$case_dir/secret-EXAMPLE_SECRET_KEY")" = "it's" ]
 
   # S2: an empty answer with nothing saved asks again.
   run empty '\n\npk_again\nsk\nn\n'
-  check empty-reprompt grep -qx "STRIPE_PUBLISHABLE_KEY='pk_again'" "$case_dir/.env"
+  check empty-reprompt grep -qx "EXAMPLE_PUBLIC_KEY='pk_again'" "$case_dir/.env"
 
   # S4: an export-prefixed line is replaced, not duplicated.
   prep export
-  printf "export STRIPE_PUBLISHABLE_KEY='old'\n" >"$scratch/$sh_tag/export/.env"
+  printf "export EXAMPLE_PUBLIC_KEY='old'\n" >"$scratch/$sh_tag/export/.env"
   chmod 600 "$scratch/$sh_tag/export/.env"
   run export '\nnew\nsk\nn\n'
-  check export-replaced [ "$(grep -c STRIPE_PUBLISHABLE_KEY "$case_dir/.env")" = 1 ]
+  check export-replaced [ "$(grep -c EXAMPLE_PUBLIC_KEY "$case_dir/.env")" = 1 ]
   check export-no-temp [ "$(find "$case_dir" -name '.env.*' | wc -l | tr -d ' ')" = 0 ]
 
   # S5: an existing world-readable .env is offered chmod 600.
@@ -113,7 +113,7 @@ for sh in $bashes; do
 
   # gh unauthenticated: the secret is listed as still to do.
   STUB_GH_AUTH=fail run noauth '\npk\nsk\ny\n'
-  check noauth-skipped grep -q "set it manually: gh secret set STRIPE_SECRET_KEY" "$case_dir/out"
+  check noauth-skipped grep -q "set it manually: gh secret set EXAMPLE_SECRET_KEY" "$case_dir/out"
 
   # EOF mid-wizard aborts instead of writing an empty value.
   run eof '\n'
