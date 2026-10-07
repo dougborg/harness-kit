@@ -69,12 +69,12 @@ Evaluate each change across six dimensions, then classify findings by severity:
 
 **Dimensions:**
 
-- **Correctness** — logic errors, data corruption risks, type mismatches, broken imports
+- **Correctness** — logic errors, data corruption risks, type mismatches, broken imports, and one value meaning both "nothing" and "could not tell" (an empty list for both no results and a failed query)
   - *Doc-sweep cross-check:* for every added or edited "Look up via `<tool>`" / "see `<endpoint>`" hint, verify the referenced tool's actual return type matches the field it annotates — copy-pasted hints across structurally similar sibling fields are a common category error
 - **Design** — consistency with existing architecture, proper separation of concerns, package boundaries
 - **Readability** — naming clarity, code structure, comments for non-obvious logic, consistent style
 - **Performance** — unnecessary computation, N+1 queries, missing caching opportunities
-- **Testing** — adequate coverage, tests that actually test behavior, edge cases
+- **Testing** — adequate coverage, tests that actually test behavior, edge cases, and assertions that measure what they name rather than something else that holds the same value (aggregates such as sizes, counts, and status codes are prone to it)
 - **Security** — hardcoded secrets, injection vulnerabilities, unsafe deserialization, path traversal
 
 **Documented standards.** Read what the repo writes down about how code should look: `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md`, path-scoped rule files (`.claude/rules/*`), and similar. Cite the file and rule for each violation. A documented standard is the strongest evidence a finding can have.
