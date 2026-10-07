@@ -281,9 +281,9 @@ Hooks are always **project-local** — configured in `.claude/settings.local.jso
 
 **Release automation reference:** When the project uses Conventional Commits + GitHub, recommend Release Please for automated semver. Setup has three reliable gotchas (workflow PR-create permission, release-PR CI triggering, CHANGELOG markdownlint conflicts) — see `release-please-reference.md` for the working config.
 
-**Execution order principle:** Formatters → Validators → Guidance. This ensures:
+**Execution order principle:** Formatters → Validators → Guidance, run in order by one script, since hooks on the same event run in parallel. A `PostToolUse` hook's plain stdout goes only to the debug log, so the script returns validator and guidance output as `hookSpecificOutput.additionalContext` (see the Hook Output section of `hooks-reference.md`). This ensures:
 
-1. **Formatters** (zero-token, silent) — auto-fix style issues before Claude sees them
+1. **Formatters** (zero-token, silent) — auto-fix style issues on disk right after each edit
    - Never ask users to fix linting errors manually
    - Examples: `prettier --write`, `ruff format`, `nix run .#format`
 

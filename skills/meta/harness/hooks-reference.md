@@ -15,6 +15,7 @@ Schema, event types, and patterns for writing Claude Code plugin `hooks.json`.
 - [Event Types](#event-types)
 - [Matcher Syntax](#matcher-syntax)
 - [Variable Substitution](#variable-substitution)
+- [Hook Output](#hook-output)
 - [Exit Code Safety](#exit-code-safety)
 - [The 3-Stage PostToolUse Pattern](#the-3-stage-posttooluse-pattern)
 - [Fully Worked Example](#fully-worked-example)
@@ -78,16 +79,16 @@ Declaring `"hooks": "./hooks/hooks.json"` in `plugin.json` **and** placing the f
 | `PreToolUse` | Before a tool is invoked | Yes (tool name regex) |
 | `PostToolUse` | After a tool completes | Yes (tool name regex) |
 | `UserPromptSubmit` | When the user sends a prompt | No |
-| `UserMessageSubmit` | Synonym variant in some versions | No |
-| `Stop` | When the session/turn ends | No |
-| `SubagentStop` | When a spawned subagent ends | No |
-| `SessionStart` | When a session begins | No |
+| `Stop` | When Claude finishes responding | No |
+| `SubagentStart` | When a subagent is spawned | Yes (agent type) |
+| `SubagentStop` | When a spawned subagent ends | Yes (agent type) |
+| `SessionStart` | When a session begins or resumes | Yes (`startup`, `resume`, `clear`, `compact`) |
 | `Notification` | When a notification would be shown | No |
 | `PreCompact` | Before automatic context compaction | No |
 
 ## Matcher Syntax
 
-For `PreToolUse` and `PostToolUse`, the `matcher` field is a regex against the tool name. Common patterns:
+For `PreToolUse` and `PostToolUse`, the `matcher` field is a regex against the tool name; other events match their own field, as the table shows. Common patterns:
 
 ```json
 "matcher": "Edit|Write"           // either Edit or Write tool
@@ -99,39 +100,68 @@ Events without matcher support (`Stop`, `UserPromptSubmit`, etc.) omit the `matc
 
 ## Variable Substitution
 
-Inside a `command` string:
+Inside a `command` string, these placeholders expand at runtime:
 
-- **`${CLAUDE_PLUGIN_ROOT}`** — expands to the plugin's cache directory at runtime. Use this for any path inside your plugin:
-
-  ```json
-  "command": "${CLAUDE_PLUGIN_ROOT}/scripts/my-hook.sh"
-  ```
-
-- **`{file_path}`** — for `PostToolUse` hooks matching `Edit|Write`, substitutes the path of the file that was just edited:
+- **`${CLAUDE_PLUGIN_ROOT}`**: the plugin's install directory. Use it for any
+  path inside your plugin, quoted in case the path has spaces:
 
   ```json
-  "command": "${CLAUDE_PLUGIN_ROOT}/scripts/format.sh {file_path}"
+  "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/my-hook.sh\""
   ```
+
+- **`${CLAUDE_PLUGIN_DATA}`**: a persistent data directory for the plugin.
+- **`${CLAUDE_PROJECT_DIR}`**: the project root, for hooks in
+  `.claude/settings*.json`.
+
+There is no `{file_path}` or other per-event substitution. A command hook
+gets the event as JSON on stdin; read the edited path with
+`jq -r '.tool_input.file_path // empty'`.
+
+## Hook Output
+
+Where a hook's output goes depends on the event:
+
+- **Plain stdout** reaches Claude's context only for `SessionStart` and
+  `UserPromptSubmit`. For `PostToolUse`, `Stop`, and most other events it
+  goes only to the debug log, as does stderr on exit 0.
+- **`additionalContext`** in `hookSpecificOutput` adds text to Claude's
+  context. On `Stop`, it makes Claude continue the turn.
+- **`systemMessage`** shows a note to the user without changing what Claude
+  does.
+
+Audit rule: a `PostToolUse` or `Stop` hook whose only output is plain stdout
+never reaches anyone.
 
 ## Exit Code Safety
 
-Claude Code treats any non-zero exit code from a hook as a failure. Common pitfall: `[ cond ] && action` exits 1 when the condition is false. Use `if [ cond ]; then action; fi` instead, or append `|| true`.
+Exit 0 is success. Exit 2 is the feedback code: stderr goes to Claude, and on
+`PreToolUse` the tool call is blocked; on `PostToolUse` nothing is blocked,
+since the tool has already run. Any other non-zero exit is a non-blocking
+error shown in the transcript. Common pitfall: `[ cond ] && action` exits 1
+when the condition is false. Use `if [ cond ]; then action; fi` instead, or
+append `|| true`.
 
 Audit rule: for every hook command, ask "what happens when this has nothing to do?" If the answer is "it exits non-zero," it needs fixing.
 
 ## The 3-Stage PostToolUse Pattern
 
-When writing multiple `PostToolUse` hooks, order them as **Formatters → Validators → Guidance**:
+Hooks on the same event run in parallel, so one script runs the stages in
+order: **Formatter → Validator → Guidance**.
 
-1. **Formatters** — silent, zero-token cost. Fix issues before Claude reads the file. (e.g. `prettier --write`, `ruff format`)
-2. **Validators** — bounded output (≤30 lines), gated with conditions. Surface real errors only. (e.g. `typecheck`, `test`)
-3. **Guidance** — context reminders (≤20 lines). Nudge the developer with domain info. (e.g. "this touches auth — see domain-advisor")
+1. **Formatter**: silent, zero-token cost. Rewrites the file on disk after
+   the edit. (e.g. `prettier --write`, `ruff format`)
+2. **Validator**: bounded output (30 lines at most), only for files it
+   applies to. Surface real errors only. (e.g. `typecheck`, `test`)
+3. **Guidance**: context reminders (20 lines at most). (e.g. "this touches
+   auth, see domain-advisor")
 
-The harness skill's hooks-patterns reference has the full rationale.
+The script returns validator and guidance output as `additionalContext`. The
+harness skill's hooks-patterns reference has the full rationale, and the
+harness-builder agent's recommendations reference a worked script.
 
 ## Fully Worked Example
 
-This is the correct shape of `hooks/hooks.json` for a plugin with a formatter hook on Edit/Write and a session-end reminder:
+This is the correct shape of `hooks/hooks.json` for a plugin with a formatter hook on Edit/Write and a session-end reminder. The reminder script prints `{"systemMessage": "..."}`, since a Stop hook's plain stdout is never shown:
 
 ```json
 {
@@ -142,7 +172,7 @@ This is the correct shape of `hooks/hooks.json` for a plugin with a formatter ho
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/shared/markdownlint-fix.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/shared/markdownlint-fix.sh\""
           }
         ]
       }
@@ -152,7 +182,7 @@ This is the correct shape of `hooks/hooks.json` for a plugin with a formatter ho
         "hooks": [
           {
             "type": "command",
-            "command": "if [ \"$(git diff --name-only | wc -l)\" -gt 3 ]; then echo '💡 Large session — consider /harness retro'; fi"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/shared/retro-nudge.sh\""
           }
         ]
       }

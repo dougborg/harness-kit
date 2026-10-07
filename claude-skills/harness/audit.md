@@ -110,6 +110,7 @@ ChernyCode principle: "If you do something more than once a day, make it a skill
 - Do hooks follow Formatters → Validators → Guidance order?
 - Are formatters configured for the project stack (ruff, prettier, nix-fmt, markdownlint)?
 - Is there a Stop hook for session-end guidance (e.g., suggest `/harness retro` after large sessions)?
+- Does each hook's output reach someone? A `PostToolUse` or `Stop` hook whose only output is plain stdout (an `echo`) goes only to the debug log. `PostToolUse` feedback needs `hookSpecificOutput.additionalContext` or stderr with exit 2; a Stop nudge needs `{"systemMessage": "..."}`. See `${CLAUDE_SKILL_DIR}/hooks-reference.md`.
 - Do all hook commands exit 0 on success **and on no-op**? Ask of every hook: "what happens when this has nothing to do?" If the answer is "it exits non-zero," it needs fixing — use `if [ cond ]; then action; fi`, never `[ cond ] && action`.
 
 Hook *latency* is `/doctor`'s job — don't time hooks here.
