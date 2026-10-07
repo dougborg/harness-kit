@@ -2,7 +2,7 @@
 name: triage
 description: Move incoming issues (and optionally external PRs) through triage states to agent-ready briefs.
 argument-hint: "[issue or PR number, or what you want to see]"
-allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh api *), Bash(git log *)
+allowed-tools: Read, Grep, Glob, Write, Edit, Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh api *), Bash(git log *)
 ---
 
 # Triage
@@ -60,15 +60,18 @@ the user pick.
    two things: whether the requested behaviour **already exists** (search by
    concept, not just the issue's wording, and say where you looked), and
    whether `.out-of-scope/` holds a **prior rejection** of the same idea
-   ([OUT-OF-SCOPE.md](OUT-OF-SCOPE.md)).
+   ([OUT-OF-SCOPE.md](OUT-OF-SCOPE.md)). Done when you can say whether it is
+   already built and whether it was rejected before.
 2. **Recommend** a category and state, with your reasoning and a short summary
-   of the relevant code. Wait for the user's direction.
-3. **Verify the claim.** For a bug, reproduce it from the reporter's steps
-   (the diagnosing-bugs skill helps when it is hard). For a PR, check it out
+   of the relevant code. Done when the user has given direction.
+3. **Verify the claim.** For a bug, reproduce it from the reporter's steps;
+   when it resists, call the Skill tool with "diagnosing-bugs". For a PR, check it out
    and run what it claims to fix. Report: confirmed (with the code path),
-   failed, or not enough detail, which points to `needs-info`.
+   failed, or not enough detail, which points to `needs-info`. Done when one
+   of those three is reported.
 4. **Grill if needed.** If the request needs shaping, call the Skill tool
-   twice, for "grilling" and "domain-modeling".
+   twice, for "grilling" and "domain-modeling". Done when the open questions
+   the brief needs are answered.
 5. **Apply the outcome**, after showing the user what you'll post:
    - `ready-for-agent`: post an agent brief ([AGENT-BRIEF.md](AGENT-BRIEF.md)).
    - `ready-for-human`: the same structure, plus why it can't be delegated.
@@ -79,7 +82,7 @@ the user pick.
      from the closing comment, and close.
    - `wontfix`, rejected bug: explain politely and close.
 
-   Close through the issue-close skill. Done when the labels, the comment, and
+   To close, call the Skill tool with "issue-close". Done when the labels, the comment, and
    (for `wontfix`) the closure are all in place.
 
 When the user says "move #42 to ready-for-agent", trust them: confirm what
