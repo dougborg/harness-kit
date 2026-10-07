@@ -32,12 +32,14 @@ This skill runs forked, with no conversation history, so take everything from
 git and the files themselves rather than from "the change we just discussed".
 
 ```bash
-git diff HEAD~1 HEAD --stat
-git diff HEAD~1 HEAD
-git diff -- path/to/file.js   # one file
+git diff <base>...HEAD --stat   # the branch against its base, e.g. main...HEAD
+git diff <base>...HEAD
+git log <base>..HEAD --oneline
+git diff -- path/to/file.js     # one file
 ```
 
-Use the range or paths the prompt names when it names one. Done when you have
+Review the whole branch by default; use the range or paths the prompt names
+when it names one. Done when you have
 read every changed file and can say what the change does and why.
 
 ## 2. Review it
@@ -106,15 +108,14 @@ Classify each finding:
   performance optimization).
 - **NITPICK**: nice to have (naming, a formatting edge case).
 
-Report:
+Report in the code-reviewer agent's output format, which the review-pr skill
+parses: `## Review Summary`, then `### BLOCKING`, `### SUGGESTIONS`,
+`### NITPICKS`, `### Complexity` (ending on its `net:` line), and
+`### What Looks Good`. Open the summary with a verdict: "Approved", "Request
+changes", or "Comment". Suggestions stay optional when the code is otherwise
+solid.
 
-1. A verdict: "Approved", "Request changes", or "Comment".
-2. BLOCKING items first.
-3. Findings grouped by dimension, listing only dimensions that have findings.
-4. Suggestions, which stay optional when the code is otherwise solid.
-5. The Complexity findings and their `net:` line.
-
-Done when every finding carries a severity and a `file:line`, and the report
+Done when every finding carries a severity and a `file:line`, and the summary
 opens with the verdict.
 
 ## Related
@@ -123,6 +124,5 @@ opens with the verdict.
   the spec pass side by side.
 - The `code-reviewer` agent: the forked context this skill runs in
   (harness-kit plugin, or project `.claude/agents/code-reviewer.md`). If it is
-  unavailable, drop `context: fork` and `agent:` from this file's frontmatter
-  and apply the review inline.
+  unavailable, apply the review inline in this context.
 - `CLAUDE.md`: project-specific review standards.

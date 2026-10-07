@@ -2,8 +2,8 @@
 name: ui-review
 description: >-
   Audits web UI components for accessibility and UX against WCAG 2.1 AA,
-  reporting each violation as `[CRITICAL|IMPORTANT|MINOR] file:line` with a
-  specific fix. Use when the user asks about accessibility, a11y, WCAG, screen
+  reporting each violation as `[CRITICAL|IMPORTANT|MINOR] — file:line` with
+  a specific fix. Use when the user asks about accessibility, a11y, WCAG, screen
   readers, keyboard navigation, or color contrast, or wants a UX pass over
   components.
 allowed-tools: Read, Grep, Glob
@@ -45,7 +45,7 @@ Give each violation a severity: **CRITICAL** blocks release, **IMPORTANT** is
 needed before the PR, **MINOR** is nice to have.
 
 ```text
-[SEVERITY] — file:line
+[CRITICAL|IMPORTANT|MINOR] — file:line
 Rule: [rule name]
 Issue: [what is wrong]
 Fix: [specific code change]
