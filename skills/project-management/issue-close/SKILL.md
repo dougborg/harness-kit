@@ -8,7 +8,7 @@ description: >-
   superseded issue.
 argument-hint: "<#> | supersede <closing#> <canonical#> | dedupe <dup#> <keeper#>"
 effort: low
-allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
+allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh repo *), Read
 ---
 
 # Issue Close
@@ -38,12 +38,18 @@ latest understanding, so the body alone can mislead. Look for:
 - cross-links to other issues and PRs;
 - labels triagers added after filing, which are part of the effective scope.
 
-`--json comments` returns at most the first 100; for a longer thread, page
-with `gh api /repos/<owner>/<repo>/issues/<#>/comments?per_page=100&page=N`
-(or `gh api --paginate`) before mining. For threads past 100 comments and
-issues in another repo, read [long-and-cross-repo.md](long-and-cross-repo.md).
+`--json comments` returns at most the first 100; for a longer thread, fetch
+them all before mining:
 
-Done when you've read every comment on every issue involved.
+```bash
+gh api --paginate "repos/<owner>/<repo>/issues/<#>/comments"
+```
+
+For threads past 100 comments and issues in another repo, read
+[long-and-cross-repo.md](long-and-cross-repo.md).
+
+Done when you've read every comment on every issue involved, or, for a
+thread past 100 comments, sampled it as the reference describes.
 
 ## 2. Resolve
 
@@ -83,17 +89,20 @@ effectively lost to anyone reading the canonical one.
 1. From step 1, list every item on `closing#` not already on `canonical#`.
    Each is a migration candidate. Carry late priority and area labels onto
    `canonical#` if it lacks them, and say in the migration comment where the
-   label change came from.
+   label change came from. When the caller says the substance is already
+   migrated (a merge posts one consolidated comment first), confirm it is on
+   `canonical#` and skip the migration comment.
 2. Draft the migration comment for `canonical#`, preserving the substance with
    attribution and linking back to `closing#`. Draft the close comment for
    `closing#`: why it's superseded, a link to `canonical#`, and a note that
    the original thread stays readable.
-3. Show the user both comments, and wait for confirmation before posting
-   either.
+3. Show the user both comments and the label diff for `canonical#`, and wait
+   for confirmation before applying any of them.
 4. Apply:
 
    ```bash
    gh issue comment <canonical#> --body "..."
+   gh issue edit <canonical#> --add-label "..."   # only if labels carry over
    gh issue close <closing#> --comment "..."
    ```
 
@@ -106,9 +115,11 @@ to the other.
 2. The keeper is usually the older issue with more discussion. Cross-link from
    the keeper only when the duplicate adds context, such as a different repro
    or reporter.
-3. Show the user the close comment and wait for confirmation, then:
+3. Show the user the close comment, and the keeper comment if there is one,
+   and wait for confirmation, then:
 
    ```bash
+   gh issue comment <keeper#> --body "..."   # only if the duplicate adds context
    gh issue close <duplicate#> --comment "Duplicate of #<keeper>. <Optional: what's preserved>"
    ```
 

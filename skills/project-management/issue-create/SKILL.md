@@ -5,7 +5,7 @@ description: >-
   scope, applies real labels, and previews before posting. Use when the user
   asks to file, open, or track an issue, and when another workflow needs to
   record deferred work, a bug found mid-task, or a follow-up as an issue.
-allowed-tools: Bash(gh issue *), Bash(gh search *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
+allowed-tools: Bash(gh issue *), Bash(gh search *), Bash(gh label list*), Read
 ---
 
 # Issue Create
@@ -22,11 +22,15 @@ gh issue list --repo <owner>/<repo> --search "<keywords>" --state all
 
 Read each candidate's body and comments; a title alone misleads.
 
-- **Same work:** comment on it with your context and a cross-link, and stop.
-  Fragmenting discussion across near-duplicates costs more than over-linking.
+- **Same work:** comment on it with your context and a cross-link instead,
+  after showing the user that comment, and stop. Fragmenting discussion
+  across near-duplicates costs more than over-linking.
 - **Adjacent but distinct:** file the new issue and cross-link both
   directions.
 - **Unclear:** show both to the user and ask.
+
+When the caller names an issue as a known source (an issue being split, say),
+it is adjacent by definition: link it, and file.
 
 Done when every candidate is classed as same, adjacent, or unrelated.
 
@@ -58,8 +62,10 @@ Done when every label you plan to apply appears in `gh label list`.
 ## 4. Draft and preview
 
 Write the body: context, current behaviour, expected behaviour, `file:line`
-references, and cross-links to related issues and PRs. Show the user the
-title, body, and labels.
+references, and cross-links to related issues and PRs. For each adjacent
+issue from step 1, draft the one-line comment that will link it back to the
+new issue. Show the user the title, body, labels, and those link-back
+comments.
 
 Done when the user confirms the draft.
 
@@ -67,9 +73,10 @@ Done when the user confirms the draft.
 
 ```bash
 gh issue create --repo <owner>/<repo> --title "..." --body "..." --label "..."
+gh issue comment <adjacent#> --repo <owner>/<repo> --body "Related: #<new>"   # per adjacent issue
 ```
 
-Done when you've printed the new issue's URL, and any adjacent issue from
+Done when you've printed the new issue's URL, and every adjacent issue from
 step 1 links back to it.
 
 ## Related

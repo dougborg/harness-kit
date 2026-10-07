@@ -7,7 +7,7 @@ description: >-
   relabel, or reopen an issue, or when a workflow needs to post a progress
   checkpoint to a tracking issue.
 argument-hint: "<#> | reopen <#>"
-allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label *), Bash(gh repo *), Read, Edit, Write
+allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh label list*), Read
 ---
 
 # Issue Update
@@ -28,9 +28,12 @@ gh issue view <#> --json title,body,state,labels,comments
 The comments often hold the latest framing, so the body alone can mislead.
 Note alternative approaches, corrections, `file:line` samples, cross-links,
 and labels added after filing. `--json comments` returns at most the first
-100; for a longer thread, page with
-`gh api /repos/<owner>/<repo>/issues/<#>/comments?per_page=100&page=N` (or
-`gh api --paginate`) so a late change of framing isn't missed.
+100; for a longer thread, fetch them all so a late change of framing isn't
+missed:
+
+```bash
+gh api --paginate "repos/<owner>/<repo>/issues/<#>/comments"
+```
 
 Done when you've read every comment, and can say what the thread currently
 believes.
@@ -59,14 +62,17 @@ readers see what shifted and why, and nobody re-litigates the original:
 <corrected body>
 ```
 
-For a label that doesn't exist, skip it and suggest it in the comment
-("Suggest adding an `area:foo` label; it doesn't exist yet"). Leave
-`gh label create` to the maintainer, because the label set is a repo-config
-decision.
+Check labels against `gh label list`. For a label that doesn't exist, skip it
+and suggest it in the comment ("Suggest adding an `area:foo` label; it
+doesn't exist yet"). Leave `gh label create` to the maintainer, because the
+label set is a repo-config decision.
 
-Show the user the drafted body, the comment, and the label diff, and wait for
-confirmation: an edit can overwrite framing. Then run only the commands that
-apply:
+If the thread surfaced related issues or PRs that don't link back, draft a
+one-line cross-link comment for each of them too.
+
+Show the user the drafted body, the comment, the label diff, and any
+cross-link comments, and wait for confirmation: an edit can overwrite
+framing. Then run only the commands that apply:
 
 ```bash
 gh issue edit <#> --body "$(cat <<'EOF'
@@ -75,9 +81,8 @@ EOF
 )"
 gh issue comment <#> --body "..."
 gh issue edit <#> --add-label "..." --remove-label "..."
+gh issue comment <related#> --body "Related: #<#> ..."   # per cross-link
 ```
-
-Cross-link any related issues or PRs you found, in both directions.
 
 Done when the confirmed changes are applied and every newly found related
 issue or PR links both ways.

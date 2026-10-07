@@ -1,7 +1,7 @@
 ---
 name: session-retro
 description: Capture a work session as a structured retro doc in docs/sessions/
-allowed-tools: Bash(git log*), Bash(git config*), Bash(gh issue*), Bash(gh pr*), Bash(gh search*), Bash(ls*), Read, Glob, Write
+allowed-tools: Bash(git log*), Bash(git config*), Bash(gh issue*), Bash(gh pr*), Bash(date*), Bash(ls*), Read, Glob, Write
 ---
 
 # Session Retro
@@ -99,9 +99,9 @@ written.
 
 ## 4. Close the loop
 
-Show the user the doc and offer to file the pending issues. For each one they
-pick, call the Skill tool with "issue-create" for a project issue, or with
-"harness-issue" for a harness gap. If the harness retro hasn't run this
+Show the user the doc and offer to file the pending issues. Call the Skill
+tool once per issue they pick: with "issue-create" for a project issue, or
+with "harness-issue" for a harness gap. If the harness retro hasn't run this
 session, suggest the user run it (`/harness retro` on Claude Code,
 `$harness retro` on Codex), so the work and the tooling lessons are both
 captured.

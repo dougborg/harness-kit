@@ -1,8 +1,8 @@
 ---
 name: issue-restructure
-description: Split one GitHub issue into focused replacements, or merge several into one keeper, migrating substance before closing.
+description: Split one GitHub issue into focused replacements, or merge several into one keeper, migrating substance and cross-linking before closing.
 argument-hint: "split <#> | merge <#> <#> [#...]"
-allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh repo *), Bash(gh label *), Read, Edit, Write
+allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(gh repo *), Read
 ---
 
 # Issue Restructure
@@ -30,10 +30,14 @@ already on the keeper or replacements:
 - labels triagers added after filing that hint at scope.
 
 Each is a migration candidate. `--json comments` returns at most the first
-100; for a longer thread, page with
-`gh api /repos/<owner>/<repo>/issues/<#>/comments?per_page=100&page=N` (or
-`gh api --paginate`). For a merge of more than five issues, or issues across
-repositories, read [bulk-and-cross-repo.md](bulk-and-cross-repo.md) first.
+100; for a longer thread, fetch them all:
+
+```bash
+gh api --paginate "repos/<owner>/<repo>/issues/<#>/comments"
+```
+
+For a merge of more than five issues, or issues across repositories, read
+[bulk-and-cross-repo.md](bulk-and-cross-repo.md) first.
 
 Done when you have a list of migration candidates for every issue involved.
 
@@ -68,11 +72,17 @@ Done when you have a list of migration candidates for every issue involved.
    ```
 
 4. File the replacements in order, calling the Skill tool with
-   "issue-create" once for each, so each gets the same duplicate search,
-   labels, and preview.
+   "issue-create" once per replacement, so each gets the same duplicate
+   search, labels, and preview. Tell each call that `<#>` is the known source
+   being split: an adjacent issue to link, not a duplicate to stop on.
 5. Edit `<#>`'s body to open with "Split into #A, #B, #C", then close it:
 
    ```bash
+   gh issue edit <#> --body-file - <<'EOF'
+   > Split into #A, #B, #C.
+
+   <original body>
+   EOF
    gh issue close <#> --comment "Split into #A / #B / #C — see body for scope each covers."
    ```
 
@@ -85,30 +95,39 @@ The inverse of split: each non-keeper is superseded by the keeper.
 
 1. Pick the keeper, in this order: the broadest accurate scope (its framing
    already covers the others), then the most discussion (the longest thread
-   stays in place), then the most recent activity, then the lowest number.
-   If no issue clearly qualifies, the set probably shouldn't merge: call the
-   Skill tool with "issue-create" for a new umbrella, then with
-   "issue-close" in `supersede` mode for each old issue, and stop here.
+   stays in place without migration), then the most recent activity
+   (readers expect a current issue to be active), then the lowest number
+   (older is more canonical). If no issue clearly qualifies, the set
+   probably shouldn't merge: call the Skill tool with "issue-create" for a
+   new umbrella, then once per old issue with "issue-close" in `supersede`
+   mode, and stop here.
 2. Draft **one** consolidated migration comment on the keeper, grouping the
-   migrated content by source issue, and a close comment for each
-   non-keeper.
-3. Show the user every comment and any label change, and wait for
-   confirmation.
-4. Post the migration comment, then close each non-keeper:
+   migrated content by source issue and linking each source, and the label
+   change if the keeper's scope grew.
+3. Show the user the migration comment and the label diff, and wait for
+   confirmation. Then post them:
 
    ```bash
-   gh issue close <non-keeper#> --comment "Merged into #<keeper>. <pointer to specific section of migration comment>"
+   gh issue comment <keeper#> --body-file - <<'EOF'
+   <migration comment>
+   EOF
+   gh issue edit <keeper#> --add-label "..."   # only if scope grew
    ```
 
-5. If the keeper's scope grew, update its labels.
+4. Close the non-keepers by calling the Skill tool with "issue-close" once
+   per non-keeper, as `supersede <non-keeper#> <keeper#>`. Tell each call the
+   substance is already migrated, so it only drafts and previews the close
+   comment ("Merged into #<keeper>", with a pointer to that source's section
+   of the migration comment).
 
-Done when every migration candidate is on the keeper, every non-keeper is
-closed pointing at it, and the keeper's labels match its scope.
+Done when every migration candidate is on the keeper, the migration comment
+links every source, every non-keeper is closed pointing at the keeper, and
+the keeper's labels match its scope.
 
 ## Related
 
 - `issue-create` — files each replacement during `split`.
-- `issue-close` — its `supersede` and `dedupe` modes are what `merge` builds
-  on.
+- `issue-close` — `merge` closes each non-keeper through its `supersede`
+  mode.
 - `issue-update` — use it instead of `split` when the issue only needs
   reframing.
