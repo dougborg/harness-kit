@@ -42,23 +42,20 @@ fixtures="${POLL_CI_FIXTURE_DIR:-}"
 elapsed=0
 
 pr_head() {
-  gh pr view "$pr_number" --json headRefOid,baseRefName,headRefName \
-    --jq '"\(.headRefOid) \(.baseRefName) \(.headRefName)"'
+  gh pr view "$pr_number" --json headRefOid,baseRefName,headRefName,isCrossRepository \
+    --jq '"\(.headRefOid) \(.baseRefName) \(.headRefName) \(.isCrossRepository)"'
 }
 
-# The branch's tip on the remote, when the branch lives there (empty for a
-# fork's branch or when the remote can't be read). POLL_CI_EXPECTED_HEAD
-# overrides it for tests.
+# The branch's tip on origin, or nothing when it can't be read (no origin,
+# a network failure, a deleted branch). Callers skip the check for a fork's
+# PR, whose branch lives in another repository.
 remote_tip() {
-  if [ -n "${POLL_CI_EXPECTED_HEAD:-}" ]; then
-    echo "$POLL_CI_EXPECTED_HEAD"
-  else
-    git ls-remote origin "refs/heads/$1" 2>/dev/null | cut -f1
-  fi
+  { git ls-remote origin "refs/heads/$1" 2>/dev/null || true; } | cut -f1
 }
 
 head_sha=""
 head_ref=""
+cross_repo="false"
 if [ -n "$fixtures" ]; then
   required=$(cat "$fixtures/required.json")
 else
@@ -66,7 +63,7 @@ else
     echo "CI RESULT: ERROR for PR #${pr_number} — couldn't read the PR from GitHub (check the number and gh auth)" >&2
     exit 3
   fi
-  read -r head_sha base head_ref <<<"$pr_info"
+  read -r head_sha base head_ref cross_repo <<<"$pr_info"
   # Required checks from the branch's effective rules (rulesets). A branch
   # with no rules returns an empty list; a failed call means the gate is
   # unknown, so say so rather than silently dropping it.
@@ -104,10 +101,10 @@ active_runs() {
 
 while true; do
   if [ -z "$fixtures" ] && pr_info=$(pr_head 2>/dev/null); then
-    read -r head_sha base head_ref <<<"$pr_info" # follow a push made during the poll
+    read -r head_sha base head_ref cross_repo <<<"$pr_info" # follow a push made during the poll
   fi
   stale=""
-  if [ -z "$fixtures" ] || [ -n "${POLL_CI_EXPECTED_HEAD:-}" ]; then
+  if [ -z "$fixtures" ] && [ "$cross_repo" != true ]; then
     tip=$(remote_tip "$head_ref")
     if [ -n "$tip" ] && [ -n "$head_sha" ] && [ "$tip" != "$head_sha" ]; then
       stale="PR head ${head_sha:0:7} is behind the branch tip ${tip:0:7}"

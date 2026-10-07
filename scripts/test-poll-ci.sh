@@ -61,7 +61,8 @@ mkdir -p "$scratch/bin"
 cat >"$scratch/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 case "$1 $2" in
-"pr view") [ "${STUB_PR_VIEW:-ok}" = ok ] || exit 1; echo "abc123 main feature" ;;
+"pr view") [ "${STUB_PR_VIEW:-ok}" = ok ] || exit 1
+  echo "abc123 main feature ${STUB_CROSS_REPO:-false}" ;;
 "api repos/{owner}/{repo}/rules/branches/main") echo '[]' ;;
 "pr checks")
   if [ -n "${STUB_CHECKS:-}" ]; then printf '%s\n' "$STUB_CHECKS"
@@ -71,6 +72,15 @@ case "$1 $2" in
 esac
 STUB
 chmod +x "$scratch/bin/gh"
+# A stub git, so the live cases never touch a real remote: STUB_REMOTE_TIP is
+# the branch tip origin reports; STUB_REMOTE=fail makes ls-remote fail.
+cat >"$scratch/bin/git" <<'STUB'
+#!/usr/bin/env bash
+[ "$1" = ls-remote ] || exit 1
+[ "${STUB_REMOTE:-ok}" = ok ] || exit 128
+[ -z "${STUB_REMOTE_TIP:-}" ] || printf '%s\trefs/heads/feature\n' "$STUB_REMOTE_TIP"
+STUB
+chmod +x "$scratch/bin/git"
 live() { # live <name> <want-exit> [env...]
   local name=$1 want=$2 out got
   shift 2
@@ -82,15 +92,19 @@ live() { # live <name> <want-exit> [env...]
 }
 live pr-unreadable 3 STUB_PR_VIEW=fail
 live runs-unreadable 2
-live head-current 0 STUB_RUNS=ok POLL_CI_EXPECTED_HEAD=abc123
+live head-current 0 STUB_RUNS=ok STUB_REMOTE_TIP=abc123
 # #131: GitHub hasn't caught up with a push, so the checks shown are the old
 # commit's; wait rather than pass on them, or fail on them.
-live head-stale 2 STUB_RUNS=ok POLL_CI_EXPECTED_HEAD=def456
-live head-stale-old-failure 2 STUB_RUNS=ok POLL_CI_EXPECTED_HEAD=def456 \
+live head-stale 2 STUB_RUNS=ok STUB_REMOTE_TIP=def456
+live head-stale-old-failure 2 STUB_RUNS=ok STUB_REMOTE_TIP=def456 \
   'STUB_CHECKS=[{"name":"ShellCheck","bucket":"fail"}]'
+live tip-unknown 0 STUB_RUNS=ok
+live remote-unreadable 0 STUB_RUNS=ok STUB_REMOTE=fail
+live fork-pr-skips-check 0 STUB_RUNS=ok STUB_CROSS_REPO=true STUB_REMOTE_TIP=def456
 stale_line=$(env PATH="$scratch/bin:$PATH" POLL_CI_INTERVAL=0 STUB_RUNS=ok \
-  POLL_CI_EXPECTED_HEAD=def456 "$script" 1 0 2>&1 | tail -n 1 || true)
-if [[ "$stale_line" == *"PR head abc123 is behind the branch tip def456"* ]]; then
+  STUB_REMOTE_TIP=def456 "$script" 1 0 2>&1 | tail -n 1 || true)
+if [[ "$stale_line" == *"PR head abc123 is behind the branch tip def456"* &&
+  "$stale_line" == *"closing and reopening the PR resyncs it"* ]]; then
   echo "PASS: head-stale names both commits"
 else
   echo "FAIL: head-stale message: $stale_line"
