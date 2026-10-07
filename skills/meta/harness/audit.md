@@ -86,7 +86,7 @@ ChernyCode principle: "If you do something more than once a day, make it a skill
 
 **Stack-dependent:**
 
-- If GitHub is used: `project-manager` agent? + `/feature-spec`, `/groom`, `/standup` skills?
+- If GitHub is used: `project-manager` agent? + `/to-spec`, `/to-tickets`, `/groom`, `/standup` skills?
 - If multiple agents or operators work concurrently: `/agent-standup` skill?
 - If frontend present: design harness (`.impeccable.md`) + `/ui-review` skill?
 

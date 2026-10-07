@@ -22,6 +22,9 @@ License. Adapted material so far:
 - The environment categories in `/harness retro` (navigation, automated
   checks, mechanical vs judgement standards, steering files, tool economy,
   information access), from `retro`.
+- `to-spec` and `to-tickets` (tracer-bullet slices with blocking edges, and
+  expand-contract for wide refactors), replacing harness-kit's
+  `feature-spec`.
 - The `pr-body` skill, from `pr`. Its menu of summary visuals is credited
   there to Dex Horthy's `show-me` skill
   ([humanlayer/skills](https://github.com/humanlayer/skills)).
