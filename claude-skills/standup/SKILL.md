@@ -23,8 +23,9 @@ gh pr list --author="@me" --state=open
 gh issue list --assignee="@me" --state=open
 ```
 
-Take the window from these timestamps, always "since yesterday", rather than
-estimating, so every day's report covers the same span. Only commits under
+The window is always the last 24 hours (`--since="1 day ago"`), taken from
+git and GitHub timestamps rather than estimated, so every day's report covers
+the same span. Only commits under
 your git email and issues assigned to you show up; when a section comes back
 empty, say so rather than filling it from memory.
 

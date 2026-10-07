@@ -4,7 +4,7 @@ description: Groom the GitHub backlog into theme buckets, umbrella status, a pri
 context: fork
 agent: harness-kit:project-manager
 background: false
-allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh label *), Bash(gh search *), Bash(gh api *), Bash(git log *), Read, Grep, Glob, Bash(${CLAUDE_SKILL_DIR}/scan-shortcuts.sh*)
+allowed-tools: Bash(gh issue list*), Bash(gh issue view*), Bash(gh pr list*), Bash(gh label list*), Bash(gh api*), Bash(git log *), Read, Grep, Glob, Bash(${CLAUDE_SKILL_DIR}/scan-shortcuts.sh*)
 disable-model-invocation: true
 ---
 
@@ -21,7 +21,8 @@ discussion. Your agent instructions own the survey process and the brief's
 output contract; this file owns the scope, the shortcut survey, and the
 next-actions footer. If that agent isn't installed the fork can't start: drop
 `context: fork` and `agent:` from this frontmatter and run the same protocol
-inline, with the same output and word cap.
+inline, with the same output and word cap. The fork is Claude Code behaviour;
+on Codex the protocol runs inline in the current session.
 
 **Read-only.** Close, edit, and comment on nothing; recommend, and let the
 user act. Use only the labels, milestones, and priorities the repo already
@@ -30,22 +31,17 @@ has.
 ## 1. Scope the backlog
 
 ```bash
-gh issue list --state open --limit 100 \
+gh issue list --state open --limit 1000 --json number --jq length
+gh issue list --state open --limit 1000 \
   --json number,title,labels,createdAt,updatedAt,assignees,milestone,body
 gh pr list --state open --json number,title,labels,isDraft
 ```
 
-`--limit 100` truncates silently, so check the true count:
-
-```bash
-gh api 'repos/{owner}/{repo}/issues?state=open&per_page=1' --include 2>/dev/null | grep -i '^link:'
-```
-
-Past 100, page through with `--limit 100` plus `--search "sort:updated-desc"`
-and `sort:updated-asc` passes, or pull per-label slices. A brief that silently
-analyzed 100 of 240 issues misleads, so it states the full count and how the
-sample was drawn. Grooming pays off from roughly 15 open issues; below that,
-read them all directly.
+The first command gives the true open-issue count; `gh issue list` truncates
+silently at its `--limit`. If the count exceeds what you pulled, a brief that
+silently analyzed part of the backlog misleads, so state the full count and
+how the sample was drawn. Grooming pays off from roughly 15 open issues; below
+that, read them all directly.
 
 Done when you know the true open-issue count and which issues your sample
 covers.
@@ -93,9 +89,10 @@ Claude Code, `$issue-close` on Codex):
 - raw incoming issues awaiting evaluation: `triage`;
 - start the train's first PR: the normal feature flow, then `open-pr`.
 
-Run none of them. If the user later wants the brief posted, they name the
-umbrella or planning issue, and the issue-update skill posts it there as a
-comment; the target is always theirs to pick.
+Run none of them. Posting the brief is outside this run: if the user later
+wants it posted, they name the umbrella or planning issue, and the parent
+session posts it there as a comment through the issue-update skill. The
+target is always theirs to pick.
 
 Done when the brief is under the cap and every recommendation has a
 rationale and a footer entry.
