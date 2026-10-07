@@ -130,9 +130,9 @@ fi
 exit 0
 ```
 
-To make a validator failure block instead, write its output to stderr and
-`exit 2`. The harness skill's hook references carry the same stdout problem,
-tracked in [#137](https://github.com/dougborg/harness-kit/issues/137).
+To report a validator failure as an error instead, write its output to
+stderr and `exit 2`; Claude sees it, though nothing is blocked, since the
+edit has already happened.
 
 ## Stack detection
 

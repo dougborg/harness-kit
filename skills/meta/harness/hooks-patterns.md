@@ -19,27 +19,34 @@ Don't ask users to do things we can automate.
 
 ## PostToolUse Hooks: 3-Stage Pattern
 
-Configure in `.claude/settings.local.json` to auto-fix on every file edit:
+Configure in `.claude/settings.local.json` to auto-fix on every file edit.
+Hooks on the same event run in parallel, so one script runs the three stages
+in order:
 
-1. **Formatters** (stage 1) — Silent, zero-token cost
-   - Run formatters auto-fix before Claude sees edited files
-   - Examples: `nix run ".#format"`, `prettier --write`, `ruff check --fix`
-   - Never ask users to fix linting errors manually
+1. **Formatter**: silent and zero-token. It rewrites the file on disk after
+   the edit; Claude sees the result the next time it reads the file. Examples:
+   `nix run ".#format"`, `prettier --write`, `ruff check --fix`. Never ask
+   users to fix lint by hand.
+2. **Validator**: bounded output (30 lines at most), only for files it
+   applies to. Report real errors, not noise.
+3. **Guidance**: short context reminders (20 lines at most), such as "this
+   touches auth, see domain-advisor".
 
-2. **Validators** (stage 2) — Bounded output (≤30 lines), gated with conditions
-   - Check for errors after formatting
-   - Examples: `nix flake check`, `type checking`, `test running`
-   - Only show real problems, not noise
-   - Use conditions to surface only relevant checks
-
-3. **Guidance** (stage 3) — Context reminders (≤20 lines)
-   - Orient developers with skill/doc references
-   - Examples: "Check CLAUDE.md for domain constraints", "This touches auth — see domain-advisor"
-   - Always helpful, never noisy
+A command hook reads its input as JSON on stdin (the edited path is
+`.tool_input.file_path`); there is no `{file_path}` substitution. Its plain
+stdout, and its stderr on exit 0, go only to the debug log, so validator and
+guidance output must be returned as
+`{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "..."}}`.
+Exit 2 sends stderr to Claude as an error instead; it blocks nothing, since
+the tool has already run. The harness-builder agent's recommendations
+reference has a worked script.
 
 ## Stop Hooks
 
-Configure session-end hooks for retrospective nudges:
+A Stop hook's plain stdout also goes only to the debug log. To show the user
+a note without making the agent carry on, print
+`{"systemMessage": "..."}`; `additionalContext` would make the agent continue
+instead. The harness-kit plugin ships a retro nudge, `scripts/shared/retro-nudge.sh`:
 
 ```json
 "Stop": [
@@ -47,16 +54,17 @@ Configure session-end hooks for retrospective nudges:
     "hooks": [
       {
         "type": "command",
-        "command": "changed=$( { git diff --name-only 2>/dev/null; git diff --name-only --cached 2>/dev/null; git log --diff-filter=ACMR --name-only --pretty=format: --since='4 hours ago' 2>/dev/null; } | sort -u | wc -l | tr -d ' '); if [ \"$changed\" -gt 3 ]; then echo \"💡 Session touched $changed files — consider /harness retro to capture learnings\"; fi"
+        "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/shared/retro-nudge.sh\""
       }
     ]
   }
 ]
 ```
 
-**Purpose:** After large sessions (>3 files changed), remind the user to run `/harness retro` to capture learnings before context is lost. Counts unstaged, staged, and recently committed files to capture the full session scope.
-
-**Note:** This hook is provided by the harness-kit plugin. Projects only need to override it in `.claude/settings.local.json` if they want different behavior.
+After a session that touched more than three files (unstaged, staged, or
+committed in the last four hours), it suggests the harness skill's retro mode
+to capture learnings before context is lost. Projects override it in
+`.claude/settings.local.json` only if they want different behavior.
 
 ## Hook Exit Code Safety
 
@@ -103,11 +111,13 @@ Context a `SessionStart` hook injects reaches the main session only. Subagents s
 | `SubagentStart` hook `additionalContext` | — | Yes |
 | `CLAUDE.md` / `AGENTS.md` | Yes | General-purpose and custom agents: yes. Built-in `Explore` and `Plan`: no |
 
-So put rules that general-purpose and custom agents need in `CLAUDE.md` or `AGENTS.md`, and pass anything `Explore` or `Plan` must know in the prompt you dispatch them with. When a rule has to be injected by a hook (it is dynamic, or computed at start), pair the `SessionStart` hook with a `SubagentStart` hook. `SubagentStart` takes a `matcher` on the agent type (`general-purpose`, `Explore`, a plugin agent name) and cannot block the subagent. Codex behaviour is not yet verified.
+So put rules that general-purpose and custom agents need in `CLAUDE.md` or `AGENTS.md`, and pass anything `Explore` or `Plan` must know in the prompt you dispatch them with. When a rule has to be injected by a hook (it is dynamic, or computed at start), pair the `SessionStart` hook with a `SubagentStart` hook. `SubagentStart` takes a `matcher` on the agent type (`general-purpose`, `Explore`, a plugin agent name) and cannot block the subagent.
+
+Codex works the same way, per its [hooks docs](https://learn.chatgpt.com/docs/hooks): `SessionStart` applies to the main session only, and `SubagentStart` (matcher on `agent_type`) injects `additionalContext` into a spawned agent and cannot block it. `AGENTS.md` reaches spawned agents (verified on codex-cli 0.160). Project hooks in `.codex/hooks.json` load only when the project's `.codex/` layer is trusted; the hook behaviour itself was taken from the docs, not reproduced.
 
 ## Why This Matters
 
-- Formatters fix before Claude reads → zero tokens, no suggestion waste
+- Formatters fix files silently → zero tokens, no suggestion waste
 - Tests and linters enforce rules; harness provides guidance
 - Stop hooks capture learnings that would otherwise be lost between sessions
 - Users only see real problems and useful guidance, never pedantic style issues
