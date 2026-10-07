@@ -224,6 +224,10 @@ or another skill must. If yes, keep it model-invoked; a skill that previews
 its side effects before acting (`issue-create`, `issue-close`) is safe to
 leave reachable. If it only ever fires by hand, make it user-invoked.
 
+When user-invoked skills pile up past what anyone remembers, a router skill
+(`ask-harness` here) names them and when to reach for each, so the human
+remembers one.
+
 A user-invoked skill may call model-invoked skills, never another user-invoked
 one. When a step needs a user-invoked skill as a precondition, tell the user to
 run it rather than calling it.
