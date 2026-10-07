@@ -35,10 +35,14 @@ in it.
 
 ## 2. Hand it over
 
+Commit and push first if the next session starts in a new worktree or another
+checkout: it begins from the repository, not from this session's uncommitted
+changes.
+
 - **Another person or host**: give the path. To start a new session from it,
-  the recipient runs `claude "$(cat <path>)"` or `codex "$(cat <path>)"` in the
-  repository.
-- **A fresh background session on Claude Code**, when the user asks for one:
+  the recipient runs `claude -- "$(cat <path>)"` or `codex -- "$(cat <path>)"`
+  in the repository.
+- **A fresh background session**, when the user asks for one. On Claude Code:
 
   ```bash
   claude --bg --worktree "<slug>" --name "<descriptive name>" -- "$(cat <path>)"
@@ -49,5 +53,15 @@ in it.
   inside it. The session starts in the permission mode from the user's
   settings, and it can't answer a permission prompt until someone attaches;
   manage it with `claude agents`, `claude attach`, and `claude logs`.
+
+  On Codex, run it non-interactively in a new managed worktree, as a
+  background process:
+
+  ```bash
+  codex exec --worktree -- "$(cat <path>)"
+  ```
+
+  It runs until the task is done, under the user's sandbox and approval
+  settings.
 
 Done when the user has the path, or the background session's id.

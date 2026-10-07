@@ -10,15 +10,18 @@ agent lose the thread.
 
 1. **Can you continue?** Yes when the next phase needs this one as a primary
    source (grilling into implementation wants the reasoning verbatim, not a
-   summary), or when there's comfortably enough room left in the context
-   window. Continuing costs nothing and loses nothing, so rule it out first.
+   summary), or when the next phase fits in what's left of the context window
+   (reasoning gets noticeably weaker past roughly 150k tokens on current
+   models). Continuing costs nothing and loses nothing, so rule it out first.
 2. **Is this context irrelevant to what comes next?** Then clear it (`/clear`
    on Claude Code, a new session on Codex). It's the cheapest move, and the
    old session stays resumable. Clearing a context that mattered loses the
    why behind what you built, and reading the diff won't bring it back.
-3. **Is the work moving?** To another host, another directory or repo, another
-   person, or a side task split off mid-phase: run the handoff skill. What it
-   buys is portability; if nothing is moving, you don't need it.
+3. **Is the work moving?** To another host, another directory or repo, or
+   another person, including a side task found mid-phase that one of those
+   should take: run the handoff skill. What it buys is portability; a side task
+   that can stay here goes to a subagent instead, and if nothing is moving,
+   you don't need a handoff.
 4. **Can the next task run unattended?** Then give it to a subagent and keep
    this session as it is. An automated review is the standard case.
 5. **Otherwise, compact** (`/compact` on both hosts), with an instruction about
@@ -31,9 +34,9 @@ confidently wrong about a decision the summary flattened.
 
 ## Why continuing comes first
 
-Every move except continuing turns a primary source (the session as it
-happened) into a secondary one (a summary of it): less noise and more room,
-but lossy. Pay that loss only when staying costs more than it saves.
+Clearing discards the session as it happened, and handing off or compacting
+replaces it with a summary: a secondary source in place of the primary one,
+with less noise and more room, but lossy. Pay that loss only when staying costs more than it saves.
 
 These are judgement calls; the value is in asking them in order, at the
 boundary.

@@ -1,6 +1,6 @@
 ---
 name: ask-harness
-description: Find which skill or flow fits your situation: a map of every harness-kit skill.
+description: Find which skill or flow fits your situation, with a map of every harness-kit skill.
 disable-model-invocation: true
 ---
 
@@ -8,8 +8,10 @@ disable-model-invocation: true
 
 You don't need to remember every skill. This is the map: one **main flow**
 most work travels, the **on-ramps** that feed it, the lifecycle around pull
-requests and issues, and the standalone tools. Names below are what you type
-(`/name` on Claude Code, `$name` on Codex).
+requests and issues, and the standalone tools. A name with a slash is one you
+type to start (`/name` on Claude Code, `$name` on Codex); a bare name is one
+the agent also picks up on its own when the task fits, and you can still ask
+for it by name.
 
 ## The main flow: idea to merged change
 
@@ -18,8 +20,9 @@ requests and issues, and the standalone tools. Names below are what you type
    hard-to-reverse decisions as ADRs. Use `/grill-me` when there's no repo to
    record into. Both run the `grilling` skill underneath.
 2. **Settle what talk can't.** When a question needs a runnable answer, build a
-   cheap throwaway artifact; when it needs outside facts, the `research` skill
-   reads primary sources and cites them.
+   cheap throwaway artifact to react to (a wayfinder prototype ticket, in a
+   bigger effort); when it needs outside facts, the `research` skill reads
+   primary sources and cites them.
 3. **Specify.** For work that spans sessions, `/to-spec` turns the
    conversation into a spec issue, and `/to-tickets` splits it into
    tracer-bullet sub-issues with blocking links. Small work skips straight to
@@ -32,10 +35,14 @@ requests and issues, and the standalone tools. Names below are what you type
    waits for CI.
 6. **Improve the environment.** `/harness retro` looks back over the session
    for missing checks, standards, pointers, and access, and `/session-retro`
-   records what the work itself taught.
+   records what the work itself taught. Run them in the session they look
+   back on, before you clear it.
 
 Keep steps 1 to 3 in one context window so the spec builds on the actual
-reasoning; each `/implement` can then start fresh from its ticket.
+reasoning; each `/implement` can then start fresh from its ticket. If the
+window fills before `/to-tickets` (reasoning gets noticeably weaker past
+roughly 150k tokens on current models), compact at the nearest phase boundary
+rather than pushing on.
 
 ## On-ramps
 
@@ -61,7 +68,7 @@ reasoning; each `/implement` can then start fresh from its ticket.
 | Split or merge issues | `/issue-restructure` |
 | Decide what to work on next | `/groom` (it also surveys `shortcut-ledger`) |
 | Recap your day | `/standup` |
-| Coordinate several agents or people | `agent-standup`; `budget` before a big fan-out |
+| Coordinate several agents or people | `agent-standup`; on Claude Code, `budget` before a big fan-out |
 
 ## Vocabulary underneath
 
