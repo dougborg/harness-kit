@@ -26,7 +26,7 @@ Run these checks in order. Stop early if a critical check fails.
 
 Run the discovered verification command. **ALL must pass.** If a check fails on the code, report the failures and stop.
 
-A failure caused by the environment rather than the code is not a code failure: "Operation not permitted", a blocked network fetch, or an unwritable cache outside the workspace. This happens in a restricted sandbox, such as Codex's. Report validation as NOT RUN with the error and the command the caller should run outside the sandbox, then carry on with checks 2–5.
+A failure caused by the environment rather than the code is not a code failure: "Operation not permitted", a blocked network fetch, or an unwritable cache outside the workspace. This happens in a restricted sandbox, such as Codex's. Report validation as NOT RUN with the error and the command the caller should run outside the sandbox, then carry on with checks 2–6.
 
 ### 2. Git Status Clean
 
@@ -61,7 +61,19 @@ Check that no checks were bypassed:
 - No `noqa` or `type: ignore` added in the diff
 - No files excluded from linting
 
-### 5. Commit Quality
+### 5. New Assertions Can Fail
+
+For each test or assertion added or changed in this work, find evidence that
+it fails when the defect it targets is present: a run seen failing before the
+fix (red, then green), a companion test that injects the defect and expects
+the check to catch it, or a stated reason neither was possible. A check that
+cannot fail passes for free.
+
+Flag as suspicious any new assertion over an aggregate (a size, count,
+bounding box, hash, or status code) with no such evidence: unrelated material
+can satisfy it while the feature is missing.
+
+### 6. Commit Quality
 
 ```bash
 git log main..HEAD --oneline
@@ -79,6 +91,7 @@ git log main..HEAD --oneline
 ✅ Git status: clean
 ✅ No debug code found
 ✅ No forbidden patterns
+✅ New assertions: each seen failing before the fix
 ✅ Commit quality: good
 
 **Result: READY FOR REVIEW**
@@ -93,6 +106,7 @@ Or if issues found:
 ❌ Git status: 2 uncommitted files
 ⚠️ Debug code: print() found in services/foo.py:42
 ✅ No forbidden patterns
+⚠️ New assertions: `test_envelope` checks a bounding box with no evidence it can fail
 ✅ Commit quality: good
 
 **Result: NOT READY — fix issues above**
@@ -107,6 +121,7 @@ Or if the environment stopped validation from running:
 ✅ Git status: clean
 ✅ No debug code found
 ✅ No forbidden patterns
+✅ New assertions: each seen failing before the fix
 ✅ Commit quality: good
 
 **Result: NOT VERIFIED — run the validation command above, then re-verify**
