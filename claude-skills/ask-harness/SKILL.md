@@ -85,6 +85,8 @@ rather than pushing on.
 - `/to-questionnaire`: when the answer is in someone else's head, write them a
   questionnaire.
 - `/wait-what`: the last message didn't land; re-explain it plainly.
+- `/adhd-mode`: action-first responses for the rest of the session (on
+  Claude Code, the ADHD output style does it without invoking anything).
 - `/handoff`: move the work to another host, directory, or person.
 - `/teach`: learn a topic over several sessions, with lessons and a record
   of what you've learned.
