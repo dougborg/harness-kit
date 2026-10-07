@@ -1,9 +1,8 @@
 ---
 name: to-spec
-description: >-
-  Turn the current conversation into a spec and file it as a GitHub issue,
-  synthesizing what has already been discussed rather than interviewing again.
+description: Turn the current conversation into a spec issue, without re-interviewing.
 argument-hint: "[parent issue]"
+allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(git log *)
 disable-model-invocation: true
 ---
 
@@ -31,8 +30,10 @@ has confirmed the seams match their expectations.
 ## 3. Write and file it
 
 Fill the template below, then call the Skill tool with "issue-create" to file
-it (duplicate search, labels, preview). Pass the parent issue if the user
-named one. Done when the issue exists and its URL is reported.
+it (duplicate search, labels, preview). If the user named a parent issue,
+attach the new spec to it afterwards with
+`gh issue edit <parent> --add-sub-issue <spec>`. Done when the issue exists,
+is attached to any parent, and its URL is reported.
 
 ```markdown
 ## Problem
@@ -75,4 +76,5 @@ What this spec deliberately leaves out.
 Anything else the implementer needs.
 ```
 
-Next step: the to-tickets skill splits the spec into tickets.
+Next step: suggest the user run the to-tickets skill to split the spec into
+tickets.

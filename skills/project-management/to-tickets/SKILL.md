@@ -1,10 +1,8 @@
 ---
 name: to-tickets
-description: >-
-  Break a spec, plan, or conversation into tracer-bullet tickets, each a thin
-  end-to-end slice that declares what blocks it, filed as GitHub sub-issues
-  with native blocking links.
+description: Split a spec into tracer-bullet sub-issues with blocking links.
 argument-hint: "[spec issue]"
+allowed-tools: Read, Grep, Glob, Bash(gh issue *), Bash(gh label *)
 ---
 
 # To Tickets
@@ -41,6 +39,9 @@ then delete the old form in a ticket blocked by every batch. When even a batch
 can't stay green alone, let the batches share an integration branch that
 blocks a final integrate-and-verify ticket.
 
+Done when every slice has a title, its blockers, and the end-to-end behaviour
+it delivers, and each fits one session.
+
 ## 3. Check the breakdown with the user
 
 Show a numbered list: each ticket's title, what blocks it, and the end-to-end
@@ -56,11 +57,15 @@ issue numbers. With a spec issue, make each ticket its sub-issue and use
 GitHub's native blocking links:
 
 ```bash
-gh issue create --title "<title>" --body-file <file> \
-  --parent <spec> --blocked-by <n>,<n>
+gh issue create --title "<title>" --parent <spec> --blocked-by <n>,<n> \
+  --body-file - <<'EOF'
+<ticket body>
+EOF
 ```
 
-Without a spec issue, drop `--parent`. Apply the repo's existing labels
+Without a spec issue, drop `--parent`. `--parent` and `--blocked-by` need
+`gh` 2.94 or later; with an older `gh`, put `Part of #<spec>` and
+`Blocked by: #<n>, #<n>` at the top of each body instead. Apply the repo's existing labels
 (`gh label list`); leave the spec issue itself unchanged.
 
 ```markdown
