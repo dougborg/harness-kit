@@ -176,8 +176,10 @@ Questions:
 - Do tests isolate the unit under test?
 - Could these tests pass with a wrong implementation (a mock too loose)?
 - Does each assertion measure the thing its name claims? Trace the subject,
-  not the syntax: a probe named "cowl depth" that samples the plate behind
-  the cowl passes and means nothing.
+  not the syntax: a "header height" check that measures the footer passes
+  and means nothing.
+- For a probe over spatial or structural state, is the sampled region inside
+  the feature under test, and clear of everything else?
 - Could something else satisfy the assertion? Aggregates (a size, count,
   bounding box, hash, or status code) are prone to it: unrelated material
   can hold them steady while the feature is missing.
