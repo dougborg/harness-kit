@@ -1,5 +1,92 @@
 # Changelog
 
+## [1.0.0](https://github.com/dougborg/harness-kit/compare/v0.8.0...v1.0.0) (2026-10-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **project-management:** /feature-spec is removed. Use /to-spec to write a spec issue and /to-tickets to split it into tickets.
+
+### Features
+
+* add handoff and the ask-harness router ([10c0122](https://github.com/dougborg/harness-kit/commit/10c0122f08e7202ec9249fa718aa76a623b7a21f)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* add implement and implement-spec ([91a67c1](https://github.com/dougborg/harness-kit/commit/91a67c1e06efa9ce23408503469c5cdc728c331c)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **code-reviewer:** check what assertions measure, and nothing vs unknown ([73eb115](https://github.com/dougborg/harness-kit/commit/73eb115a7232227a52cd4d74de9a50f0ab329941)), closes [#94](https://github.com/dougborg/harness-kit/issues/94)
+* **codex:** generate .codex/agents/*.toml from agents/*.md ([5a14372](https://github.com/dougborg/harness-kit/commit/5a14372b9d94d422eb89dd3fa5fef076e043fd8f)), closes [#114](https://github.com/dougborg/harness-kit/issues/114)
+* **engineering:** add minimal-change and a complexity lens for review ([143a1e7](https://github.com/dougborg/harness-kit/commit/143a1e7c20c57afc6c9a2b1b6a7059810ce61a87)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **engineering:** add prototype, improve-codebase-architecture, and wizard ([f0e9327](https://github.com/dougborg/harness-kit/commit/f0e93278e1ab51a292ca640141287db7fca56f64))
+* **engineering:** add tdd, codebase-design, and diagnosing-bugs ([465d7fe](https://github.com/dougborg/harness-kit/commit/465d7fef9c49f38cbc90eac0acb84c0a7482fa72)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **open-pr:** make our own agent review the gate; outside reviews optional ([9521e82](https://github.com/dougborg/harness-kit/commit/9521e825df99c460231c9e6c1fc68d6a6b51c55b)), closes [#116](https://github.com/dougborg/harness-kit/issues/116) [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **open-pr:** one output contract and one test seam for both poll scripts ([9c85a43](https://github.com/dougborg/harness-kit/commit/9c85a43baabb59a2af4253924fc3b9fa214c01b2)), closes [#156](https://github.com/dougborg/harness-kit/issues/156)
+* **pr:** fold five PR-thread scripts into one pr-threads module ([f12da75](https://github.com/dougborg/harness-kit/commit/f12da759f64990ceefa36415b1b0313fcbbb7130))
+* **project-management:** add triage and a shortcut ledger ([54e2bc4](https://github.com/dougborg/harness-kit/commit/54e2bc4becf85905f60eb205d0127fca98827432)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **project-management:** add wayfinder and research ([c0c3ab3](https://github.com/dougborg/harness-kit/commit/c0c3ab3a232bc59ab2a6f0e86f819be19b09e3e3)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **project-management:** replace feature-spec with to-spec and to-tickets ([08e7069](https://github.com/dougborg/harness-kit/commit/08e70692c8b406d7dd2b52936ee592d1966f64fd)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **retro,pr:** add environment categories to retro and a pr-body skill ([4d1ac2d](https://github.com/dougborg/harness-kit/commit/4d1ac2dd7c13dd0e35992cd220efca0a40ef0f3f)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **review:** add a separate spec pass, documented standards, and smells ([4b0c6e6](https://github.com/dougborg/harness-kit/commit/4b0c6e67f2a691f218b0184efc03742c322119d6)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **skills:** derive invocation from agents/openai.yaml and reclassify ([9328970](https://github.com/dougborg/harness-kit/commit/932897050ccac29386eba8347e4b9ed41446da76)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **skills:** port teach and an experimental loop-me ([f6307f7](https://github.com/dougborg/harness-kit/commit/f6307f766984b165df43eda785a94f4bd3efaeda))
+* **skills:** restate progress in reports, and break debug spirals ([7576640](https://github.com/dougborg/harness-kit/commit/7576640ed4e8f61cfaddcc521bc9eb184b5e5e1f)), closes [#152](https://github.com/dougborg/harness-kit/issues/152)
+* support Claude Code and Codex ([#104](https://github.com/dougborg/harness-kit/issues/104)) ([a51af7e](https://github.com/dougborg/harness-kit/commit/a51af7e1269f8210fbdfd98a5c441090ee25b7a7))
+* **thinking:** add grilling, domain-modeling, and their entry points ([559e7ca](https://github.com/dougborg/harness-kit/commit/559e7ca2ab860eadb3411a2d6bf583150918c7b5)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **validate:** fail when a script calls a sibling that isn't beside it ([2f18ced](https://github.com/dougborg/harness-kit/commit/2f18ceda35346b555df98114669efe40fd87fcf2))
+* **verifier:** check that new assertions can fail ([e60c53a](https://github.com/dougborg/harness-kit/commit/e60c53a7c95bfc2c56c45fbf4e85b7bcff33d199)), closes [#93](https://github.com/dougborg/harness-kit/issues/93)
+* **writing:** add adhd-mode, a skill and a harness-kit:adhd output style ([7020692](https://github.com/dougborg/harness-kit/commit/70206924415c76b946ac3174f157483c51f5b01e))
+
+
+### Bug Fixes
+
+* **ci:** wire the preflight test, widen the sibling guard, keep annotations ([55cde31](https://github.com/dougborg/harness-kit/commit/55cde312e886bb90d6ef9fbce445fb76ed45bed0))
+* **codex:** address agent review of the verifier sandbox and hook findings ([573e0a9](https://github.com/dougborg/harness-kit/commit/573e0a90168e2ba52743ada06801d7cf088baf95))
+* **codex:** harden the agent generator and address agent review ([94363e2](https://github.com/dougborg/harness-kit/commit/94363e288255a1391a5c19c5b4a72387eaac35a7))
+* **codex:** run the verifier under workspace-write, not read-only ([eec153d](https://github.com/dougborg/harness-kit/commit/eec153d7608346c3c7bd80ec5db21149ae54f576)), closes [#143](https://github.com/dougborg/harness-kit/issues/143)
+* **engineering:** address agent review of the PR-lifecycle rewrite ([bd5cdda](https://github.com/dougborg/harness-kit/commit/bd5cdda18866f907d983c1b97c19afa00c6d7056))
+* **engineering:** address review of the code-reviewer, commit, and ui-review rewrite ([95d3124](https://github.com/dougborg/harness-kit/commit/95d312487b77e3c80c6b33293b16c12637820f13))
+* **engineering:** harden the wizard template and address agent review ([f1088da](https://github.com/dougborg/harness-kit/commit/f1088da62d7d6560aa38f6068b1f2733f3c2b33f))
+* **engineering:** make the HITL loop runnable and finish the done criteria ([b9ae431](https://github.com/dougborg/harness-kit/commit/b9ae4312a3a06f0ca32f8d49acc7f52cc64f4db1))
+* **engineering:** number complexity findings apart and pin the shortcut format ([7316c49](https://github.com/dougborg/harness-kit/commit/7316c4924509ca872642a3a699a42848218eee9e))
+* **hooks:** address agent review of the hook output rewrite ([74568a1](https://github.com/dougborg/harness-kit/commit/74568a11b8252e6a9ccf63c08ac11ee995072ea6))
+* **hooks:** quote plugin-root paths in hook commands ([65b5d8f](https://github.com/dougborg/harness-kit/commit/65b5d8f60129c4676e0e249664c34c12ce4680f6))
+* **hooks:** show the retro nudge as a Stop-hook systemMessage ([e02dbc5](https://github.com/dougborg/harness-kit/commit/e02dbc5c57f676bc5d17ada7099dd818503c66fd)), closes [#137](https://github.com/dougborg/harness-kit/issues/137)
+* **hooks:** show the retro nudge once per session, with a test ([626131e](https://github.com/dougborg/harness-kit/commit/626131e3a36f5e501591f504e68b7cca49d8ab51))
+* **meta:** working hook example, harness-builder grants, and review fixes ([1344a7c](https://github.com/dougborg/harness-kit/commit/1344a7c940d6326ad0500f381b7c39e0ad6ab304))
+* one markdownlint for local and CI, stale-head waits, accepted root CLAUDE.md warning ([0f21183](https://github.com/dougborg/harness-kit/commit/0f21183056ad6b234d4fc60795ad82250ea9c832)), closes [#112](https://github.com/dougborg/harness-kit/issues/112) [#131](https://github.com/dougborg/harness-kit/issues/131) [#138](https://github.com/dougborg/harness-kit/issues/138)
+* **open-pr:** address agent review of the shared poll contract ([48d0cbd](https://github.com/dougborg/harness-kit/commit/48d0cbdeed1d8d93193ba44aa0e45be026eee9fa))
+* **open-pr:** count actionable threads past the first 100 in poll-review ([cfa0933](https://github.com/dougborg/harness-kit/commit/cfa0933ce20ac38f62c259cbc83a226212796574)), closes [#155](https://github.com/dougborg/harness-kit/issues/155)
+* **open-pr:** harden the review gate after agent review ([68057ee](https://github.com/dougborg/harness-kit/commit/68057ee486a158e1cf8523e34b8121d31a20a7e0))
+* **open-pr:** keep poll-ci alive when origin can't be read; skip fork PRs ([1a2bcb2](https://github.com/dougborg/harness-kit/commit/1a2bcb24ab8235d2f7ee99a11531d9cf10198b1d))
+* **open-pr:** keep poll-ci waiting while workflow runs are queued ([68dedb4](https://github.com/dougborg/harness-kit/commit/68dedb414198fc2fc723eb289a25ebb2b59b800a)), closes [#126](https://github.com/dougborg/harness-kit/issues/126)
+* **open-pr:** let a newer run of a workflow supersede an orphaned one ([9657452](https://github.com/dougborg/harness-kit/commit/9657452e699b4e70be2d9133e283b512d9e586a1))
+* **open-pr:** let finished CI keep its verdict when the PR conflicts ([b9c9201](https://github.com/dougborg/harness-kit/commit/b9c92010eb7049be7a0a2e700aa35ca55141a1f0))
+* **open-pr:** make poll-ci's failure paths explicit ([8d52f91](https://github.com/dougborg/harness-kit/commit/8d52f919d976583c6f7a654d962ca6460bf7ec4e))
+* **open-pr:** report a merge conflict from poll-ci instead of timing out ([9838c50](https://github.com/dougborg/harness-kit/commit/9838c50240292e578425a39fd67b5cb77496ca40)), closes [#147](https://github.com/dougborg/harness-kit/issues/147)
+* **pr:** a failed GitHub call is an error, never an empty result ([ac7defe](https://github.com/dougborg/harness-kit/commit/ac7defee73ea7f426e149a8848703a31dbe023a5))
+* **project-management:** close the gaps the review found in to-spec and to-tickets ([9f08263](https://github.com/dougborg/harness-kit/commit/9f082631147c38616a25869d777dbed40c9f1daf))
+* **project-management:** give wayfinder's tickets owners and safe claims ([9a6c892](https://github.com/dougborg/harness-kit/commit/9a6c89288ed0e8256b0e448e872b60a9b7ac833e))
+* **project-management:** preview every write, narrow tools, and fix groom's count ([2ba31e5](https://github.com/dougborg/harness-kit/commit/2ba31e5bf6e7a8f5ae15b352463fd2e0ddda8648))
+* **project-management:** run the ledger scan from groom's fork, tighten triage ([df28923](https://github.com/dougborg/harness-kit/commit/df2892360664395357fa38cbaadb172e11a2d480))
+* **rebase:** detect pushed teammate commits and stash only what we own ([ffd8795](https://github.com/dougborg/harness-kit/commit/ffd87951124eef9b10c2d2ffb0f753b02f304b00))
+* **rebase:** make the shared-branch check run, and ask before forcing ([a0e3ef7](https://github.com/dougborg/harness-kit/commit/a0e3ef7180131a6903810255e61c27bd4d57a89d))
+* **retro,pr:** route environment findings and scale the PR body ([0ac4646](https://github.com/dougborg/harness-kit/commit/0ac4646bdafb535ab4df2b832af9bccd663b5027))
+* **review-pr:** resolve threads without a sibling script ([8f52f01](https://github.com/dougborg/harness-kit/commit/8f52f0121f42302f56ba0fd6467889239bd0e946))
+* **review:** address agent review of the dedupe and assertion checks ([b9b52fa](https://github.com/dougborg/harness-kit/commit/b9b52fa39682ea644f42538431650268068eab79))
+* **review:** make the two passes runnable end to end ([58d9239](https://github.com/dougborg/harness-kit/commit/58d9239805b2c2c290c55a180cd3f539c928d802))
+* **skills:** address agent review of the teach, loop-me, and skill-writer ports ([574b9e7](https://github.com/dougborg/harness-kit/commit/574b9e769a34d3e9177930d0208d5d0583f0e96d))
+* **skills:** address review of the teach and skill-writer ports ([5e7071d](https://github.com/dougborg/harness-kit/commit/5e7071dc3c93b8bf863992d09ba6c61a1722db36))
+* **skills:** close the gaps the topic-area review found ([914becb](https://github.com/dougborg/harness-kit/commit/914becbb14ae953cb14b68867c2ebe159d2fb885))
+* **skills:** search the backlog by topic before filing deferred work ([4a193af](https://github.com/dougborg/harness-kit/commit/4a193afb7e77e490f8aaf4b84159ab9f99319008)), closes [#91](https://github.com/dougborg/harness-kit/issues/91)
+* **skills:** tighten invocation validation and descriptions after review ([d164ab4](https://github.com/dougborg/harness-kit/commit/d164ab45f493a08206ae1c8da6bbcfca081e90f9)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **test:** copy only files that exist into validate-codex's scratch repos ([48e2885](https://github.com/dougborg/harness-kit/commit/48e2885d48db88ca1ff2f9f3e8af912fdc948a7b))
+* **test:** stub browser openers in the wizard template test ([16a502d](https://github.com/dougborg/harness-kit/commit/16a502d3959490b2f23cb4287cf0e9a1866acf5b))
+* **thinking:** tighten grilling's asking rules and restore adaptation losses ([f840e38](https://github.com/dougborg/harness-kit/commit/f840e38d317d5d8749fad9c7ddc0530e2e5a1fe0))
+* tighten implement-spec's steps, permissions, and claims ([71b80c9](https://github.com/dougborg/harness-kit/commit/71b80c946e1271b52f6efad09f3399eefa64536e))
+* valid router frontmatter, a Codex handoff launch, and a two-way router check ([e621fe1](https://github.com/dougborg/harness-kit/commit/e621fe1539b8703a2e41da22fb0a9633bd75bf7c))
+* **validate:** check only tracked shared files, by exact name, with a test ([c9ad9d5](https://github.com/dougborg/harness-kit/commit/c9ad9d55d625580ff49adf8173a7ab653181229b))
+* **validate:** require the Claude manifest to list every generated skill ([54f6eef](https://github.com/dougborg/harness-kit/commit/54f6eef2bd7473a026e558484c6d5b11021952c7)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **validate:** stop requiring the checkout folder to be named harness-kit ([19f5c9f](https://github.com/dougborg/harness-kit/commit/19f5c9fd5fd5fd3fc6c4574fd0f821fd30b81e4d)), closes [#111](https://github.com/dougborg/harness-kit/issues/111)
+* **wizard:** use a neutral example service instead of Stripe ([b4db08f](https://github.com/dougborg/harness-kit/commit/b4db08f9ee429715be2e845116528dd1d76ce858))
+* **writing:** address agent review of adhd-mode and the style generator ([b64fc22](https://github.com/dougborg/harness-kit/commit/b64fc221f623c5f2bc0031f5c60b03aa710a370a))
+
 ## [0.8.0](https://github.com/dougborg/harness-kit/compare/v0.7.0...v0.8.0) (2026-08-22)
 
 
