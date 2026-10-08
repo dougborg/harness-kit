@@ -18,7 +18,7 @@ import json, os, subprocess, sys
 
 args = sys.argv[1:]
 log = open(os.environ["STUB_LOG"], "a")
-THREADS, PAGE, BIG = 250, 100, 7
+THREADS, PAGE, BIG = int(os.environ.get("STUB_THREADS", "250")), 100, 7
 
 def opt(flag_names, key):
     for i, a in enumerate(args):
@@ -44,6 +44,9 @@ def thread(t):
                                       "endCursor": "C100" if total > 100 else None},
                          "nodes": nodes}}
 
+if os.environ.get("STUB_FAIL") and args[0] in os.environ["STUB_FAIL"].split(","):
+    sys.stderr.write("gh: HTTP 502\n")
+    sys.exit(1)
 if args[:2] == ["api", "graphql"]:
     query = opt(["-f"], "query") or ""
     if "resolveReviewThread" in query:
@@ -56,7 +59,8 @@ if args[:2] == ["api", "graphql"]:
             "pageInfo": {"hasNextPage": False, "endCursor": None},
             "nodes": [{"databaseId": i} for i in ids]}}}})
     else:
-        log.write("repo %s/%s\n" % (opt(["-F"], "owner"), opt(["-F"], "repo")))
+        log.write("repo %s/%s host=%s\n" % (opt(["-f"], "owner"), opt(["-f"], "repo"),
+                                              os.environ.get("GH_HOST", "-")))
         start = int((opt(["-f"], "cursor") or "P0")[1:])
         end = min(start + PAGE, THREADS)
         jq_out({"data": {"repository": {"pullRequest": {"reviewThreads": {
@@ -108,7 +112,14 @@ check url-uses-its-repo [ "$(run "$scratch/l1" https://github.com/other/fork/pul
 out=$(run "$scratch/l2" https://github.com/other/fork/pull/9 unresolved)
 check unresolved-all-pages [ "$(jq length <<<"$out")" = 125 ]
 check unresolved-latest-comment [ "$(jq -r '.[0] | "\(.id) \(.author)"' <<<"$out")" = "1000 reviewer" ]
-check queries-hit-url-repo [ "$(sort -u "$scratch/l2")" = "repo other/fork" ]
+check queries-hit-url-repo [ "$(sort -u "$scratch/l2")" = "repo other/fork host=-" ]
+
+: >"$scratch/l2b"
+run "$scratch/l2b" https://ghe.corp.example/team/svc/pull/3/files unresolved >/dev/null
+check ghe-url-sets-host [ "$(sort -u "$scratch/l2b")" = "repo team/svc host=ghe.corp.example" ]
+: >"$scratch/l2c"
+run "$scratch/l2c" https://github.com/acme/1234/pull/3 unresolved >/dev/null
+check numeric-repo-name-stays-string [ "$(sort -u "$scratch/l2c")" = "repo acme/1234 host=-" ]
 
 : >"$scratch/l3"
 check resolve-all-count [ "$(run "$scratch/l3" 5 resolve-all)" = 125 ]
@@ -133,6 +144,41 @@ set -e
 check reply-wrong-pr-refused [ "$rc" = 1 ]
 check reply-wrong-pr-no-post [ ! -s "$scratch/l6" ]
 check reply-wrong-pr-says-why grep -q "belongs to PR #6, not #5" "$scratch/err"
+
+# Other remote shapes, and one that isn't owner/repo at all.
+for remote in ssh://git@ghe.corp.example/team/svc.git https://ghe.corp.example/team/svc/ git@ghe-alias:team/svc.git; do
+  git -C "$scratch/work" remote set-url origin "$remote"
+  check "origin-$remote" [ "$(run "$scratch/l1" 5 repo)" = team/svc ]
+done
+git -C "$scratch/work" remote set-url origin /srv/git/bare-repo
+set +e
+run "$scratch/l1" 5 repo 2>"$scratch/err"
+rc=$?
+set -e
+check unreadable-origin-refused [ "$rc" = 1 ]
+check unreadable-origin-says-why grep -q "pass the PR URL" "$scratch/err"
+git -C "$scratch/work" remote set-url origin git@github.com:some/origin-repo.git
+
+# An empty PR is an empty result, not an error.
+: >"$scratch/l7"
+check empty-unresolved [ "$(STUB_THREADS=0 run "$scratch/l7" 5 unresolved | jq -c .)" = "[]" ]
+check empty-resolve-all [ "$(STUB_THREADS=0 run "$scratch/l7" 5 resolve-all)" = 0 ]
+
+# A failed GitHub call is an error, never a quiet empty result.
+for cmd in unresolved resolve-all context; do
+  set +e
+  out=$(STUB_FAIL=api run "$scratch/l7" 5 "$cmd" 2>/dev/null)
+  rc=$?
+  set -e
+  check "gh-failure-$cmd-exits-1" [ "$rc" = 1 ]
+  check "gh-failure-$cmd-prints-no-result" [ -z "$out" ]
+done
+set +e
+STUB_FAIL=api run "$scratch/l7" 5 reply 1000 Fixed 2>"$scratch/err" >/dev/null
+rc=$?
+set -e
+check gh-failure-reply-exits-1 [ "$rc" = 1 ]
+check gh-failure-reply-shows-gh-error grep -q "HTTP 502" "$scratch/err"
 
 set +e
 run "$scratch/l1" not-a-pr repo 2>/dev/null
