@@ -229,8 +229,9 @@ poll was killed mid-wait, so re-poll. The state:
 | `approved` | 0 | Report it and go to step 9 |
 | `timeout` | 2 | An expected reviewer (requested, or automatic Copilot) hasn't arrived. Report that the agent review is done and outside review is pending |
 | `error` | 3 | The PR couldn't be read, or the GitHub API kept failing; stderr has the details. Fix auth or the PR reference and re-run |
+| (usage) | 64 | A bad argument or `POLL_REVIEW_EXPECT` value; no RESULT line. Fix the call |
 
-Read a `summary-only` body with:
+Read a `summary-only` body with this, run from the PR's repo:
 
 ```bash
 gh api "repos/{owner}/{repo}/pulls/<number>/reviews" \

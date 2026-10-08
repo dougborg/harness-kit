@@ -58,7 +58,7 @@ head_ref=""
 cross_repo="false"
 mergeable="UNKNOWN"
 if ! pr_info=$(pr_head); then
-  echo "CI RESULT: ERROR for PR #${pr_number} — couldn't read the PR from GitHub (check the number and gh auth)" >&2
+  echo "CI RESULT: ERROR for PR #${pr_number} — couldn't read the PR from GitHub (check the number and gh auth)"
   exit 3
 fi
 read -r head_sha base head_ref cross_repo mergeable <<<"$pr_info"
@@ -126,12 +126,12 @@ while true; do
   # no pull_request workflows for it, so waiting would only time out. A null
   # or UNKNOWN mergeable (GitHub still computing it) keeps waiting.
   if [ "$mergeable" = CONFLICTING ]; then
-    echo "CI RESULT: CONFLICT for PR #${pr_number} after ${elapsed}s — the PR conflicts with ${base}, so GitHub won't run its CI. Rebase onto ${base}, resolve, and push; closing and reopening won't help." >&2
+    echo "CI RESULT: CONFLICT for PR #${pr_number} after ${elapsed}s — the PR conflicts with ${base}, so GitHub won't run its CI. Rebase onto ${base}, resolve, and push; closing and reopening won't help."
     exit 4
   fi
 
   if [ "$elapsed" -ge "$timeout" ]; then
-    echo "CI RESULT: TIMEOUT for PR #${pr_number} after ${elapsed}s — NOT complete: ${pending} pending, ${runs} run(s) queued or running, required checks not yet reported: ${missing:-none}. A required check that never reports may be skipped by path filters.${stale:+ ${stale}: GitHub has not processed the push yet; closing and reopening the PR resyncs it.} Re-poll to get the final state." >&2
+    echo "CI RESULT: TIMEOUT for PR #${pr_number} after ${elapsed}s — NOT complete: ${pending} pending, ${runs} run(s) queued or running, required checks not yet reported: ${missing:-none}. A required check that never reports may be skipped by path filters.${stale:+ ${stale}: GitHub has not processed the push yet; closing and reopening the PR resyncs it.} Re-poll to get the final state."
     exit 2
   fi
 

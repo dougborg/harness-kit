@@ -17,7 +17,7 @@ copy() {
   (
     cd "$repo_root"
     git ls-files -z -co --exclude-standard | while IFS= read -r -d '' f; do
-      if [ -e "$f" ]; then printf '%s\0' "$f"; fi
+      if [ -e "$f" ] || [ -L "$f" ]; then printf '%s\0' "$f"; fi
     done | xargs -0 tar cf -
   ) | tar xf - -C "$dir"
   git -C "$dir" init -q
