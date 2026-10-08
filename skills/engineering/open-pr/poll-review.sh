@@ -197,7 +197,7 @@ graphql() {
   if [ -n "$fixture" ]; then
     cat "$fixture${2:+.$2}"
   else
-    gh api graphql -f query="$1" -F "owner=$owner" -F "repo=$repo_name" \
+    gh api graphql -f query="$1" -f "owner=$owner" -f "repo=$repo_name" \
       -F "number=$pr_number" ${2:+-f "cursor=$2"}
   fi
 }
@@ -211,6 +211,7 @@ fetch() {
   info=$(jq -r "$page_info" <<<"$first") || return 1
   read -r has_next cursor <<<"$info"
   while [ "$has_next" = true ]; do
+    [ -n "$cursor" ] || return 1 # a next page with no cursor would loop
     page=$(graphql "$threads_query" "$cursor") || return 1
     n=$(jq --arg pr_author "$author" "$page_actionable" <<<"$page") || return 1
     more=$((more + n))
