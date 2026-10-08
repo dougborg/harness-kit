@@ -7,6 +7,7 @@ python3 - "$repo_root" <<'PY'
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 if sys.version_info < (3, 11):
@@ -140,14 +141,19 @@ assert not missing, "sibling scripts missing beside their caller: " + "; ".join(
 # what a skill or hook uses: each file named by a skill's <shared-scripts-dir>
 # reference or by hooks/hooks.json, and no subdirectories. Repo tests and
 # fixtures live in scripts/.
-shared = root / "scripts/shared"
+shared_files = subprocess.run(
+    ["git", "-C", str(root), "ls-files", "scripts/shared"],
+    capture_output=True, text=True, check=True,
+).stdout.split()
 users = "\n".join(
-    [p.read_text() for p in (root / "skills").rglob("*") if p.is_file() and p.suffix in (".md", ".sh")]
+    [p.read_text() for pattern in ("*.md", "*.sh") for p in (root / "skills").rglob(pattern)]
     + [(root / "hooks/hooks.json").read_text()]
 )
 stray = sorted(
-    p.name for p in shared.iterdir()
-    if p.is_dir() or not (f"<shared-scripts-dir>/{p.name}" in users or f"scripts/shared/{p.name}" in users)
+    rel for rel in shared_files
+    if rel.count("/") > 2  # a subdirectory
+    or not re.search(
+        rf"(<shared-scripts-dir>|scripts/shared)/{re.escape(rel.split('/')[-1])}(?![\w.-])", users)
 )
 assert not stray, "scripts/shared/ holds files no skill or hook uses (move repo tooling to scripts/): " + ", ".join(stray)
 PY
