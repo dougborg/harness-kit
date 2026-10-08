@@ -9,11 +9,17 @@ trap 'rm -rf "$scratch"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 
 fail=0
-# copy <name>: a fresh git repo at $scratch/<name> holding the tracked tree.
+# copy <name>: a fresh git repo at $scratch/<name> holding the working tree's
+# tracked and new files (a file deleted but not yet committed is skipped).
 copy() {
   local dir="$scratch/$1"
   mkdir -p "$dir"
-  (cd "$repo_root" && git ls-files -z | xargs -0 tar cf -) | tar xf - -C "$dir"
+  (
+    cd "$repo_root"
+    git ls-files -z -co --exclude-standard | while IFS= read -r -d '' f; do
+      if [ -e "$f" ]; then printf '%s\0' "$f"; fi
+    done | xargs -0 tar cf -
+  ) | tar xf - -C "$dir"
   git -C "$dir" init -q
   git -C "$dir" add -A
   work=$dir
