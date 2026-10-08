@@ -42,9 +42,7 @@ shows review states but not the threads:
 
 ```bash
 gh pr view <PR#> --json number,state,reviews    # no number: the current branch's PR
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
-owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/fetch-unresolved-comments.sh "$owner_repo" <PR#>
+${CLAUDE_SKILL_DIR}/pr-threads.sh <PR#> unresolved
 ```
 
 Take the first that matches:
@@ -129,9 +127,7 @@ Done when the current branch is the PR's head branch.
 ### 3.1 Fetch unresolved comments
 
 ```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
-owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/fetch-unresolved-comments.sh "$owner_repo" <PR#>
+${CLAUDE_SKILL_DIR}/pr-threads.sh <PR#> unresolved
 ```
 
 It returns a JSON array of unresolved comments (id, path, line, body,
@@ -201,7 +197,7 @@ reply confirms a live fix. The script checks that the comment belongs to the
 PR before posting:
 
 ```bash
-${CLAUDE_SKILL_DIR}/reply-to-comment.sh <owner>/<repo> <PR#> <comment_id> 'Fixed — [explanation]'
+${CLAUDE_SKILL_DIR}/pr-threads.sh <PR#> reply <comment_id> 'Fixed — [explanation]'
 ```
 
 Use the shape that fits:
@@ -220,7 +216,7 @@ Done when every comment from 3.1 has a reply.
 Resolving clears the "changes requested" status:
 
 ```bash
-resolved=$(${CLAUDE_SKILL_DIR}/resolve-all-threads.sh <owner>/<repo> <PR#>)
+resolved=$(${CLAUDE_SKILL_DIR}/pr-threads.sh <PR#> resolve-all)
 echo "Resolved $resolved review threads"
 ```
 
