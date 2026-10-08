@@ -135,6 +135,21 @@ missing = sorted(
     if not (script.parent / name).is_file()
 )
 assert not missing, "sibling scripts missing beside their caller: " + "; ".join(missing)
+
+# scripts/shared/ ships into projects (bootstrap copies it), so it holds only
+# what a skill or hook uses: each file named by a skill's <shared-scripts-dir>
+# reference or by hooks/hooks.json, and no subdirectories. Repo tests and
+# fixtures live in scripts/.
+shared = root / "scripts/shared"
+users = "\n".join(
+    [p.read_text() for p in (root / "skills").rglob("*") if p.is_file() and p.suffix in (".md", ".sh")]
+    + [(root / "hooks/hooks.json").read_text()]
+)
+stray = sorted(
+    p.name for p in shared.iterdir()
+    if p.is_dir() or not (f"<shared-scripts-dir>/{p.name}" in users or f"scripts/shared/{p.name}" in users)
+)
+assert not stray, "scripts/shared/ holds files no skill or hook uses (move repo tooling to scripts/): " + ", ".join(stray)
 PY
 
 "$repo_root/scripts/generate-claude-skills.sh" --check

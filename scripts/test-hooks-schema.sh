@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regression tests for validate-hooks-schema.sh (issue #16).
 #
-# Each fixture under scripts/shared/testdata/ is a miniature plugin root. The
+# Each fixture under scripts/testdata/ is a miniature plugin root. The
 # validator is invoked from inside the fixture directory (its duplicate-
 # registration guard is cwd-sensitive) and the exit code is asserted:
 #

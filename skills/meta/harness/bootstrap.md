@@ -39,8 +39,11 @@ and Codex, and generate project-specific additions. Auto-trigger only when
      and IDE repository discovery, preserving each `agents/openai.yaml`. The
      plugin groups skills by area (`<plugin-root>/skills/<area>/<skill>/`);
      install them flat by skill name, matching `.claude/skills/<skill>/`.
-   - Copy shared scripts to `.agents/scripts/shared/`; installed canonical
-     skills resolve `<shared-scripts-dir>` from their loaded location.
+   - Copy shared scripts (`<plugin-root>/scripts/shared/*.sh`, which holds
+     only skill helpers and hook scripts) to `.agents/scripts/shared/`;
+     installed canonical skills resolve `<shared-scripts-dir>` from their
+     loaded location. harness-kit's own tests and fixtures live in
+     `scripts/` and are not copied.
    - Copy Codex agent TOMLs from `<plugin-root>/.codex/agents/` to
      `.codex/agents/` and merge the project defaults into `.codex/config.toml`.
    - **Copy whole skill directories with `cp -R`.** Claude's generated
