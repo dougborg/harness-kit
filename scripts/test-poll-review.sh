@@ -45,10 +45,16 @@ mkdir -p "$scratch/bin"
 cat >"$scratch/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 # Stub gh: the PR's URL, or the canned GraphQL response for STUB_FIXTURE.
-[ -z "${STUB_FAIL:-}" ] || { echo "gh: HTTP 502" >&2; exit 1; }
+# STUB_FAIL_PR / STUB_FAIL_GRAPHQL fail just that call; STUB_LOG records the
+# GH_HOST each GraphQL call sees.
 case "$1 $2" in
-"pr view") echo "https://github.com/owner/repo/pull/10" ;;
+"pr view")
+  [ -z "${STUB_FAIL_PR:-}" ] || { echo "gh: HTTP 502" >&2; exit 1; }
+  echo "https://github.com/owner/repo/pull/10"
+  ;;
 "api graphql")
+  [ -z "${STUB_FAIL_GRAPHQL:-}" ] || { echo "gh: HTTP 502" >&2; exit 1; }
+  if [ -n "${STUB_LOG:-}" ]; then echo "host=${GH_HOST:--}" >>"$STUB_LOG"; fi
   cursor=""
   for arg in "$@"; do case "$arg" in cursor=*) cursor=${arg#cursor=} ;; esac; done
   cat "$STUB_FIXTURE${cursor:+.$cursor}"
@@ -137,8 +143,18 @@ page2 "$scratch/paged-replied.json.c2" "$replied_thread"
 expect paged-replied timeout 2
 
 # A gh that fails reports error, never a quiet pending.
-fixture gh-failure
-expect gh-failure error 3 STUB_FAIL=1 POLL_REVIEW_EXPECT=requested
+fixture pr-unreadable
+expect pr-unreadable error 3 STUB_FAIL_PR=1
+fixture api-failing
+expect api-failing error 3 STUB_FAIL_GRAPHQL=1 POLL_REVIEW_EXPECT=requested
+out=$(env PATH="$scratch/bin:$PATH" STUB_FIXTURE="$scratch/api-failing.json" STUB_FAIL_GRAPHQL=1 \
+  POLL_REVIEW_INTERVAL=0 POLL_REVIEW_EXPECT=requested "$script" 10 0 2>/dev/null || true)
+if [[ "$(tail -n 1 <<<"$out")" == *"the GitHub API failed"* ]]; then
+  echo "PASS: api-failing-says-why"
+else
+  echo "FAIL: api-failing-says-why: $out"
+  fail=1
+fi
 
 # While waiting it prints a heartbeat, so a killed poll is distinguishable.
 fixture heartbeat requests=1
@@ -151,14 +167,24 @@ else
   fail=1
 fi
 
-# A PR URL names its own repo, with no gh lookup.
+# A PR URL names its own repo: no `gh pr view` lookup (it would fail here),
+# and a GitHub Enterprise host reaches gh as GH_HOST.
 fixture url-arg
-out=$(env PATH="$scratch/bin:$PATH" STUB_FIXTURE="$scratch/url-arg.json" POLL_REVIEW_INTERVAL=0 \
-  "$script" https://github.com/owner/repo/pull/10 0 2>/dev/null || true)
+out=$(env PATH="$scratch/bin:$PATH" STUB_FIXTURE="$scratch/url-arg.json" STUB_FAIL_PR=1 \
+  POLL_REVIEW_INTERVAL=0 "$script" https://github.com/owner/repo/pull/10 0 2>/dev/null || true)
 if [[ "$(tail -n 1 <<<"$out")" == "REVIEW RESULT: none for PR #10"* ]]; then
   echo "PASS: url-arg"
 else
   echo "FAIL: url-arg: $out"
+  fail=1
+fi
+env PATH="$scratch/bin:$PATH" STUB_FIXTURE="$scratch/url-arg.json" STUB_FAIL_PR=1 \
+  STUB_LOG="$scratch/hosts" POLL_REVIEW_INTERVAL=0 \
+  "$script" https://ghe.example.com/owner/repo/pull/10 0 >/dev/null 2>&1 || true
+if [ "$(sort -u "$scratch/hosts")" = host=ghe.example.com ]; then
+  echo "PASS: ghe-url-sets-host"
+else
+  echo "FAIL: ghe-url-sets-host: $(cat "$scratch/hosts" 2>/dev/null)"
   fail=1
 fi
 

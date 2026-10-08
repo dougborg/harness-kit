@@ -24,6 +24,8 @@
 #                         Copilot) did not arrive in time
 #   error              3  the PR couldn't be read, or the GitHub API failed 3
 #                         polls in a row; details on stderr
+#   (usage)            64 a bad argument or POLL_REVIEW_EXPECT value; no
+#                         RESULT line
 #
 # "Actionable" thread = unresolved AND its last comment is NOT by the PR
 # author. Threads the author already replied to don't re-trigger `comments`,
@@ -81,7 +83,8 @@ result() {
 
 # The repo comes from a PR URL, or from gh for a bare number (the current
 # repo). This script is skill-local, so it resolves the repo itself rather
-# than calling a shared helper.
+# than calling the shared pr-threads.sh; keep the URL handling in step with
+# that script's.
 if [[ "$pr_arg" =~ ^https?://([^/]+)/([^/]+/[^/]+)/pull/([0-9]+) ]]; then
   if [ "${BASH_REMATCH[1]}" != github.com ]; then export GH_HOST="${BASH_REMATCH[1]}"; fi
   repo="${BASH_REMATCH[2]}"
