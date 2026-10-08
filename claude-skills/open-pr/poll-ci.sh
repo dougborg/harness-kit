@@ -31,16 +31,14 @@
 # heartbeat and its output, truncated by an external timeout, is
 # indistinguishable from a finished run.
 #
-# Testing: POLL_CI_FIXTURE_DIR=<dir> reads checks.json, runs.json, and
-# required.json from that directory instead of calling GitHub (see
-# scripts/test-poll-ci.sh); POLL_CI_INTERVAL overrides the 30s interval.
+# Testing: scripts/test-poll-ci.sh puts a stub gh and git first on PATH;
+# POLL_CI_INTERVAL overrides the 30s interval.
 
 set -euo pipefail
 
 pr_number="${1:?Usage: poll-ci.sh <pr-number> [timeout-seconds]}"
 timeout="${2:-300}" # default 5 minutes
 interval="${POLL_CI_INTERVAL:-30}"
-fixtures="${POLL_CI_FIXTURE_DIR:-}"
 elapsed=0
 
 pr_head() {
@@ -59,32 +57,24 @@ head_sha=""
 head_ref=""
 cross_repo="false"
 mergeable="UNKNOWN"
-if [ -n "$fixtures" ]; then
-  required=$(cat "$fixtures/required.json")
-else
-  if ! pr_info=$(pr_head); then
-    echo "CI RESULT: ERROR for PR #${pr_number} — couldn't read the PR from GitHub (check the number and gh auth)" >&2
-    exit 3
-  fi
-  read -r head_sha base head_ref cross_repo mergeable <<<"$pr_info"
-  # Required checks from the branch's effective rules (rulesets). A branch
-  # with no rules returns an empty list; a failed call means the gate is
-  # unknown, so say so rather than silently dropping it.
-  if ! required=$(gh api "repos/{owner}/{repo}/rules/branches/${base}" \
-    --jq '[.[] | select(.type == "required_status_checks")
-           | .parameters.required_status_checks[].context]'); then
-    echo "CI POLL: couldn't read ${base}'s branch rules; required checks are not enforced by this poll" >&2
-    required="[]"
-  fi
+if ! pr_info=$(pr_head); then
+  echo "CI RESULT: ERROR for PR #${pr_number} — couldn't read the PR from GitHub (check the number and gh auth)" >&2
+  exit 3
+fi
+read -r head_sha base head_ref cross_repo mergeable <<<"$pr_info"
+# Required checks from the branch's effective rules (rulesets). A branch
+# with no rules returns an empty list; a failed call means the gate is
+# unknown, so say so rather than silently dropping it.
+if ! required=$(gh api "repos/{owner}/{repo}/rules/branches/${base}" \
+  --jq '[.[] | select(.type == "required_status_checks")
+         | .parameters.required_status_checks[].context]'); then
+  echo "CI POLL: couldn't read ${base}'s branch rules; required checks are not enforced by this poll" >&2
+  required="[]"
 fi
 
 checks_json() {
-  if [ -n "$fixtures" ]; then
-    cat "$fixtures/checks.json"
-  else
-    # "no checks reported" exits non-zero; treat it as an empty list.
-    gh pr checks "$pr_number" --json name,bucket 2>/dev/null || echo "[]"
-  fi
+  # "no checks reported" exits non-zero; treat it as an empty list.
+  gh pr checks "$pr_number" --json name,bucket 2>/dev/null || echo "[]"
 }
 
 # Prints the number of workflows whose latest run for the head commit hasn't
@@ -94,22 +84,18 @@ checks_json() {
 latest_unfinished='group_by(.name) | map(max_by(.createdAt))
   | map(select(.status != "completed")) | length'
 active_runs() {
-  if [ -n "$fixtures" ]; then
-    jq "$latest_unfinished" "$fixtures/runs.json"
-  else
-    gh run list --commit "$head_sha" --limit 100 --json name,status,createdAt \
-      --jq "$latest_unfinished" 2>/dev/null || echo "?"
-  fi
+  gh run list --commit "$head_sha" --limit 100 --json name,status,createdAt \
+    --jq "$latest_unfinished" 2>/dev/null || echo "?"
 }
 
 while true; do
-  if [ -z "$fixtures" ] && pr_info=$(pr_head 2>/dev/null); then
+  if pr_info=$(pr_head 2>/dev/null); then
     read -r head_sha base head_ref cross_repo mergeable <<<"$pr_info" # follow a push made during the poll
   else
     mergeable=UNKNOWN # never act on a conflict read before a failed refresh
   fi
   stale=""
-  if [ -z "$fixtures" ] && [ "$cross_repo" != true ]; then
+  if [ "$cross_repo" != true ]; then
     tip=$(remote_tip "$head_ref")
     if [ -n "$tip" ] && [ -n "$head_sha" ] && [ "$tip" != "$head_sha" ]; then
       stale="PR head ${head_sha:0:7} is behind the branch tip ${tip:0:7}"

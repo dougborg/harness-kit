@@ -1,24 +1,29 @@
 #!/usr/bin/env bash
 # Poll for review activity on a PR with timeout.
 #
-# Usage: poll-review.sh <owner/repo> <pr-number> [timeout-seconds]
+# Usage: poll-review.sh <pr-number|pr-url> [timeout-seconds]
 #
-# Prints exactly one state and exits:
-#   approved           exit 0  a reviewer's latest review is APPROVED
-#   changes-requested  exit 0  a reviewer's latest review is CHANGES_REQUESTED
-#                              (with actionable threads, or body-only)
-#   comments           exit 0  new actionable inline threads exist
-#   summary-only       exit 0  a reviewer's latest review is COMMENTED with
-#                              zero inline comments (overall body only —
-#                              read it, no fixup loop needed)
-#   timeout            exit 2  an expected reviewer (requested, or automatic
-#                              Copilot) did not arrive in time
-#   none               exit 3  nothing from outside reviewers needs action:
-#                              nobody is expected (returned at once), or only
-#                              Copilot was expected and it has already reviewed
-#                              with nothing actionable left
-#   error              exit 4  the GitHub API failed 3 polls in a row (auth,
-#                              rate limit, wrong repo or PR); details on stderr
+# Output contract (shared with poll-ci.sh): while waiting it prints a
+# "REVIEW POLL:" heartbeat each interval; every terminal outcome ends with
+# one "REVIEW RESULT: <state> for PR #N …" line. Output that ends on a
+# heartbeat means the poll was killed mid-wait: the state is unknown, re-poll.
+#
+#   state              exit
+#   approved           0  a reviewer's latest review is APPROVED
+#   changes-requested  0  a reviewer's latest review is CHANGES_REQUESTED
+#                         (with actionable threads, or body-only)
+#   comments           0  new actionable inline threads exist
+#   summary-only       0  a reviewer's latest review is COMMENTED with zero
+#                         inline comments (overall body only: read it, no
+#                         fixup loop needed)
+#   none               0  nothing from outside reviewers needs action:
+#                         nobody is expected (returned at once), or only
+#                         Copilot was expected and it has already reviewed
+#                         with nothing actionable left
+#   timeout            2  an expected reviewer (requested, or automatic
+#                         Copilot) did not arrive in time
+#   error              3  the PR couldn't be read, or the GitHub API failed 3
+#                         polls in a row; details on stderr
 #
 # "Actionable" thread = unresolved AND its last comment is NOT by the PR
 # author. Threads the author already replied to don't re-trigger `comments`,
@@ -46,17 +51,15 @@
 # review, which may predate your newest push; check the review time when it
 # matters.
 #
-# Testing: POLL_REVIEW_FIXTURE=<file> reads the GraphQL response from a file
-# instead of calling the API (see scripts/test-poll-review.sh).
+# Testing: scripts/test-poll-review.sh puts a stub gh first on PATH;
+# POLL_REVIEW_INTERVAL overrides the 60s interval.
 
 set -euo pipefail
 
-repo="${1:?Usage: poll-review.sh <owner/repo> <pr-number> [timeout-seconds]}"
-pr_number="${2:?Missing PR number}"
-timeout="${3:-900}"                             # default 15 minutes
+pr_arg="${1:?Usage: poll-review.sh <pr-number|pr-url> [timeout-seconds]}"
+timeout="${2:-900}"                             # default 15 minutes
 copilot_wait="${POLL_REVIEW_COPILOT_WAIT:-300}" # default 5 min from PR creation
 expect_override="${POLL_REVIEW_EXPECT:-auto}"
-fixture="${POLL_REVIEW_FIXTURE:-}"
 interval="${POLL_REVIEW_INTERVAL:-60}"
 max_failures=3
 failures=0
@@ -70,6 +73,31 @@ auto | requested | copilot | none) ;;
 esac
 elapsed=0
 
+# result <state> <exit> [detail]: the terminal line, then exit.
+result() {
+  echo "REVIEW RESULT: $1 for PR #${pr_number:-?} after ${elapsed}s${3:+ — $3}"
+  exit "$2"
+}
+
+# The repo comes from a PR URL, or from gh for a bare number (the current
+# repo). This script is skill-local, so it resolves the repo itself rather
+# than calling a shared helper.
+if [[ "$pr_arg" =~ ^https?://([^/]+)/([^/]+/[^/]+)/pull/([0-9]+) ]]; then
+  if [ "${BASH_REMATCH[1]}" != github.com ]; then export GH_HOST="${BASH_REMATCH[1]}"; fi
+  repo="${BASH_REMATCH[2]}"
+  pr_number="${BASH_REMATCH[3]}"
+elif [[ "$pr_arg" =~ ^[0-9]+$ ]]; then
+  pr_number=$pr_arg
+  if ! url=$(gh pr view "$pr_number" --json url --jq .url) ||
+    [[ ! "$url" =~ ^https?://[^/]+/([^/]+/[^/]+)/pull/ ]]; then
+    echo "poll-review.sh: couldn't read PR #$pr_number from GitHub (check the number and gh auth)" >&2
+    result error 3
+  fi
+  repo="${BASH_REMATCH[1]}"
+else
+  echo "poll-review.sh: not a PR number or URL: $pr_arg" >&2
+  exit 64
+fi
 owner="${repo%%/*}"
 repo_name="${repo##*/}"
 
@@ -191,15 +219,10 @@ JQ
 errfile=$(mktemp)
 trap 'rm -f "$errfile"' EXIT
 
-# graphql <query> [cursor]: one response. In fixture mode the first page is
-# $POLL_REVIEW_FIXTURE and a later page is the file "<fixture>.<cursor>".
+# graphql <query> [cursor]: one response.
 graphql() {
-  if [ -n "$fixture" ]; then
-    cat "$fixture${2:+.$2}"
-  else
-    gh api graphql -f query="$1" -f "owner=$owner" -f "repo=$repo_name" \
-      -F "number=$pr_number" ${2:+-f "cursor=$2"}
-  fi
+  gh api graphql -f query="$1" -f "owner=$owner" -f "repo=$repo_name" \
+    -F "number=$pr_number" ${2:+-f "cursor=$2"}
 }
 
 # fetch runs inside `if snapshot=$(fetch)`, where set -e is off, so every
@@ -236,8 +259,7 @@ while :; do
     if [ "$failures" -ge "$max_failures" ] || [ "$elapsed" -ge "$timeout" ]; then
       echo "poll-review.sh: GitHub API failed ($failures in a row):" >&2
       cat "$errfile" >&2
-      echo "error"
-      exit 4
+      result error 3 "the GitHub API failed $failures polls in a row"
     fi
   fi
   if [ "$expect_override" != auto ]; then
@@ -246,36 +268,32 @@ while :; do
 
   case "$state" in
   approved | changes-requested | comments | summary-only)
-    echo "$state"
-    exit 0
+    result "$state" 0
     ;;
   esac
 
   case "$expect" in
   none)
-    echo "none"
-    exit 3
+    result none 0 "no outside reviewer is expected"
     ;;
   copilot)
     # Only Copilot is expected. Once it has reviewed, anything actionable
     # was reported above, so nothing is left to act on. If its window has
     # passed without a review, it is not coming.
     if [ "$copilot_reviewed" = "yes" ]; then
-      echo "none"
-      exit 3
+      result none 0 "Copilot has reviewed and nothing is left to act on"
     fi
     if [ -n "$pr_age" ] && [ "$pr_age" -ge "$copilot_wait" ]; then
-      echo "timeout"
-      exit 2
+      result timeout 2 "Copilot's window passed without a review"
     fi
     ;;
   esac
 
   if [ "$elapsed" -ge "$timeout" ]; then
-    echo "timeout"
-    exit 2
+    result timeout 2 "an expected reviewer has not arrived"
   fi
 
+  echo "REVIEW POLL: ${elapsed}s elapsed for PR #${pr_number} — no actionable review yet (expecting: ${expect}), waiting..."
   sleep "$interval"
   elapsed=$((elapsed + interval))
 done

@@ -206,8 +206,7 @@ an outcome, CI is green on the final push, and the PR carries an
 ## 8. Outside reviews
 
 ```bash
-owner_repo=$(<shared-scripts-dir>/pr-threads.sh <number> repo)
-<skill-dir>/poll-review.sh "$owner_repo" <number>
+<skill-dir>/poll-review.sh <number> [timeout-seconds]
 ```
 
 It queries review threads and review states through GraphQL, and waits only
@@ -217,21 +216,24 @@ automatically (until Copilot lands, at most `POLL_REVIEW_COPILOT_WAIT`
 seconds after the PR opened). Otherwise it returns `none` at once. When it
 waits, give it an explicit Bash `timeout` above its own or run it in the
 background, as in step 6, and on a wakeup or notification follow
-[resuming.md](resuming.md). It prints exactly one state:
+[resuming.md](resuming.md). It shares `poll-ci.sh`'s output contract: a
+`REVIEW POLL:` heartbeat while it waits, and one final
+`REVIEW RESULT: <state> …` line. Output that ends on a heartbeat means the
+poll was killed mid-wait, so re-poll. The state:
 
 | State | Exit | Next |
 | --- | --- | --- |
-| `none` | 3 | Nothing from outside reviewers to act on: nobody was expected, or Copilot already reviewed and its threads are handled. Go to step 9 |
+| `none` | 0 | Nothing from outside reviewers to act on: nobody was expected, or Copilot already reviewed and its threads are handled. Go to step 9 |
 | `comments` / `changes-requested` | 0 | Call the Skill tool with "review-pr", asking it to address the feedback |
 | `summary-only` | 0 | A COMMENTED review with no inline comments (common for Copilot follow-ups). Read the body, surface it, and act only on what the user agrees needs action |
 | `approved` | 0 | Report it and go to step 9 |
 | `timeout` | 2 | An expected reviewer (requested, or automatic Copilot) hasn't arrived. Report that the agent review is done and outside review is pending |
-| `error` | 4 | The GitHub API kept failing; stderr has the details. Fix auth or the PR reference and re-run |
+| `error` | 3 | The PR couldn't be read, or the GitHub API kept failing; stderr has the details. Fix auth or the PR reference and re-run |
 
 Read a `summary-only` body with:
 
 ```bash
-gh api "repos/$owner_repo/pulls/<number>/reviews" \
+gh api "repos/{owner}/{repo}/pulls/<number>/reviews" \
   --jq '[.[] | select(.state == "COMMENTED" and .body != "")] | last | .body'
 ```
 
