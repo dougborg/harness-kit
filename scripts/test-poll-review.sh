@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Regression tests for skills/engineering/open-pr/poll-review.sh decision
-# logic, using canned GraphQL responses (POLL_REVIEW_FIXTURE) instead of the
-# live API.
+# Regression tests for skills/engineering/open-pr/poll-review.sh, through a
+# stub gh on PATH that serves canned GraphQL responses: the fixture file for
+# the first page, and "<fixture>.<cursor>" for a later page of threads.
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -41,15 +41,35 @@ json.dump({"data": {"repository": {"pullRequests": {"nodes": nodes[-6:]},
 PY
 }
 
+mkdir -p "$scratch/bin"
+cat >"$scratch/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+# Stub gh: the PR's URL, or the canned GraphQL response for STUB_FIXTURE.
+[ -z "${STUB_FAIL:-}" ] || { echo "gh: HTTP 502" >&2; exit 1; }
+case "$1 $2" in
+"pr view") echo "https://github.com/owner/repo/pull/10" ;;
+"api graphql")
+  cursor=""
+  for arg in "$@"; do case "$arg" in cursor=*) cursor=${arg#cursor=} ;; esac; done
+  cat "$STUB_FIXTURE${cursor:+.$cursor}"
+  ;;
+*) exit 1 ;;
+esac
+STUB
+chmod +x "$scratch/bin/gh"
+
 fail=0
-expect() { # expect <name> <state> <exit> [env...]
-  local name=$1 want_state=$2 want_exit=$3 got_state got_exit
+# expect <name> <state> <exit> [env...]: the last line is the RESULT line for
+# that state (or, with an empty state, there is none) and the exit matches.
+expect() {
+  local name=$1 want_state=$2 want_exit=$3 out got_state got_exit
   shift 3
   set +e
-  got_state=$(env POLL_REVIEW_FIXTURE="$scratch/$name.json" POLL_REVIEW_INTERVAL=0 \
-    "$@" "$script" owner/repo 10 0 2>/dev/null)
+  out=$(env PATH="$scratch/bin:$PATH" STUB_FIXTURE="$scratch/$name.json" \
+    POLL_REVIEW_INTERVAL=0 "$@" "$script" 10 0 2>/dev/null)
   got_exit=$?
   set -e
+  got_state=$(tail -n 1 <<<"$out" | sed -n 's/^REVIEW RESULT: \([a-z-]*\) for PR #10.*/\1/p')
   if [ "$got_state" = "$want_state" ] && [ "$got_exit" = "$want_exit" ]; then
     echo "PASS: $name ($got_state, exit $got_exit)"
   else
@@ -65,7 +85,7 @@ replied_thread='[{"isResolved":false,"comments":{"nodes":[{"author":{"login":"me
 body_only_cr='[{"state":"CHANGES_REQUESTED","submittedAt":"2026-01-01T00:00:00Z","author":{"login":"reviewer"},"comments":{"totalCount":0}}]'
 
 fixture nobody
-expect nobody none 3
+expect nobody none 0
 
 fixture requested requests=1
 expect requested timeout 2
@@ -81,17 +101,17 @@ expect body-only-cr changes-requested 0
 
 # Copilot reviewed 2 of the last 5 other PRs: manual requests, not automatic.
 fixture copilot-manual copilot_history=0,0,1,0,1
-expect copilot-manual none 3
+expect copilot-manual none 0
 
 # Copilot on the 3 oldest of 6 other PRs: only 2 fall inside the last 5.
 fixture copilot-old-history copilot_history=1,1,1,0,0,0
-expect copilot-old-history none 3
+expect copilot-old-history none 0
 
 fixture copilot-auto-missed copilot_history=1,1,1,0,1
 expect copilot-auto-missed timeout 2
 
 fixture copilot-auto-done copilot_history=1,1,1,1,1 reviews="$copilot_review_inline" threads="$replied_thread"
-expect copilot-auto-done none 3
+expect copilot-auto-done none 0
 
 fixture copilot-summary copilot_history=1,1,1,1,1 reviews="$copilot_review"
 expect copilot-summary summary-only 0
@@ -102,7 +122,7 @@ expect override "" 64 POLL_REVIEW_EXPECT=bogus
 
 : >"$scratch/broken.json"
 printf 'not json' >"$scratch/broken.json"
-expect broken error 4
+expect broken error 3
 
 # More than 100 threads: the only actionable thread is on the second page,
 # which the fixture serves as "<fixture>.<cursor>" (#155).
@@ -116,19 +136,29 @@ fixture paged-replied requests=1 threads="$replied_thread" next=c2
 page2 "$scratch/paged-replied.json.c2" "$replied_thread"
 expect paged-replied timeout 2
 
-# A live gh that fails reports error, never a quiet pending.
-mkdir -p "$scratch/bin"
-printf '#!/usr/bin/env bash\necho "gh: HTTP 502" >&2\nexit 1\n' >"$scratch/bin/gh"
-chmod +x "$scratch/bin/gh"
-set +e
-got=$(env PATH="$scratch/bin:$PATH" POLL_REVIEW_INTERVAL=0 POLL_REVIEW_EXPECT=requested \
-  "$script" owner/repo 10 0 2>/dev/null)
-rc=$?
-set -e
-if [ "$got" = error ] && [ "$rc" = 4 ]; then
-  echo "PASS: gh-failure (error, exit 4)"
+# A gh that fails reports error, never a quiet pending.
+fixture gh-failure
+expect gh-failure error 3 STUB_FAIL=1 POLL_REVIEW_EXPECT=requested
+
+# While waiting it prints a heartbeat, so a killed poll is distinguishable.
+fixture heartbeat requests=1
+out=$(env PATH="$scratch/bin:$PATH" STUB_FIXTURE="$scratch/heartbeat.json" \
+  POLL_REVIEW_INTERVAL=1 "$script" 10 1 2>/dev/null || true)
+if grep -q '^REVIEW POLL: 0s elapsed for PR #10' <<<"$out"; then
+  echo "PASS: heartbeat"
 else
-  echo "FAIL: gh-failure: want error/exit 4, got '$got'/exit $rc"
+  echo "FAIL: heartbeat: $out"
+  fail=1
+fi
+
+# A PR URL names its own repo, with no gh lookup.
+fixture url-arg
+out=$(env PATH="$scratch/bin:$PATH" STUB_FIXTURE="$scratch/url-arg.json" POLL_REVIEW_INTERVAL=0 \
+  "$script" https://github.com/owner/repo/pull/10 0 2>/dev/null || true)
+if [[ "$(tail -n 1 <<<"$out")" == "REVIEW RESULT: none for PR #10"* ]]; then
+  echo "PASS: url-arg"
+else
+  echo "FAIL: url-arg: $out"
   fail=1
 fi
 

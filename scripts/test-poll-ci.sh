@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Regression tests for skills/engineering/open-pr/poll-ci.sh: the decision
-# logic through canned check, run, and required-check lists
-# (POLL_CI_FIXTURE_DIR), and the live path through a stub `gh`.
+# Regression tests for skills/engineering/open-pr/poll-ci.sh, through a stub
+# `gh` and `git` on PATH: canned check, run, and required-check lists, PR
+# head state, and API failures.
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -23,51 +23,28 @@ check() {
   fi
 }
 
-# run_case <name> <checks> <runs> <required> <want-exit>
-run_case() {
-  local dir="$scratch/$1" out got
-  mkdir -p "$dir"
-  printf '%s' "$2" >"$dir/checks.json"
-  printf '%s' "$3" >"$dir/runs.json"
-  printf '%s' "$4" >"$dir/required.json"
-  set +e
-  out=$(POLL_CI_FIXTURE_DIR="$dir" POLL_CI_INTERVAL=0 "$script" 1 0 2>&1)
-  got=$?
-  set -e
-  check "$1" "$5" "$out" "$got"
-}
-
-both='["Validate plugin","ShellCheck"]'
-green='[{"name":"Validate plugin","bucket":"pass"},{"name":"ShellCheck","bucket":"pass"},{"name":"CodeQL","bucket":"pass"}]'
-done_runs='[{"name":"CI","status":"completed","createdAt":"2026-10-07T15:00:00Z"}]'
-
-run_case all-green "$green" "$done_runs" "$both" 0
-run_case check-failed '[{"name":"ShellCheck","bucket":"fail"}]' "$done_runs" '[]' 1
-run_case check-cancelled '[{"name":"ShellCheck","bucket":"cancel"}]' "$done_runs" '[]' 1
-run_case failed-while-queued '[{"name":"ShellCheck","bucket":"fail"}]' '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:00:00Z"}]' '[]' 1
-run_case check-pending '[{"name":"ShellCheck","bucket":"pending"},{"name":"CodeQL","bucket":"pass"}]' "$done_runs" '[]' 2
-# The #126 case: CodeQL done, the CI workflow run still queued with no checks.
-run_case run-queued '[{"name":"CodeQL","bucket":"pass"}]' '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:00:00Z"},{"name":"CodeQL","status":"completed","createdAt":"2026-10-07T15:00:00Z"}]' '[]' 2
-run_case required-missing '[{"name":"CodeQL","bucket":"pass"}]' "$done_runs" "$both" 2
-run_case required-partial '[{"name":"ShellCheck","bucket":"pass"}]' "$done_runs" "$both" 2
-# An orphaned older run superseded by a finished newer run of the same workflow.
-run_case superseded-run "$green" '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:07:28Z"},{"name":"CI","status":"completed","createdAt":"2026-10-07T15:45:14Z"}]' "$both" 0
-run_case nothing-reported '[]' '[]' '[]' 2
-run_case skipped-counts '[{"name":"Validate plugin","bucket":"pass"},{"name":"ShellCheck","bucket":"skipping"}]' "$done_runs" "$both" 0
-
-# Live path, with a stub gh: an unreadable PR is an explicit error, and an
-# unreadable run list keeps the poll waiting instead of passing or crashing.
+# The stub gh. STUB_RUNS: fail (default) exits 1, ok reports nothing
+# running, json applies the caller's --jq to STUB_RUNS_JSON.
 mkdir -p "$scratch/bin"
 cat >"$scratch/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 case "$1 $2" in
 "pr view") [ "${STUB_PR_VIEW:-ok}" = ok ] || exit 1
   echo "abc123 main feature ${STUB_CROSS_REPO:-false} ${STUB_MERGEABLE:-MERGEABLE}" ;;
-"api repos/{owner}/{repo}/rules/branches/main") echo '[]' ;;
+"api repos/{owner}/{repo}/rules/branches/main") echo "${STUB_REQUIRED:-[]}" ;;
 "pr checks")
   if [ -n "${STUB_CHECKS:-}" ]; then printf '%s\n' "$STUB_CHECKS"
   else echo '[{"name":"CodeQL","bucket":"pass"}]'; fi ;;
-"run list") [ "${STUB_RUNS:-fail}" = ok ] || exit 1; echo 0 ;;
+"run list")
+  case "${STUB_RUNS:-fail}" in
+  ok) echo 0 ;;
+  json)
+    for ((i = 1; i <= $#; i++)); do [ "${!i}" = --jq ] && j=$((i + 1)); done
+    jq "${!j}" <<<"$STUB_RUNS_JSON"
+    ;;
+  *) exit 1 ;;
+  esac
+  ;;
 *) exit 1 ;;
 esac
 STUB
@@ -90,6 +67,30 @@ live() { # live <name> <want-exit> [env...]
   set -e
   check "$name" "$want" "$out" "$got"
 }
+# run_case <name> <checks> <runs> <required> <want-exit>: the stub gh serves
+# the three lists for a current, mergeable PR head.
+run_case() {
+  live "$1" "$5" STUB_RUNS=json STUB_CHECKS="$2" STUB_RUNS_JSON="$3" STUB_REQUIRED="$4"
+}
+
+both='["Validate plugin","ShellCheck"]'
+green='[{"name":"Validate plugin","bucket":"pass"},{"name":"ShellCheck","bucket":"pass"},{"name":"CodeQL","bucket":"pass"}]'
+done_runs='[{"name":"CI","status":"completed","createdAt":"2026-10-07T15:00:00Z"}]'
+
+run_case all-green "$green" "$done_runs" "$both" 0
+run_case check-failed '[{"name":"ShellCheck","bucket":"fail"}]' "$done_runs" '[]' 1
+run_case check-cancelled '[{"name":"ShellCheck","bucket":"cancel"}]' "$done_runs" '[]' 1
+run_case failed-while-queued '[{"name":"ShellCheck","bucket":"fail"}]' '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:00:00Z"}]' '[]' 1
+run_case check-pending '[{"name":"ShellCheck","bucket":"pending"},{"name":"CodeQL","bucket":"pass"}]' "$done_runs" '[]' 2
+# The #126 case: CodeQL done, the CI workflow run still queued with no checks.
+run_case run-queued '[{"name":"CodeQL","bucket":"pass"}]' '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:00:00Z"},{"name":"CodeQL","status":"completed","createdAt":"2026-10-07T15:00:00Z"}]' '[]' 2
+run_case required-missing '[{"name":"CodeQL","bucket":"pass"}]' "$done_runs" "$both" 2
+run_case required-partial '[{"name":"ShellCheck","bucket":"pass"}]' "$done_runs" "$both" 2
+# An orphaned older run superseded by a finished newer run of the same workflow.
+run_case superseded-run "$green" '[{"name":"CI","status":"queued","createdAt":"2026-10-07T15:07:28Z"},{"name":"CI","status":"completed","createdAt":"2026-10-07T15:45:14Z"}]' "$both" 0
+run_case nothing-reported '[]' '[]' '[]' 2
+run_case skipped-counts '[{"name":"Validate plugin","bucket":"pass"},{"name":"ShellCheck","bucket":"skipping"}]' "$done_runs" "$both" 0
+
 live pr-unreadable 3 STUB_PR_VIEW=fail
 live runs-unreadable 2
 live head-current 0 STUB_RUNS=ok STUB_REMOTE_TIP=abc123
