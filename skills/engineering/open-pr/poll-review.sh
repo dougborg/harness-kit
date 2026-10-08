@@ -96,6 +96,7 @@ read -r -d '' query <<'GRAPHQL' || true
           }
         }
         reviewThreads(first: 100) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             isResolved
             comments(last: 1) {
@@ -120,7 +121,7 @@ read -r -d '' decide <<'JQ' || true
   | ([ $pr.reviewThreads.nodes[]
        | select(.isResolved | not)
        | select((.comments.nodes[0].author.login // "") != $pr_author)
-     ] | length) as $actionable
+     ] | length + $more_actionable) as $actionable
   | ([ $pr.reviews.nodes[]
        | select(.state != "PENDING")
        | select((.author.login // "") != $pr_author)
@@ -160,17 +161,63 @@ read -r -d '' decide <<'JQ' || true
     + " " + $expect
 JQ
 
+# Threads past the first 100: same "actionable" rule, one page at a time.
+read -r -d '' threads_query <<'GRAPHQL' || true
+  query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
+          nodes {
+            isResolved
+            comments(last: 1) { nodes { author { login } } }
+          }
+        }
+      }
+    }
+  }
+GRAPHQL
+read -r -d '' page_info <<'JQ' || true
+  .data.repository.pullRequest.reviewThreads.pageInfo
+  | "\(.hasNextPage // false) \(.endCursor // "")"
+JQ
+read -r -d '' page_actionable <<'JQ' || true
+  [ .data.repository.pullRequest.reviewThreads.nodes[]
+    | select(.isResolved | not)
+    | select((.comments.nodes[0].author.login // "") != $pr_author)
+  ] | length
+JQ
+
 errfile=$(mktemp)
 trap 'rm -f "$errfile"' EXIT
 
-fetch() {
+# graphql <query> [cursor]: one response. In fixture mode the first page is
+# $POLL_REVIEW_FIXTURE and a later page is the file "<fixture>.<cursor>".
+graphql() {
   if [ -n "$fixture" ]; then
-    jq -r "$decide" "$fixture"
+    cat "$fixture${2:+.$2}"
   else
-    gh api graphql -f query="$query" \
-      -F "owner=$owner" -F "repo=$repo_name" -F "number=$pr_number" \
-      --jq "$decide"
+    gh api graphql -f query="$1" -F "owner=$owner" -F "repo=$repo_name" \
+      -F "number=$pr_number" ${2:+-f "cursor=$2"}
   fi
+}
+
+# fetch runs inside `if snapshot=$(fetch)`, where set -e is off, so every
+# step returns its own failure: a failed call must count as a failed poll.
+fetch() {
+  local first page n more=0 has_next cursor author info
+  first=$(graphql "$query") || return 1
+  author=$(jq -r '.data.repository.pullRequest.author.login // ""' <<<"$first") || return 1
+  info=$(jq -r "$page_info" <<<"$first") || return 1
+  read -r has_next cursor <<<"$info"
+  while [ "$has_next" = true ]; do
+    page=$(graphql "$threads_query" "$cursor") || return 1
+    n=$(jq --arg pr_author "$author" "$page_actionable" <<<"$page") || return 1
+    more=$((more + n))
+    info=$(jq -r "$page_info" <<<"$page") || return 1
+    read -r has_next cursor <<<"$info"
+  done
+  jq -r --argjson more_actionable "$more" "$decide" <<<"$first"
 }
 
 while :; do
