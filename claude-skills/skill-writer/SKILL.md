@@ -335,8 +335,9 @@ outside the skill system that both point at.
   `allowed-tools` rule matches and it prompts on every run. `var=$(script.sh)`
   and `script.sh --flag arg` both match fine; `cmd=$(script.sh); eval "$cmd"`
   does not. Split it into two calls.
-- A shared script that calls a sibling resolves it beside the canonical script;
-  see `scripts/shared/resolve-all-threads.sh`.
+- Keep each shared script self-contained: the Claude projection copies only
+  the helpers a skill names, so a call from one helper to another breaks
+  there (`just check` catches a `$SCRIPT_DIR/` call with nothing beside it).
 - Put each canonical skill in its topic-area folder,
   `skills/<area>/<skill>/` (`engineering`, `meta`, `orchestration`,
   `project-management`, `thinking`, `writing`); names stay unique across areas

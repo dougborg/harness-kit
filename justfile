@@ -8,11 +8,15 @@ check: validate-all lint-shell lint-md hygiene
 validate-all: validate validate-codex validate-hooks tests
 
 # Every regression test script
-tests: test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-codex-install
+tests: test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-codex-install
 
 # Exercise rebase preflight against throwaway repos with a local bare origin
 test-rebase-preflight:
     ./scripts/test-rebase-preflight.sh
+
+# Exercise pr-threads.sh against a stub gh serving 250 paged threads
+test-pr-threads:
+    ./scripts/test-pr-threads.sh
 
 # Validate plugin manifest and structure
 validate:

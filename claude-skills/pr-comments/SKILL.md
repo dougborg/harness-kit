@@ -1,7 +1,7 @@
 ---
 name: pr-comments
 description: Reply in thread to every unresolved PR review comment, once the fixes are pushed.
-allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(git *), Bash(${CLAUDE_SKILL_DIR}/reply-to-comment.sh*), Bash(${CLAUDE_SKILL_DIR}/resolve-github-context.sh*), Bash(${CLAUDE_SKILL_DIR}/fetch-pr-context.sh*), Read
+allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(git *), Bash(${CLAUDE_SKILL_DIR}/pr-threads.sh*), Read
 disable-model-invocation: true
 ---
 
@@ -12,7 +12,7 @@ the reply pass: the fixes are already made and pushed. To fix and reply in
 one go, use `/review-pr` instead.
 
 Reply only after the push has landed, since each reply tells the reviewer the
-fix is live. Reply only through `reply-to-comment.sh`: it checks the comment
+fix is live. Reply only through `pr-threads.sh … reply`: it checks the comment
 belongs to this PR and uses the right endpoint. `gh pr comment` posts outside
 the thread and loses its context, and the
 `gh api .../pulls/comments/{id}/replies` endpoint does not exist (404).
@@ -20,9 +20,7 @@ the thread and loses its context, and the
 ## 1. Fetch the unresolved comments
 
 ```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
-owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/fetch-pr-context.sh "$owner_repo" <PR#>
+${CLAUDE_SKILL_DIR}/pr-threads.sh <PR#> context
 ```
 
 The script returns comments with their resolved status. Done when you have
@@ -49,7 +47,7 @@ Done when every unresolved comment has a drafted answer.
 ## 3. Reply in thread
 
 ```bash
-${CLAUDE_SKILL_DIR}/reply-to-comment.sh <owner>/<repo> <PR#> <comment_id> 'Fixed — [explanation]'
+${CLAUDE_SKILL_DIR}/pr-threads.sh <PR#> reply <comment_id> 'Fixed — [explanation]'
 ```
 
 Reply to every comment in the same push cycle. Done when every unresolved

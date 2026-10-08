@@ -14,9 +14,7 @@ by side, then either posted (someone else's PR) or fixed (your own PR).
 ## 1. Fetch the PR and its spec
 
 ```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <PR#>)
-owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
-${CLAUDE_SKILL_DIR}/fetch-pr-context.sh "$owner_repo" <PR#>
+${CLAUDE_SKILL_DIR}/pr-threads.sh <PR#> context
 gh pr view <PR#> --json closingIssuesReferences --jq '.closingIssuesReferences[].number'
 gh issue view <issue#> --comments
 ```

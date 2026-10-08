@@ -206,8 +206,7 @@ an outcome, CI is green on the final push, and the PR carries an
 ## 8. Outside reviews
 
 ```bash
-ctx=$(${CLAUDE_SKILL_DIR}/resolve-github-context.sh <number>)
-owner_repo=$(echo "$ctx" | jq -r '"\(.owner)/\(.repo)"')
+owner_repo=$(${CLAUDE_SKILL_DIR}/pr-threads.sh <number> repo)
 ${CLAUDE_SKILL_DIR}/poll-review.sh "$owner_repo" <number>
 ```
 
