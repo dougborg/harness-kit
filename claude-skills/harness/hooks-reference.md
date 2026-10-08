@@ -210,7 +210,7 @@ If hooks fail to load, `claude --debug` surfaces the exact error, including the 
 
 ## Validation in CI
 
-harness-kit ships `scripts/shared/validate-hooks-schema.sh` — a minimal `jq`-based check that enforces the top-level `hooks` object shape and ensures each event value is an array. Run it via `just validate-hooks` or as part of `just check`.
+harness-kit checks its own `hooks/hooks.json` with `scripts/validate-hooks-schema.sh` (repo tooling, not copied into projects) — a minimal `jq`-based check that enforces the top-level `hooks` object shape and ensures each event value is an array. Run it via `just validate-hooks` or as part of `just check`.
 
 This check would have caught both v0.1.0 and v0.2.0 releases before they shipped.
 

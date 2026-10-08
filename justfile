@@ -28,11 +28,11 @@ validate-codex:
 
 # Validate plugin hooks.json schema shape (minimal, catches missing top-level hooks key)
 validate-hooks:
-    ./scripts/shared/validate-hooks-schema.sh hooks/hooks.json
+    ./scripts/validate-hooks-schema.sh hooks/hooks.json
 
-# Run validate-hooks-schema.sh regression tests against fixtures in scripts/shared/testdata/
+# Run validate-hooks-schema.sh regression tests against fixtures in scripts/testdata/
 test-hooks:
-    ./scripts/shared/test-hooks-schema.sh
+    ./scripts/test-hooks-schema.sh
 
 # Exercise host-specific hook semantics
 test-cross-host-hooks:
