@@ -31,7 +31,9 @@ pr = {
     "author": {"login": "me"},
     "reviewRequests": {"totalCount": int(opts.get("requests", "0"))},
     "reviews": {"nodes": json.loads(opts.get("reviews", "[]"))},
-    "reviewThreads": {"nodes": json.loads(opts.get("threads", "[]"))},
+    "reviewThreads": {"nodes": json.loads(opts.get("threads", "[]")),
+                      "pageInfo": {"hasNextPage": "next" in opts,
+                                   "endCursor": opts.get("next")}},
 }
 nodes = others + [{"number": 10, "reviews": {"nodes": []}}]
 json.dump({"data": {"repository": {"pullRequests": {"nodes": nodes[-6:]},
@@ -101,5 +103,33 @@ expect override "" 64 POLL_REVIEW_EXPECT=bogus
 : >"$scratch/broken.json"
 printf 'not json' >"$scratch/broken.json"
 expect broken error 4
+
+# More than 100 threads: the only actionable thread is on the second page,
+# which the fixture serves as "<fixture>.<cursor>" (#155).
+page2() { # page2 <file> <threads-json>
+  printf '{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":%s}}}}}' "$2" >"$1"
+}
+fixture paged requests=1 threads="$replied_thread" next=c2
+page2 "$scratch/paged.json.c2" "$open_thread"
+expect paged comments 0
+fixture paged-replied requests=1 threads="$replied_thread" next=c2
+page2 "$scratch/paged-replied.json.c2" "$replied_thread"
+expect paged-replied timeout 2
+
+# A live gh that fails reports error, never a quiet pending.
+mkdir -p "$scratch/bin"
+printf '#!/usr/bin/env bash\necho "gh: HTTP 502" >&2\nexit 1\n' >"$scratch/bin/gh"
+chmod +x "$scratch/bin/gh"
+set +e
+got=$(env PATH="$scratch/bin:$PATH" POLL_REVIEW_INTERVAL=0 POLL_REVIEW_EXPECT=requested \
+  "$script" owner/repo 10 0 2>/dev/null)
+rc=$?
+set -e
+if [ "$got" = error ] && [ "$rc" = 4 ]; then
+  echo "PASS: gh-failure (error, exit 4)"
+else
+  echo "FAIL: gh-failure: want error/exit 4, got '$got'/exit $rc"
+  fail=1
+fi
 
 exit "$fail"
