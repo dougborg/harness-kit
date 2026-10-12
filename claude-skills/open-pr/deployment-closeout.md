@@ -2,7 +2,8 @@
 
 For a task that already authorizes merging to a branch that deploys
 automatically. Follow the project's deployment workflow and approval
-requirements, and merge only after steps 6-8 are done.
+requirements. Merge only after open-pr's steps 6-8 are done; if step 8 ended
+in `timeout` with a requested human review still pending, ask before merging.
 
 1. Record the merged commit SHA. A squash merge differs from the reviewed PR
    head.
@@ -16,6 +17,6 @@ requirements, and merge only after steps 6-8 are done.
    rollback or deploy.
 
 Poll with a bound: the project's policy, or 15 minutes without one, following
-step 6's rules for long waits. On timeout, report "merged, deploy pending" and
-stop. With no release identity or post-deploy check available, say so rather
-than claim a check passed.
+open-pr step 6's rules for long waits. On timeout, report "merged, deploy
+pending" and stop. With no release identity or post-deploy check available,
+say so rather than claim a check passed.

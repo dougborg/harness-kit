@@ -32,9 +32,10 @@ dependency guidance before calling the batch ready.
 
 ## Merge and close the originals
 
-Merge only with explicit approval that names the consolidated PR or the
-batch. Approval to merge the originals doesn't cover compatibility fixes or
-resolution changes added here: show those and ask.
+Merge only after open-pr's steps 6-8, with explicit approval given after you
+have shown the final diff, including any compatibility fixes or resolution
+changes added here. Approval given earlier, for the originals or the batch,
+doesn't cover those.
 
 Link every superseded PR in the consolidated PR body. Once the consolidated PR
 has merged, not merely opened, close each original whose changes are in the

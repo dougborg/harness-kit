@@ -176,15 +176,16 @@ commit, autosquash-rebases onto the base, and force-pushes with a lease that
 survives a GitHub "Update branch" merge. That keeps history clean, with no
 "address review" commits. First apply the commit skill's uv.lock drift check:
 if `uv.lock` has drifted, add it to the file list and warn the user, as that
-skill prescribes. Inference targets the latest commit; when the fix belongs to
-an earlier one, pass its exact subject from
-`git log origin/<base>..HEAD --format=%s`, never the PR title.
+skill prescribes. Inference targets the latest non-merge, non-fixup commit;
+when the fix belongs to an earlier one, pass that commit's exact subject from
+`git log --no-merges --format=%s origin/<base>..HEAD | grep -v '^fixup!'`,
+never the PR title.
 
 ```bash
 # subject inferred from the latest non-merge, non-fixup commit in origin/<base>..HEAD
 <skill-dir>/fixup-and-push.sh <baseRefName> <file1> <file2> ...
 # or explicit:
-<skill-dir>/fixup-and-push.sh <baseRefName> --subject "fix(scope): description" <file1> <file2> ...
+<skill-dir>/fixup-and-push.sh <baseRefName> --subject "<exact target subject>" <file1> <file2> ...
 ```
 
 If it reports `fixup!` commits that didn't squash, recover with
