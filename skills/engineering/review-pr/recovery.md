@@ -53,8 +53,21 @@ commit, the rebase reports success and leaves the `fixup!` commit dangling
 on the branch, where CI and history readers see the noise. The script checks
 for this after the rebase, prints the recovery below, and exits non-zero
 without pushing (dougborg/harness-kit#40, #42). A PR title passed as
-`--subject` that differs from the commit subject causes the same no-op; prefer
-the inferred subject.
+`--subject` that differs from the commit subject causes the same no-op.
+
+Pick the fix by cause. The dangling fixup is `HEAD` and unpushed:
+
+- **Wrong subject, target on the branch**: retitle it and let git place it:
+
+  ```bash
+  git commit --amend -m "fixup! <exact target subject>"
+  git rebase --autosquash origin/<base>
+  ```
+
+- **Target already on base**: there is nothing in range to fold into. Reword
+  it into a normal commit (`git commit --amend -m "fix(scope): ..."`) instead
+  of squashing it into an unrelated one.
+- **The commit right before the fixup is its target**: use the recipe below.
 
 Squash it by hand. The script's printed recovery writes the editor to
 `/tmp`; put it in the repository's git directory instead, where no other
@@ -72,8 +85,8 @@ chmod +x <git-dir>/squash-fixup.sh
 env GIT_SEQUENCE_EDITOR=<git-dir>/squash-fixup.sh git rebase -i origin/<base>
 ```
 
-The recipe assumes each fixup directly follows its target. With several
-targets, reorder the todo first so each fixup sits under its own target.
+The recipe folds every `fixup!` into the commit above it, so use it only when
+that commit is the target; otherwise use the retitle path above.
 
 Two details matter:
 

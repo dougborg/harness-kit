@@ -63,9 +63,16 @@ git log main..HEAD --oneline
 
 Read every changed file. Understand what the change does and why.
 
-For dependency updates, apply the "Vendor and dependency changes" guidance in
-the code-reviewer skill's `special-cases.md`, including migration defaults and
-combined lockfile resolution.
+For dependency updates:
+
+- Check the version matches the intended update and pinned runtimes; a new
+  dependency should be a current, maintained release.
+- For changes touching persistence, authentication, serialization, or
+  telemetry, check release notes or a vendored CHANGELOG for changed defaults.
+  If you can't read them, say so rather than assume nothing changed.
+- Flag BLOCKING when a compatibility fix has no regression test.
+- For a consolidated update, review the combined lockfile and its transitive
+  changes; the original PRs' green checks don't cover how they interact.
 
 ### 2. Review Categories
 

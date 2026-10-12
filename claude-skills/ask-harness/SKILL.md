@@ -66,6 +66,7 @@ rather than pushing on.
 | --- | --- |
 | Commit with the project's checks | `commit` |
 | Open a PR and see it through review and CI | `open-pr` |
+| Work through or consolidate several dependency PRs | `open-pr` |
 | Review a PR, or answer its review comments | `review-pr`; `/pr-comments` for a reply-only pass |
 | Bring a branch up to date | `/rebase` |
 | File, update, or close an issue | `issue-create`, `issue-update`, `issue-close` |
