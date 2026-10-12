@@ -60,18 +60,21 @@ Pick the fix by cause. The dangling fixup is `HEAD` and unpushed:
 - **Wrong subject, target on the branch**: retitle it and let git place it:
 
   ```bash
+  git log --no-merges --format=%s origin/<base>..HEAD | grep -v '^fixup!'
   git commit --amend -m "fixup! <exact target subject>"
-  git rebase --autosquash origin/<base>
+  env GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<base>
   ```
+
+  The `-i` with a no-op editor makes autosquash apply on any git version;
+  plain `git rebase --autosquash` needs git 2.44 or newer.
 
 - **Target already on base**: there is nothing in range to fold into. Reword
   it into a normal commit (`git commit --amend -m "fix(scope): ..."`) instead
   of squashing it into an unrelated one.
 - **The commit right before the fixup is its target**: use the recipe below.
 
-Squash it by hand. The script's printed recovery writes the editor to
-`/tmp`; put it in the repository's git directory instead, where no other
-session can overwrite it. Get the path with
+For that last case, squash it by hand. Write the editor script into the
+repository's git directory, where no other session can overwrite it. Get the path with
 `git rev-parse --absolute-git-dir` and write it in place of `<git-dir>`.
 `cat`, `chmod`, and `env` fall outside this skill's `allowed-tools`, so expect
 a permission prompt for each.
@@ -98,7 +101,7 @@ Two details matter:
   configs). Matching any `pick` line that contains `fixup!` works with either
   and is harder to no-op silently than a regex tied to one shape.
 
-Check that nothing is left:
+Whichever path you took, check that nothing is left:
 
 ```bash
 git log origin/<base>..HEAD --format=%s | grep -c '^fixup!' || true

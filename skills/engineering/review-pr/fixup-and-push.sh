@@ -142,18 +142,19 @@ remaining_fixups=$(git log "origin/${base}..HEAD" --format=%s | grep -c '^fixup!
 if [ "$remaining_fixups" -gt 0 ]; then
   cat >&2 <<EOF
 ERROR: ${remaining_fixups} fixup! commit(s) did not get squashed by autosquash.
+Nothing was pushed. Recover by cause (review-pr's recovery.md, "Autosquash
+no-op"; harness-kit#40, #42):
 
-This typically means the fixup commit's target subject matched a commit
-that was already on the base branch (outside the rebase range), so autosquash
-found no in-range target to fold into.
+- Subject didn't match an in-range commit (e.g. a PR title): retitle and
+  re-run autosquash. Get the target subject from
+  git log --no-merges --format=%s origin/${base}..HEAD | grep -v '^fixup!'
+    git commit --amend -m "fixup! <exact target subject>"
+    env GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/${base}
+- Target already on ${base}: nothing in range to fold into. Make it a normal
+  commit instead of squashing it into an unrelated one:
+    git commit --amend -m "fix(scope): <what it fixes>"
 
-Manual recovery (see also harness-kit#42):
-  cat > /tmp/squash-fixup.sh <<'SH'
-#!/bin/bash
-sed -i.bak '/fixup!/s/^pick /fixup /' "\$1"
-SH
-  chmod +x /tmp/squash-fixup.sh
-  env GIT_SEQUENCE_EDITOR=/tmp/squash-fixup.sh git rebase -i origin/${base}
+Don't squash it into the commit above unless that commit is its target.
 EOF
   exit 1
 fi

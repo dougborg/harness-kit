@@ -38,8 +38,11 @@ Read every changed file. Understand what the change does and why.
 
 For dependency updates:
 
+- Apply the usual vendor checks: trusted maintainer, known CVEs, minimal
+  surface area, and whether the dependency earns its cost.
 - Check the version matches the intended update and pinned runtimes; a new
-  dependency should be a current, maintained release.
+  dependency should be a current, maintained release. If you can't confirm
+  that offline, say so.
 - For changes touching persistence, authentication, serialization, or
   telemetry, check release notes or a vendored CHANGELOG for changed defaults.
   If you can't read them, say so rather than assume nothing changed.
