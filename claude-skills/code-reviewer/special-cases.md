@@ -70,20 +70,20 @@ dropped. Consider adding a comment explaining the performance trade-off.
 For changes to external code or dependencies:
 
 1. **Supply chain**: is the package from a known, trusted maintainer?
-2. **Version**: does it match the intended update and pinned runtimes?
+2. **Version**: does it match the intended update and pinned runtimes? For a
+   new dependency, is it a current, maintained release?
 3. **Security**: any known CVEs in this version?
 4. **Surface area**: import only what is needed.
 5. **Necessity**: does it add value, or only complexity?
 
 For updates touching persistence, authentication, serialization, or
-telemetry, read the target's release notes. For a major upgrade or a minor
-release documented as changing behavior, read the upstream migration guide
-and compare changed defaults with what the application does now. A clean
-install and typecheck don't prove that database type inference,
-serialization, authentication, or telemetry and privacy defaults survived.
-Check the runtime behavior and add a regression test for any compatibility
-fix: a migration drift check for ORM inference changes, an explicit
-collection-policy check for telemetry SDKs.
+telemetry, check the target's release notes or migration guide (try a vendored
+CHANGELOG) for changed defaults. If you can't read them, say so in the report
+rather than assume the defaults are unchanged. A clean install and typecheck
+don't prove that database type inference, serialization, authentication, or
+telemetry and privacy defaults survived. Flag BLOCKING when a compatibility fix
+has no regression test, such as a migration drift check for ORM inference or a
+collection-policy check for a telemetry SDK.
 
 For a consolidated update, review the combined dependency graph and the
 lockfile's peer contexts, transitive changes included. The original PRs'

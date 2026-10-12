@@ -6,7 +6,8 @@ description: >-
   for CI, run an independent agent review and fix its findings, then answer
   any outside (Copilot or human) review. Use when implementation is complete
   and ready for review, when the user asks to open, raise, or submit a PR, and
-  when the harness-issue skill hands off in PR mode.
+  when the harness-issue skill hands off in PR mode. Also use when asked to
+  work through or consolidate several dependency PRs.
 argument-hint: "[base branch]"
 allowed-tools: Bash(gh pr *), Bash(gh api *), Bash(gh run *), Bash(git status), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git reset *), Bash(git rev-list *), Bash(git rev-parse *), Bash(${CLAUDE_SKILL_DIR}/*), Bash(${CLAUDE_SKILL_DIR}/*), Read
 ---
