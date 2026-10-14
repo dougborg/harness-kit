@@ -172,7 +172,7 @@ This is the correct shape of `hooks/hooks.json` for a plugin with a formatter ho
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/shared/markdownlint-fix.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/format-markdown.sh\""
           }
         ]
       }
@@ -182,7 +182,7 @@ This is the correct shape of `hooks/hooks.json` for a plugin with a formatter ho
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/shared/retro-nudge.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/session-reminder.sh\""
           }
         ]
       }
