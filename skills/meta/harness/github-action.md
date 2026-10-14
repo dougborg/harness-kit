@@ -82,7 +82,9 @@ base branch before Claude starts. It keeps the PR's versions under
   from the PR head
   ([claude-code-action#1696](https://github.com/anthropics/claude-code-action/issues/1696)).
   A PR can change the verification command that a base-branch skill then
-  runs. Review fact changes like code.
+  runs. Review fact changes like code. The scheduled update PR never
+  changes them: its workflow fails if the update touches anything the
+  snapshot doesn't own (`<skill-dir>/vendoring.md`).
 - Vendor the snapshot as real files. A symlink inside `.claude/` that points
   outside the restored paths (for example into `.agents/`) crashes the
   restore

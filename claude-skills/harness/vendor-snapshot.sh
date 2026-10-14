@@ -8,6 +8,7 @@
 #   .agents/scripts/shared/   shared helpers those skills name
 #   .codex/agents/<a>.toml    generated Codex agents (.codex/agents/<a>.toml)
 #   .claude/hooks/harness-kit/  the plugin's hook scripts
+#   .github/workflows/harness-update.yml  the scheduled update workflow
 # The harness skill is always included; forked skills and agents are the
 # project's own and are never written or removed. The plugin's hook entries
 # are merged into .claude/settings.json, harness-kit is set to false there,
@@ -201,6 +202,10 @@ for name in skills:
     if len(found) != 1:
         die(f"skill {name} not found once in {plugin}/skills/<area>/")
     add_tree(found[0], f".agents/skills/{name}", scan_helpers=True)
+# The scheduled workflow that opens the next update PR (harness-update.sh).
+WORKFLOW = ".github/workflows/harness-update.yml"
+roots.append(WORKFLOW)
+add_file(need(plugin / "claude-skills/harness/harness-update.yml", "the update workflow"), WORKFLOW)
 for name in agents:
     for src, dest in ((f"agents/{name}.md", f".claude/agents/{name}.md"),
                       (f".codex/agents/{name}.toml", f".codex/agents/{name}.toml")):
@@ -243,7 +248,7 @@ for names_, dest_dir in ((codex_helpers, ".agents/scripts/shared"), (hook_script
 
 owned = set(old_lock.get("files", {}))
 for path in owned:
-    if not re.match(r"\.(claude|agents|codex)/", path) or ".." in Path(path).parts:
+    if not (re.match(r"\.(claude|agents|codex)/", path) or path == WORKFLOW) or ".." in Path(path).parts:
         die(f"{lock_path}: refusing to manage {path}")
 for root in roots:
     p = project / root
