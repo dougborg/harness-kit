@@ -5,13 +5,20 @@ generic skills, agents, and hooks into a project (ADR 0001). It reads the
 project's `.harness/config.toml` (keys in `<skill-dir>/project-facts.md`),
 copies real files, never symlinks, and records what it wrote in
 `.harness/lock.json`. It does no merging. Read this when a mode vendors or
-re-vendors a project, checks that a snapshot is unedited, or explains what
-the snapshot owns.
+re-vendors a project, updates it to a new release, checks that a snapshot is
+unedited, or explains what the snapshot owns.
+
+- [Run it](#run-it)
+- [What it writes](#what-it-writes)
+- [What the snapshot owns](#what-the-snapshot-owns)
+- [Updating to a new release](#updating-to-a-new-release)
+- [Third-party skills](#third-party-skills)
+- [The edit check](#the-edit-check)
 
 ## Run it
 
 ```bash
-<skill-dir>/vendor-snapshot.sh <plugin-root> .
+<skill-dir>/vendor-snapshot.sh [--json] <plugin-root> .
 ```
 
 The first argument is a harness-kit plugin root: the installed plugin, or a
@@ -20,7 +27,8 @@ https://github.com/dougborg/harness-kit`). The snapshot takes that root's
 version. The second is the project directory, which defaults to `.`. It needs
 `python3` 3.11 or later and exits 1 with a message, writing nothing, when the
 config names an unknown skill or agent or a vendored path holds a
-project-local file.
+project-local file. It prints a Markdown report, or the same report as JSON
+with `--json` (see [Updating to a new release](#updating-to-a-new-release)).
 
 ## What it writes
 
@@ -37,8 +45,9 @@ project-local file.
 
 The chosen set is the config's `skills` and `agents` plus `harness`, which is
 always vendored. A name in `[forks.skills]` or `[forks.agents]` is the
-project's own and is skipped. Other keys in `settings.json`, and its other
-hook entries, are kept.
+project's own: its files are never written or removed, even ones an earlier
+snapshot vendored, and the shared scripts it names stay vendored. Other keys
+in `settings.json`, and its other hook entries, are kept.
 
 Hooks are vendored because disabling the plugin also disables its
 `hooks/hooks.json`. With the plugin off, `${CLAUDE_PLUGIN_ROOT}` is unset, so
@@ -64,6 +73,8 @@ never touched. A re-run at the same version and config writes nothing.
   "skills": {"commit": "harness-kit", "harness": "harness-kit"},
   "agents": {"verifier": "harness-kit"},
   "hooks": {"claude": {"Stop": [{"hooks": [{"type": "command", "command": "..."}]}]}},
+  "available": {"skills": ["commit", "harness", "tdd"], "agents": ["verifier"]},
+  "removed": {"skills": [], "agents": []},
   "files": {".claude/skills/commit/SKILL.md": "<sha256 hex>"}
 }
 ```
@@ -72,7 +83,65 @@ never touched. A re-run at the same version and config writes nothing.
 - `skills`, `agents`: each vendored name and its source, `harness-kit` or a
   third-party source string.
 - `hooks.claude`: the entries added to `.claude/settings.json`, by event.
+- `available`: every skill and agent that release ships, so the next update
+  can tell which are new.
+- `removed`: chosen names the release no longer ships, still listed in the
+  config.
 - `files`: each vendored file's SHA-256, which the edit check compares against.
+
+## Updating to a new release
+
+Updating is the same command against a newer plugin root. The snapshot is
+replaced wholesale: every vendored file is rewritten from the new release,
+files the release dropped are removed, and the lock is rewritten to the new
+version. Three cases are reported rather than acted on:
+
+- **Removed upstream.** A chosen skill or agent the last snapshot had and the
+  release no longer ships is dropped from the snapshot and listed. The config
+  is not edited; the name is reported (and kept in the lock's `removed`) on
+  every run until someone removes it from the config. A name no snapshot ever
+  had is still an unknown name, and the script exits 1.
+- **New upstream.** A skill or agent the release ships that the last
+  snapshot's catalog lacked, and the config doesn't name, is offered, not
+  installed. The first snapshot offers nothing.
+- **Forks.** Each fork is left byte-for-byte unchanged, and the report lists
+  which of its files changed upstream between the version it was forked from
+  and the new release, as project paths (`.claude/skills/<skill>/...`) with
+  `A`, `M`, or `D`. The forked-from version is read from tag `v<version>` in
+  the plugin root, so the comparison needs a git checkout holding that tag; a
+  shallow release clone has only its own tag. When the plugin root isn't a
+  git checkout, or the tag is missing, the fork is reported as not compared,
+  with the reason and the `git fetch` that adds the tag. A fork whose name
+  the release no longer ships is reported as removed upstream.
+
+The text report is Markdown meant for a pull request body: a summary line,
+then `## Removed upstream`, `## New upstream`, and `## Forks` sections, each
+printed only when it has entries. For example:
+
+```markdown
+vendored harness-kit 1.1.0 (from 1.0.0): 12 skills, 2 agents, 230 files
+
+## New upstream
+
+Not installed; add them to `.harness/config.toml` to vendor them:
+
+- skill `wayfinder`
+
+## Forks
+
+Left unchanged. Upstream changes since each was forked:
+
+- skill `review-pr` (forked from 1.0.0): 1 file changed upstream
+  - M `.agents/skills/review-pr/SKILL.md`
+- agent `verifier` (forked from 1.0.0): no upstream changes
+```
+
+`--json` prints the same facts for a workflow to read: `from` (the previous
+version, or `null`), `to`, `skills`, `agents`, `files` (a count), `removed`
+and `new` (each `{"skills": [...], "agents": [...]}`), and `forks`, a list of
+`{kind, name, forked_from, status, changes}` where `status` is `changed`,
+`unchanged`, `removed`, or `not-compared` (with a `reason`), and `changes` is
+a list of `{status, path}`.
 
 ## Third-party skills
 

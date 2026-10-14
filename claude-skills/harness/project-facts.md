@@ -68,12 +68,14 @@ verification_command = "moon ci"
 | `[facts] verification_command` | string | `discover-verification-cmd.sh`, the verifier agent | Implemented |
 | `skills` | array of skill names | `vendor-snapshot.sh` | Implemented |
 | `agents` | array of agent names | `vendor-snapshot.sh` | Implemented |
-| `[forks.skills]` | table, name = forked-from version | `vendor-snapshot.sh` skips these; update reports on them (#169) | Partial |
-| `[forks.agents]` | table, name = forked-from version | `vendor-snapshot.sh` skips these; update reports on them (#169) | Partial |
+| `[forks.skills]` | table, name = forked-from version | `vendor-snapshot.sh` never touches these and reports upstream changes since the version | Implemented |
+| `[forks.agents]` | table, name = forked-from version | `vendor-snapshot.sh` never touches these and reports upstream changes since the version | Implemented |
 | `[sources.skills]` | table, name = `"owner/repo@ref:path"` | `vendor-snapshot.sh` validates and records it; fetching is not implemented yet | Partial |
 
 Forks are split by kind because a skill and an agent can share a name
-(`code-reviewer` is both). A source names the repository, the ref, and the
+(`code-reviewer` is both). Write the forked-from version as the release
+number without the `v` (`"1.0.0"`); the update report reads that release from
+tag `v1.0.0`. A source names the repository, the ref, and the
 skill's directory in that repository; a skill without one comes from
 harness-kit. `${CLAUDE_SKILL_DIR}/vendoring.md` covers what the vendoring script
 writes from these keys.
