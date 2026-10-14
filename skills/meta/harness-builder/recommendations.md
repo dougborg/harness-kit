@@ -46,8 +46,8 @@ Model tiers:
 The agent picks skills by detected workflow and by which global skills
 already exist.
 
-- **Every project**: `/commit`, conventional commits with the project's own
-  quality gates (extends the global `/commit`).
+- **Every project**: `/commit`, conventional commits gated by the project's
+  verification command (a generic skill; the gate is a fact).
 - **GitHub**: `/to-spec` and `/to-tickets` turn a design conversation into a
   spec issue, then tracer-bullet sub-issues; `/issue-create`, `/triage`, and
   `/groom` file issues with real labels, move incoming issues to agent-ready
@@ -56,15 +56,16 @@ already exist.
   and operators.
 - **Frontend**: `/ui-review`, an accessibility and UX audit (WCAG 2.1 AA).
 
-Compose rather than duplicate: a global skill plus a project-local wrapper.
+Generic skills are vendored unedited; a project shapes them with facts, and
+writes a local skill only for a workflow no generic skill covers.
 
-- Good: the global `/commit` handles the conventional format, and a
-  project-local `/commit` adds the stack's quality gates.
-- Good: the global `/harness` provides the meta-harness framework, and no
-  project-local `/harness` is needed, because the framework is
-  stack-agnostic.
-- Bad: copying the global `/commit` workflow into a project-local skill. Two
-  copies drift and double the maintenance.
+- Good: the vendored `/commit` runs the gate set in `.harness/config.toml`
+  (`[facts] verification_command`), so the project needs no `/commit` of its
+  own.
+- Good: a project-local `deploy-staging` skill for the project's own release
+  steps, under a name no generic skill uses.
+- Bad: copying or editing a generic skill to teach it a project's quirk. The
+  edit check fails, and every release becomes a merge.
 
 ## Hooks
 
@@ -84,8 +85,7 @@ reaches Claude, so a quiet hook costs no tokens.
 
 Hooks matching the same event run in parallel
 ([hooks reference](https://code.claude.com/docs/en/hooks.md)), so put stages
-that must run in order into one script. A `.claude/settings.local.json`
-entry:
+that must run in order into one script. A `.claude/settings.json` entry:
 
 ```json
 {

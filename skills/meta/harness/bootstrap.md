@@ -1,116 +1,140 @@
 # Bootstrap Mode
 
-Analyze the project, install skills/agents from harness-kit for both Claude Code
-and Codex, and generate project-specific additions. Auto-trigger only when
-`.claude/`, `.agents/`, and `.codex/` contain no harness content.
+Set up a project on the vendored model (ADR 0001): state its facts, write its
+project-specific skills and agents, and vendor harness-kit's generic set as an
+unedited snapshot for Claude Code and Codex. Auto-trigger only when `.claude/`,
+`.agents/`, and `.codex/` contain no harness content. A project with a
+`.harness-lock.json` from an older bootstrap is not fresh; migrate mode
+converts it.
+
+## Find the plugin root
+
+Below, `<plugin-root>` is the harness-kit tree the snapshot is copied from.
+Bootstrap of a new project runs from the installed plugin, since the project
+has no snapshot yet, so the path is the plugin's root: Claude Code fills it in,
+and on Codex it is three levels above this skill's folder, which sits at
+`skills/meta/harness/` in the plugin.
+
+When this skill was loaded from a vendored snapshot (`.claude/skills/harness/`
+or `.agents/skills/harness/`), the plugin is turned off and that path is empty
+or points nowhere. Clone the release to vendor from, `git clone --depth 1
+--branch vX.Y.Z https://github.com/dougborg/harness-kit /tmp/harness-kit`, and
+use `/tmp/harness-kit` wherever this file says `<plugin-root>`. `<skill-dir>`
+is this skill's folder either way.
+
+Done when `<plugin-root>/.claude-plugin/plugin.json` exists.
 
 ## Workflow
 
-1. **Spawn `harness-builder` agent** — pass it the absolute paths of this skill's `architecture-patterns.md`, `external-plugins.md`, `hooks-reference.md`, and `release-please-reference.md` (siblings of this file, under `<skill-dir>`) so it can read the catalogs. It analyzes the codebase and returns:
-   - Stack summary (language, toolchain, verification command)
-   - Draft CLAUDE.md skeleton
-   - **Recommended architecture pattern** (from `<skill-dir>/architecture-patterns.md`)
-   - **Recommended agents** with model + `tools:` (agents use `tools:`, not the skill-only `allowed-tools:`) (always includes code-reviewer, verifier, test-writer, domain-advisor; adds project-manager if GitHub detected)
-   - **Recommended skills from harness-kit:** which of the plugin's base skills to copy into the project
-   - **Bundled skills to delegate to:** matches from the bundled-skills table in `<skill-dir>/external-plugins.md` — no install required
-   - **Recommended official Anthropic plugins:** stack-matched picks from the marketplace catalog in `<skill-dir>/external-plugins.md`, with overlap flags against harness-kit skills
-   - **Recommended external sources:** additional plugin marketplaces based on stack (e.g., Vercel skills for React, impeccable for frontend)
-   - **Project-specific skills** to generate (domain workflows, custom checks)
-   - Recommended hooks (PostToolUse: formatters → validators → guidance; Stop: session-end guidance)
-   - Domain knowledge (entity types, ownership model, business rules)
+1. **Spawn the `harness-builder` agent.** Pass it the absolute paths of this
+   skill's catalogs (`<skill-dir>/architecture-patterns.md`,
+   `external-plugins.md`, `hooks-reference.md`, `release-please-reference.md`)
+   and the generic names it can choose from: the folders in
+   `<plugin-root>/claude-skills/` and the files in `<plugin-root>/agents/`. It
+   returns the stack, a recommended architecture pattern, and its
+   recommendations sorted into three kinds:
+   - **Facts**: the verification command first, then the prose facts for
+     `AGENTS.md`'s `## Project facts` section (`<skill-dir>/project-facts.md`).
+   - **Project-local content**: skills and agents that exist only for this
+     project (domain workflows, `test-writer`, `domain-advisor`), plus hooks.
+   - **The generic set**: harness-kit skills and agents to vendor by name,
+     unedited. `harness` is always included.
 
-2. **Present recommendations for approval:**
-   - **Stack:** one-line summary + architecture pattern
-   - **Skills from harness-kit to install:** table with name, purpose, why this project needs it
-   - **Bundled skills already available (no install):** the matching rows from the bundled-skills table in `<skill-dir>/external-plugins.md`, one line each. Present these *before* anything installable — never propose installing a plugin or generating a project skill for a job a bundled skill already does
-   - **Official Anthropic plugins to install (optional):** for each stack-matched plugin from `<skill-dir>/external-plugins.md`, show one-line rationale plus the install command (`/plugin install <name>@claude-plugins-official`). Where a plugin overlaps a harness-kit skill (e.g., `code-review` vs `code-reviewer`, `commit-commands` vs `/commit`), flag the overlap and ask the user to pick one or accept the documented composition — never install both sides of an overlap silently
-   - **External sources to add:** marketplace repos with rationale
-   - **Project-specific skills to generate:** table with name, purpose
-   - **Agents to create:** table with name, purpose, model
-   - **Domain knowledge:** institutional rules the harness should encode
-   - **Hooks to configure:** execution order and commands
+   It also lists bundled skills to delegate to, official Anthropic plugins,
+   and external marketplaces. Done when the report names a verification
+   command and doesn't say the catalogs were missing.
 
-3. **Do NOT write any files until the user approves.**
+2. **Present the recommendations for approval:**
+   - **Stack:** one-line summary and architecture pattern.
+   - **Facts:** the verification command, then the `## Project facts` bullets.
+   - **Generic set:** the skills and agents to vendor, each with why this
+     project needs it.
+   - **Bundled skills already available (no install):** the matching rows from
+     `<skill-dir>/external-plugins.md`, one line each, before anything
+     installable. Never propose a plugin or a project skill for a job a
+     bundled skill already does.
+   - **Official Anthropic plugins (optional):** each stack-matched plugin with
+     a one-line rationale and `/plugin install <name>@claude-plugins-official`.
+     Flag each overlap with a harness-kit skill (`code-review` vs
+     `code-reviewer`, `commit-commands` vs `/commit`) and have the user pick
+     one side or accept the documented composition.
+   - **External sources to add:** marketplace repos with rationale.
+   - **Project-local skills and agents:** name, purpose, and model for agents.
+     None may share a name with the generic set.
+   - **Hooks:** execution order and commands.
 
-4. **After approval, install and generate for both hosts:**
-   - Copy approved skills from `<plugin-root>/claude-skills/` to `.claude/skills/` — copy each skill's **whole directory**, including sibling reference `.md` files and scripts, not just `SKILL.md`
-   - Copy approved agents from `<plugin-root>/agents/` to `.claude/agents/`
-   - Copy the same canonical skills to `.agents/skills/<skill>/` for Codex CLI
-     and IDE repository discovery, preserving each `agents/openai.yaml`. The
-     plugin groups skills by area (`<plugin-root>/skills/<area>/<skill>/`);
-     install them flat by skill name, matching `.claude/skills/<skill>/`.
-   - Copy the contents of `<plugin-root>/scripts/shared/` (skill helpers and
-     hook scripts only) to `.agents/scripts/shared/`;
-     installed canonical skills resolve `<shared-scripts-dir>` from their
-     loaded location. harness-kit's own tests and fixtures live in
-     `scripts/` and are not copied.
-   - Copy Codex agent TOMLs from `<plugin-root>/.codex/agents/` to
-     `.codex/agents/` and merge the project defaults into `.codex/config.toml`.
-   - **Copy whole skill directories with `cp -R`.** Claude's generated
-     projection includes regular copies of the helpers each skill needs. Codex
-     keeps shared helpers canonical in the host's shared-script directory.
-   - Resolve `<skill-dir>` and `<plugin-root>` from the loaded Codex skill path.
-     Claude copies already contain runtime `${CLAUDE_SKILL_DIR}` and
-     `${CLAUDE_PLUGIN_ROOT}` substitutions; do not rewrite them at install time.
-   - Generate project-specific agents for both `.claude/agents/` and
-     `.codex/agents/`; use Claude Markdown frontmatter and Codex standalone TOML.
-   - Generate project-specific open-format skills and install them in both host trees.
-   - Write shared rules to `AGENTS.md`; write Claude-only additions and an
-     `@AGENTS.md` import to `CLAUDE.md`.
-   - Configure hooks in `.claude/settings.local.json` and `.codex/hooks.json`,
-     sharing invoked scripts where semantics match.
-   - Create `.harness-lock.json` tracking provenance of every installed file
-   - Write `.harness-upstream` as the shared routing file and retain
-     `.claude/harness-upstream` as a compatibility copy.
-   - Update `.gitignore` (add `.claude/settings.local.json` if it contains secrets)
-   - Never generate `.claude/commands/` — commands are legacy
+   A project quirk that a generic skill should honor is a fact, not a reason
+   to copy or edit that skill. Done when the user approves the list. Write no
+   files before then.
 
-5. **Run verification command** to confirm nothing broke.
+3. **Write the facts and the project-local content:**
+   - `.harness/config.toml`: the generic set as `skills` and `agents`, and
+     `[facts] verification_command` (format in `<skill-dir>/project-facts.md`).
+     Leave out `harness`; it is always vendored.
+   - `AGENTS.md`: shared rules plus the `## Project facts` section. `CLAUDE.md`
+     holds Claude-only additions and an `@AGENTS.md` import.
+   - Project-local skills as open-format skills in both `.claude/skills/<name>/`
+     and `.agents/skills/<name>/`; project-local agents as Claude Markdown in
+     `.claude/agents/` and Codex TOML in `.codex/agents/`.
+   - Project hooks in `.claude/settings.json` (or `.claude/settings.local.json`
+     when they hold secrets or machine paths) and `.codex/hooks.json`, sharing
+     invoked scripts where semantics match.
+   - Merge the project's Codex defaults into `.codex/config.toml`.
+   - `.harness-upstream`, and `.claude/harness-upstream` as a compatibility
+     copy, naming the upstream repo.
+   - `.gitignore`: commit `.harness/`, `.agents/`, `.codex/`, and `.claude/`'s
+     `skills/`, `agents/`, `hooks/`, `settings.json`, and `harness-upstream`;
+     ignore `.claude/settings.local.json`. Never generate `.claude/commands/`;
+     commands are legacy.
 
-6. **Tell the user how to keep it healthy.** Two complementary tools, named in the closing summary:
-   - `/doctor` (bundled with Claude Code, alias `/checkup`) — ongoing setup hygiene: installation and PATH problems, unused skills and MCP servers, slow hooks, CLAUDE.md bloat. Run it periodically; no install needed.
-   - `/harness audit` — harness-kit structure, frontmatter validity, and provenance. Advisory, not a gate.
+   Done when every approved fact and project-local file is written.
 
-   Also recommend running `/run-skill-generator` once, to record this project's real build/launch recipe as a `run-<name>` skill that `/run` and `/verify` then follow. See the bundled-skills table in `<skill-dir>/external-plugins.md` for the rest.
+4. **Vendor the snapshot:**
 
-## Lock File Creation
+   ```bash
+   <skill-dir>/vendor-snapshot.sh <plugin-root> .
+   ```
 
-The `.harness-lock.json` file is created during bootstrap and tracks every file's provenance:
+   It writes the generic set into `.claude/`, `.agents/`, and `.codex/` as
+   real files, vendors the plugin's hooks, sets harness-kit to `false` in
+   `.claude/settings.json`, and records it all in `.harness/lock.json`
+   (`<skill-dir>/vendoring.md`), the project's only lock. Nothing is copied
+   by hand. If it exits 1, fix what it names (an
+   unknown name in the config, a project-local file on a vendored path) and
+   run it again. Done when it exits 0 and `.harness/lock.json` exists.
 
-```json
-{
-  "schemaVersion": 2,
-  "hosts": ["claude", "codex"],
-  "sources": {
-    "harness-kit": { "version": "0.1.0", "installed": "2026-04-04", "repo": "dougborg/harness-kit" }
-  },
-  "files": {
-    ".claude/skills/commit/SKILL.md": {
-      "source": "harness-kit", "modified": false,
-      "host": "claude", "component": "skill"
-    },
-    ".agents/skills/commit/SKILL.md": {
-      "source": "harness-kit", "modified": false,
-      "host": "codex", "component": "skill"
-    },
-    ".codex/agents/code-reviewer.toml": {
-      "source": "harness-kit", "modified": false,
-      "host": "codex", "component": "agent"
-    }
-  }
-}
-```
+5. **Run the gate.** Run
+   `<shared-scripts-dir>/discover-verification-cmd.sh` and then the command
+   it prints. With the lock in place, it starts with
+   `.claude/skills/harness/check-snapshot.sh &&`, so the edit check is part of
+   the gate from the first commit. If the project's CI runs the verification
+   command directly rather than the discovered one, add the check there too.
+   On a Nix flake, `git add` the new files first. Done when the command
+   passes.
 
-Track every copied file in both host trees. A lock without `schemaVersion` is
-legacy v1 and Claude-only; migrate it to v2 on the next write by inferring
-`host` and `component` from each path without changing content or modified flags.
+6. **Offer the GitHub Action (optional).** If the project wants Claude in CI,
+   set up `claude-code-action` per `<skill-dir>/github-action.md`: `Skill` in
+   `--allowedTools`, and no harness-kit in the Action's `plugins` input.
 
-The `repo` field on each source records the GitHub upstream so `/harness-issue` and `/harness hoist` can route feedback and proposed changes to the right place. Omit `repo` for purely local sources.
+7. **Tell the user how to keep it healthy.** Name both in the closing
+   summary:
+   - `/doctor` (bundled with Claude Code, alias `/checkup`): ongoing setup
+     hygiene such as installation and PATH problems, unused skills and MCP
+     servers, slow hooks, and CLAUDE.md bloat. No install needed.
+   - `/harness audit`: harness structure, frontmatter validity, and the
+     snapshot. Advisory, not a gate.
 
-This file should be committed — it lets teammates run `/harness update` to sync.
+   Also recommend running `/run-skill-generator` once, to record this
+   project's real build and launch recipe as a `run-<name>` skill that `/run`
+   and `/verify` then follow. The bundled-skills table in
+   `<skill-dir>/external-plugins.md` has the rest. Done when the summary lists
+   what was written, the snapshot version, and these next steps.
 
-## Agent Recommendations
+## Agent recommendations
 
-- **Always include:** `code-reviewer` (6D review), `verifier` (validation), `test-writer` (testing), `domain-advisor` (read-only business rules)
-- **If GitHub:** Add `project-manager` (issue/PR/sprint management via `gh` CLI)
-- **If frontend:** Add `/ui-review` skill for accessibility audits
+- **Generic, vendored:** `code-reviewer` and `verifier` always;
+  `project-manager` when the project uses GitHub.
+- **Project-local, generated:** `test-writer` (the project's testing
+  conventions) and `domain-advisor` (read-only business rules) always, plus
+  any domain-specific agents.
+- **Frontend:** add the `ui-review` skill to the generic set.
