@@ -14,8 +14,10 @@
 # and .harness/lock.json records the version, each file's sha256, the hook
 # entries, and the plugin's catalog, so the next run replaces exactly what
 # this one wrote. Files the lock doesn't own are never touched, and a re-run
-# at the same version writes nothing. It does no merging: an edited vendored
-# file is overwritten.
+# at the same version writes nothing. It does no merging: when the current
+# snapshot fails check-snapshot.sh (an edited, added, or deleted vendored
+# file, or a changed hook entry) it exits 1 and writes nothing, unless
+# --discard-edits says to overwrite those changes.
 #
 # It reports, as Markdown (or JSON with --json): chosen skills and agents the
 # release removed (dropped from the snapshot), ones new since the last
@@ -23,19 +25,37 @@
 # changed upstream since the version it was forked from. That comparison reads
 # the fork's version from tag v<version> when <plugin-dir> is a git checkout.
 #
-# Usage: vendor-snapshot.sh [--json] <plugin-dir> [project-dir]
+# Usage: vendor-snapshot.sh [--json] [--discard-edits] <plugin-dir> [project-dir]
 #   <plugin-dir>   this plugin's installed root, or a release checkout
 #   [project-dir]  the project holding .harness/config.toml (default: .)
 set -euo pipefail
 
-as_json=0
-if [ "${1:-}" = --json ]; then
-  as_json=1
+usage="usage: vendor-snapshot.sh [--json] [--discard-edits] <plugin-dir> [project-dir]"
+as_json=0 discard=0
+while [ $# -gt 0 ]; do
+  case $1 in
+    --json) as_json=1 ;;
+    --discard-edits) discard=1 ;;
+    -*) echo "$usage" >&2; exit 2 ;;
+    *) break ;;
+  esac
   shift
-fi
+done
 if [ $# -lt 1 ] || [ $# -gt 2 ]; then
-  echo "usage: vendor-snapshot.sh [--json] <plugin-dir> [project-dir]" >&2
+  echo "$usage" >&2
   exit 2
+fi
+
+# Refuse to overwrite an edited snapshot: the edit check against the current
+# lock must pass first. It passes when there is no lock yet.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$discard" = 0 ] && ! "$SCRIPT_DIR/check-snapshot.sh" "${2:-.}" >/dev/null; then
+  cat >&2 <<'MSG'
+vendor-snapshot: refusing to update: the current snapshot was changed (above),
+and updating would overwrite those changes. Move the project-specific part into
+facts or declare a fork first, or pass --discard-edits to overwrite them.
+MSG
+  exit 1
 fi
 
 python3 - "$as_json" "$1" "${2:-.}" <<'PY'
