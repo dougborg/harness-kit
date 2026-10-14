@@ -13,6 +13,8 @@ Claude Code and Codex agent harness.
 
 Four catalogs live in the harness skill's folder: `external-plugins.md` (bundled skills and official plugins), `architecture-patterns.md`, `hooks-reference.md`, and `release-please-reference.md`. The caller passes their paths in your prompt. If it didn't, look for `harness/external-plugins.md` under `~/.claude/plugins/`, `~/.codex/plugins/`, and the project's `.claude/skills/` or `.agents/skills/`. Read them rather than recommending from memory. If you can't find them, say so at the top of your report, so the caller knows the plugin and pattern recommendations are unchecked.
 
+The caller also passes the names of the generic skills and agents harness-kit ships. Choose the generic set only from those names; if none were passed, list the folders beside the harness skill's folder and the plugin's `agents/`.
+
 ## Discovery Checklist
 
 ### 1. Stack Fingerprint
@@ -38,6 +40,8 @@ Find the single "does everything work?" command. Priority:
 3. `package.json` → look for `test`, `check`, or `ci` script
 4. `Cargo.toml` → `cargo test`
 5. Fallback: chain linter + type checker + test runner
+
+This is the project's first fact. Recommend it as `[facts] verification_command` in `.harness/config.toml`, even when discovery would find it, so the gate is stated rather than guessed.
 
 ### 3. Project Structure
 
@@ -92,6 +96,12 @@ Identify institutional knowledge that an agent would otherwise hallucinate:
 
 ## Output Format
 
+Sort every recommendation into one of three kinds, because each lands in a different place:
+
+- **Facts**: what is true of this project that a generic skill or agent must honor. The verification command goes in `.harness/config.toml`; everything else is prose in `AGENTS.md`'s `## Project facts` section.
+- **Project-local content**: skills, agents, and hooks that exist only for this project. They are written into the project and never vendored, so their names must not match a generic name.
+- **The generic set**: harness-kit skills and agents vendored unedited, by name. A project quirk a generic skill should honor is a fact; never recommend copying or editing a generic skill to teach it one.
+
 ### Stack Summary
 
 ```text
@@ -102,6 +112,15 @@ Linter:        ruff
 Type checker:  ty
 Test runner:   pytest
 Verify cmd:    just check
+```
+
+### Facts
+
+The verification command first, as the config line, then the `## Project facts` bullets: domain terms and where they're defined, conventions an agent would otherwise get wrong, how to deploy or release, what is off-limits. Keep each to a statement an agent acts on.
+
+```toml
+[facts]
+verification_command = "just check"
 ```
 
 ### Recommended Shared Instructions
@@ -167,20 +186,23 @@ the tracking issue's checkpoint comment.
 
 ### Recommended Agents
 
-For each, provide a Claude Markdown definition and a Codex TOML definition:
+Split the list into generic agents to vendor (name and why only) and project-local agents. For each project-local agent, provide a Claude Markdown definition and a Codex TOML definition:
 
 - **Name** and one-line description
 - **Why** — what problem it solves for this specific project
 - **Model** — Claude tier when needed; prefer Codex inheritance unless measured
 - **Permissions** — minimal Claude tools and explicit Codex read-only sandbox where promised
 
-Always recommend these universal agents (adapted to the project):
+Always recommend these generic agents, vendored as they are:
 
 - `code-reviewer` — 6-dimension review (correctness, design, readability, performance, testing, security)
-- `verifier` — skeptical validator using the project's verification command
+- `verifier` — skeptical validator that runs the project's verification command
+- `project-manager` (GitHub projects) — issue/PR/sprint management using `gh` CLI
+
+And these project-local agents, generated for the project:
+
 - `test-writer` — uses the project's testing conventions and seam patterns
 - `domain-advisor` (sonnet, Read only) — reads domain source files and answers business rule questions; read-only advisor, never executes or validates
-- `project-manager` (sonnet, Bash + Read) — GitHub issue/PR/sprint management using `gh` CLI
 
 Add domain-specific agents when there's specialized knowledge to encode (debuggers, evaluators, profilers).
 
@@ -214,14 +236,14 @@ For each, provide:
 - **Name** and one-line description
 - **Why** — what repetitive workflow it automates
 
-Always recommend these universal skills:
+Always recommend these for the generic set:
 
 - `/to-spec` and `/to-tickets` — turn a design conversation into a spec issue, then into tracer-bullet sub-issues
 - The `issue-create`, `triage`, and `groom` skills — file issues with real labels and duplicate search; move incoming issues to agent-ready briefs; prioritize the backlog
-- `/commit` — quality gate + conventional commit
+- `/commit` — conventional commit gated by the project's verification command
 - `/ui-review` — accessibility/UX audit (frontend projects)
 
-Add domain-specific skills for frequent workflows discovered in step 5.
+Add project-local skills for frequent workflows discovered in step 5 that no generic skill covers.
 
 ### Bundled Skills and Recommended Official Anthropic Plugins (optional)
 
@@ -271,7 +293,7 @@ Use the `skill-writer` skill when generating or reviewing a skill, and the `docu
 
 ### Recommended Hooks (Claude Code, `.claude/settings.json`)
 
-Hooks are always **project-local** — configured in `.claude/settings.local.json`. They reference project-specific tools and file patterns that vary across codebases. Each project gets hooks tailored to its stack during bootstrap.
+Hooks are always **project-local** — configured in the committed `.claude/settings.json`, beside the vendored harness-kit entries, or in `.claude/settings.local.json` when they hold secrets or machine paths. They reference project-specific tools and file patterns that vary across codebases. Each project gets hooks tailored to its stack during bootstrap.
 
 **Schema reference:** For plugin `hooks/hooks.json` (different shape from `settings.json`!), see `hooks-reference.md`.
 
@@ -310,13 +332,15 @@ See CLAUDE.md "Automation Philosophy" section for the full pattern.
 
 ### .gitignore Update
 
-Recommend `.gitignore` pattern to track agents, commands, and skills but ignore settings:
+Recommend a `.gitignore` pattern that commits the snapshot and project-local content but ignores local settings. The vendored hooks and `settings.json` must be committed, or a fresh clone fails the edit check:
 
 ```gitignore
 .claude/*
 !.claude/agents/
-!.claude/commands/
 !.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
+!.claude/harness-upstream
 ```
 
 ### Machine Configuration Suggestions

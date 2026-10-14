@@ -33,7 +33,7 @@ On Claude Code the modes are `/harness <mode>`; on Codex, `$harness <mode>`.
 ```text
 harness              Auto-detect: bootstrap if no harness, audit if one exists
 harness audit        Audit the current harness (delegates setup health to /doctor)
-harness bootstrap    Analyze the project, install skills and agents from the plugin, generate project-specific additions
+harness bootstrap    Analyze the project, write its facts and project-specific additions, vendor the generic set
 harness update       Pull the latest from upstream sources and smart-merge with local changes
 harness add <repo>   Add skills from another plugin marketplace
 harness retro        Post-session retrospective on the environment
@@ -49,7 +49,7 @@ each is self-contained.
 | Mode | Read | What it covers |
 | --- | --- | --- |
 | `audit` | `${CLAUDE_SKILL_DIR}/audit.md` | Audit protocol, `/doctor` division of labor, gap classification, output format |
-| `bootstrap` | `${CLAUDE_SKILL_DIR}/bootstrap.md` | harness-builder handoff, approval gate, install steps, `.harness-lock.json` creation |
+| `bootstrap` | `${CLAUDE_SKILL_DIR}/bootstrap.md` | harness-builder handoff, approval gate, facts and project-local content, vendoring the snapshot |
 | `update` | `${CLAUDE_SKILL_DIR}/update.md` | Smart-merge with upstream using lock-file provenance |
 | `add` | `${CLAUDE_SKILL_DIR}/update.md` | Installing skills from another marketplace (second half of the file) |
 | `retro` | `${CLAUDE_SKILL_DIR}/retro.md` | Environment audit, gap classification A/B/C/D/E, upstream promotion pass |

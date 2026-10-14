@@ -13,12 +13,13 @@ trim, and then generate the files. Use it early in a project's setup. Its
 recommendations are starting points that you are expected to customize.
 
 It needs a git repository (the agent reads history) and a verification
-command such as a test suite, linter, or build. The files it generates are
-the Claude Code side only. `/harness bootstrap` (or `$harness bootstrap` on
-Codex) runs the same agent as its first step and then installs for both
-Claude Code and Codex, with `.harness-lock.json` provenance; use it for a
-full two-host setup, and this skill when you want the recommendation and a
-Claude-side starting point.
+command such as a test suite, linter, or build. The agent sorts what it
+recommends into facts, project-local content, and the generic set of
+harness-kit skills and agents. This skill writes only the project-local
+Claude Code files. `/harness bootstrap` (or `$harness bootstrap` on Codex)
+runs the same agent as its first step, then writes the facts and vendors the
+generic set for both hosts; use it for a full setup, and this skill when you
+want the recommendation and a Claude-side starting point.
 
 What the agent tends to recommend, and how to read it, is in
 [recommendations.md](recommendations.md).
@@ -29,8 +30,9 @@ Dispatch the `harness-builder` agent on the current codebase. Pass it the
 absolute paths of the harness skill's catalogs so it recommends from them
 rather than from memory: `external-plugins.md`, `architecture-patterns.md`,
 `hooks-reference.md`, and `release-please-reference.md`. The harness skill sits
-beside this one, in `<skill-dir>/../harness/`, in the plugin and in project
-copies alike.
+beside this one, in `<skill-dir>/../harness/`, in the plugin and in a
+vendored snapshot alike. Also pass the generic names it can choose from: the
+skill folders beside this one and the plugin's agents.
 
 Done when the agent has returned its report and the report does not say the
 catalogs were missing; if it does, dispatch it again with the paths. When the
@@ -42,20 +44,23 @@ recommendations.md and fold the answers in.
 The report covers:
 
 - **Stack**: language, frameworks, and the verification command.
-- **Agents**: the analytical work to hand off (always code-reviewer, verifier,
-  test-writer, and domain-advisor). Judge roles and model tiers against
-  "Agents" in recommendations.md.
-- **Skills**: the workflows to provide (always `/commit`, plus GitHub and
-  frontend tools when detected). "Skills" in recommendations.md covers when
-  to extend a global skill and when to write a local one.
+- **Facts**: the verification command as `[facts] verification_command`,
+  then the prose for `AGENTS.md`'s `## Project facts` section.
+- **Agents**: the analytical work to hand off, split into generic
+  (code-reviewer, verifier) and project-local (test-writer, domain-advisor).
+  Judge roles and model tiers against "Agents" in recommendations.md.
+- **Skills**: the workflows to provide, split into the generic set (always
+  `/commit`, plus GitHub and frontend tools when detected) and project-local
+  skills. "Skills" in recommendations.md covers when a need is a fact and
+  when it is a local skill.
 - **Hooks**: formatters, validators, and guidance for auto-fixing. "Hooks" in
   recommendations.md has a working example; the reasoning behind the stages
   is in `<skill-dir>/../harness/hooks-patterns.md`.
 - **Domain knowledge**: entity types, ownership, the auth and session system,
   and the side effects of mutating core entities.
 
-Prefer the existing global skills (`/commit`, `/review-pr`) the agent points
-to, extended with project-specific variants, over generating new ones. Done
+Prefer the generic skills (`/commit`, `/review-pr`) the agent points to,
+with the project's facts stated for them, over generating new ones. Done
 when every recommendation is either accepted or explained away to the user.
 
 ## 3. Customize
@@ -67,14 +72,16 @@ list.
 
 ## 4. Generate the files
 
-After approval, generate:
+After approval, generate the project-local content only:
 
-- `.claude/agents/*.md`, one per agent, with its tool permissions and domain
-  context.
-- `.claude/skills/*/SKILL.md`, one per skill, with `allowed-tools` and a
-  description that says what it does and when.
-- `CLAUDE.md`, the harness documentation.
+- `.claude/agents/*.md`, one per project-local agent, with its tool
+  permissions and domain context.
+- `.claude/skills/*/SKILL.md`, one per project-local skill, with
+  `allowed-tools` and a description that says what it does and when.
+- `CLAUDE.md`, the harness documentation, with the facts.
 - `.gitignore` updates.
+
+The generic set is never copied by hand; `/harness bootstrap` vendors it.
 
 Then run the project's verification command to confirm the setup works. On a
 Nix flake, `git add` the new files first, because flakes only see tracked
