@@ -62,9 +62,11 @@ fi
 python3 - "$as_json" "$1" "${2:-.}" <<'PY'
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -311,26 +313,50 @@ lock = {
 }
 
 
+# Never write or remove through a symlinked directory: it could point out of
+# the project. Checked for every path before anything is written.
+for path in sorted(owned | set(want) | {".claude/settings.json", ".harness/lock.json"}):
+    for parent in Path(path).parents:
+        if parent != Path(".") and (project / parent).is_symlink():
+            die(f"{parent.as_posix()} is a symlink; the snapshot is written as real files only. "
+                "Replace it with a directory, then run this again")
+
+
 def write(path, data, mode=0o644):
-    if path.is_symlink():
-        path.unlink()
-    if path.is_file() and path.read_bytes() == data and path.stat().st_mode & 0o777 == mode:
+    """Write atomically: a temp file in the same directory, then a rename, so
+    an interrupted run leaves each file whole (old or new). A symlink at the
+    path is replaced, not followed."""
+    if not path.is_symlink() and path.is_file() and path.read_bytes() == data \
+            and path.stat().st_mode & 0o777 == mode:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    path.chmod(mode)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.chmod(tmp, mode)
+        os.replace(tmp, path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
 
 
+# Directories the snapshot shares with the project. Emptying one never
+# removes it, or anything above it.
+SHARED_DIRS = {".claude", ".agents", ".codex", ".github", ".github/workflows",
+               ".claude/skills", ".agents/skills", ".claude/agents", ".codex/agents",
+               ".claude/hooks", ".agents/scripts"}
 for path in sorted(owned - set(want)):
     if in_fork(path):
         continue  # the project's own now; it leaves the lock untouched
     p = project / path
     if p.is_file() or p.is_symlink():
         p.unlink()
-    for parent in p.parents:
-        if parent == project or not parent.is_dir() or any(parent.iterdir()):
+    for parent in Path(path).parents:
+        d = project / parent
+        if parent == Path(".") or parent.as_posix() in SHARED_DIRS or not d.is_dir() or any(d.iterdir()):
             break
-        parent.rmdir()
+        d.rmdir()
 for path, (data, mode) in sorted(want.items()):
     write(project / path, data, mode)
 if new_settings != settings:

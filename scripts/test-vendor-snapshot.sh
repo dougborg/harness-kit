@@ -365,6 +365,27 @@ printf '\n[sources.skills]\n"a/b" = "anthropics/skills@main:skills/x"\n' >>"$pro
 commit_all "$proj"
 expect_refusal bad-source-name "$proj" "not a valid name"
 
+# A symlinked directory inside the project is never written through.
+proj=$(new_project symlinked-parent '["tdd"]' '[]')
+mkdir -p "$scratch/elsewhere"
+mv "$proj/.agents/skills" "$scratch/elsewhere/skills"
+ln -s "$scratch/elsewhere/skills" "$proj/.agents/skills"
+commit_all "$proj"
+expect_refusal symlinked-parent-refused "$proj" "symlink"
+check symlink-target-untouched test ! -e "$scratch/elsewhere/skills/tdd"
+
+# Dropping the last vendored agent keeps the host directories themselves.
+proj=$(new_project last-agent '["tdd"]' '["verifier"]')
+rm "$proj/.codex/agents/domain-advisor.toml" "$proj/.claude/agents/domain-advisor.md"
+commit_all "$proj"
+run "$proj" >/dev/null
+commit_all "$proj"
+printf 'skills = ["tdd"]\nagents = []\n' >"$proj/.harness/config.toml"
+run "$proj" >/dev/null
+check last-agent-removed test ! -e "$proj/.codex/agents/verifier.toml" -a ! -e "$proj/.claude/agents/verifier.md"
+check host-agent-dirs-kept test -d "$proj/.codex/agents" -a -d "$proj/.claude/agents"
+check no-temp-files-left test -z "$(find "$proj" -name '.*.tmp*' -print)"
+
 # A lock that claims a path outside the snapshot's trees is refused before
 # anything is removed, even when the edit check is skipped.
 proj=$(new_project bad-lock '["tdd"]' '[]')
