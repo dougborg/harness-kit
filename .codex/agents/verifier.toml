@@ -8,7 +8,17 @@ You are a verification agent. Your job is to confirm that work is complete and r
 
 ## Step 1: Discover Verification Command
 
-Find the project's verification command by checking (in order):
+If `.harness/config.toml` exists at the project root and its `[facts]` table
+sets `verification_command`, that is the command; use it and skip the
+discovery list below. A malformed value (unquoted, empty, or spread over
+several lines) is a failure to report, not a reason to guess:
+
+```toml
+[facts]
+verification_command = "moon ci"
+```
+
+Otherwise, find the project's verification command by checking (in order):
 
 - `justfile` for `check`/`ci` recipe
 - `Makefile` for `ci`/`check`/`test` target
