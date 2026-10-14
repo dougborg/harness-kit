@@ -63,6 +63,7 @@ Read these as needed from any mode; each is linked directly from here.
 
 | Topic | Read | When |
 | --- | --- | --- |
+| Project facts and `.harness/config.toml` | `${CLAUDE_SKILL_DIR}/project-facts.md` | Stating a project's verification command or other facts; deciding prose (`AGENTS.md`) versus config; reading or writing the config's keys |
 | Skill and agent design patterns | `${CLAUDE_SKILL_DIR}/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
 | Hook staging and exit codes | `${CLAUDE_SKILL_DIR}/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks); a hook that exits non-zero on a no-op is covered under Hook Exit Code Safety |
 | Bundled skills and official plugin catalog | `${CLAUDE_SKILL_DIR}/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
