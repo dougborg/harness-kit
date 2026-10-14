@@ -6,12 +6,14 @@ project's `.harness/config.toml` (keys in `${CLAUDE_SKILL_DIR}/project-facts.md`
 copies real files, never symlinks, and records what it wrote in
 `.harness/lock.json`. It does no merging. Read this when a mode vendors or
 re-vendors a project, updates it to a new release, checks that a snapshot is
-unedited, or explains what the snapshot owns.
+unedited, explains what the snapshot owns, or sets up or debugs the scheduled
+update PR.
 
 - [Run it](#run-it)
 - [What it writes](#what-it-writes)
 - [What the snapshot owns](#what-the-snapshot-owns)
 - [Updating to a new release](#updating-to-a-new-release)
+- [The update workflow](#the-update-workflow)
 - [Third-party skills](#third-party-skills)
 - [The edit check](#the-edit-check)
 
@@ -48,6 +50,7 @@ changes are meant to be thrown away.
 | `.agents/scripts/shared/<name>` | each `scripts/shared/` helper a vendored open-format skill names |
 | `.codex/agents/<agent>.toml` | `.codex/agents/<agent>.toml` (generated Codex agents) |
 | `.claude/hooks/harness-kit/<name>` | the `scripts/shared/` scripts the plugin's hooks run |
+| `.github/workflows/harness-update.yml` | the harness skill's `harness-update.yml` ([The update workflow](#the-update-workflow)) |
 | `.claude/settings.json` | sets `"harness-kit@harness-kit": false` and adds the plugin's hook entries |
 | `.harness/lock.json` | the record of all of the above |
 
@@ -72,8 +75,8 @@ Codex hook config, so none is written.
 The lock lists every file the script wrote, and only those files are the
 snapshot's. On a re-run it overwrites them, removes the ones the new set no
 longer includes, and replaces the hook entries it added last time, in place.
-Anything else under `.claude/`, `.agents/`, or `.codex/` is project-local and
-never touched. A re-run at the same version and config writes nothing.
+Anything else under `.claude/`, `.agents/`, `.codex/`, or `.github/` is
+project-local and never touched. A re-run at the same version and config writes nothing.
 
 ```json
 {
@@ -150,6 +153,53 @@ and `new` (each `{"skills": [...], "agents": [...]}`), and `forks`, a list of
 `{kind, name, forked_from, status, changes}` where `status` is `changed`,
 `unchanged`, `removed`, or `not-compared` (with a `reason`), and `changes` is
 a list of `{status, path}`.
+
+## The update workflow
+
+The snapshot includes `.github/workflows/harness-update.yml`, so every
+vendored repo updates itself through a pull request that its own CI and
+review gate. It runs weekly and on `workflow_dispatch`, on the default branch
+only, and calls the vendored `.claude/skills/harness/harness-update.sh`,
+which:
+
+1. Resolves the upstream repository: the `HARNESS_UPSTREAM` repository
+   variable, then `.claude/harness-upstream`, then `dougborg/harness-kit`.
+2. Reads the upstream's latest release (`gh api repos/<upstream>/releases/latest`)
+   and stops, writing nothing, unless it is newer than the lock's `version`.
+3. Shallow-clones the release tag, fetches the `v<version>` tag of each fork
+   in the config so the fork report can compare it, and runs that release's
+   `vendor-snapshot.sh`. An edited snapshot fails here, as it would locally.
+4. Runs the diff guard (below).
+5. Commits to the branch `harness-kit/update`, force-pushes it, and opens a
+   pull request, or edits the open one, so there is only ever one. The body
+   links the release notes, includes them, and ends with the update's
+   Markdown report (removed, new, and forks). A run whose result matches the
+   branch already pushed doesn't push again.
+
+**The diff guard.** The update PR changes only snapshot-owned paths: files the
+old or new lock lists, `.harness/lock.json`, and the hook entries in
+`.claude/settings.json`. If anything else changed, the job lists the paths and
+fails without pushing. A pull request can change `.harness/config.toml`,
+whose `verification_command` the base branch's skills then run
+(`${CLAUDE_SKILL_DIR}/github-action.md`), so an update PR never touches the config or
+`AGENTS.md`; review any PR that does like code.
+
+It uses only `GITHUB_TOKEN`, with `contents: write` and
+`pull-requests: write`, which has three consequences:
+
+- The repository must allow it: Settings > Actions > General > "Allow GitHub
+  Actions to create and approve pull requests".
+- GitHub doesn't start `pull_request` workflows for a PR pushed with
+  `GITHUB_TOKEN`. Close and reopen the PR to run CI; the PR body says so.
+- `GITHUB_TOKEN` can't push a change to a workflow file. The workflow is a
+  thin wrapper so it rarely changes; when a release does change it, the job
+  fails and says so, and someone runs the update locally (the command in
+  [Run it](#run-it), from a clone of the release tag) and opens the PR.
+
+The workflow is snapshot-owned, so the edit check fails if it is edited. To
+follow a fork of harness-kit, set `HARNESS_UPSTREAM` rather than editing it.
+A release must be published as a GitHub release whose tag is `v<version>`;
+a private upstream needs a token this workflow doesn't have.
 
 ## Third-party skills
 

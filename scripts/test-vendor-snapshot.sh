@@ -101,7 +101,7 @@ check no-symlinks test -z "$(find "$proj" -type l)"
 # --- The lock ----------------------------------------------------------------
 lock="$proj/.harness/lock.json"
 check lock-records-version test "$(json "d['version']" "$lock")" = "$version"
-expected=$(cd "$proj" && find .claude/skills .agents/skills .claude/agents .codex/agents .agents/scripts .claude/hooks/harness-kit \
+expected=$(cd "$proj" && find .claude/skills .agents/skills .claude/agents .codex/agents .agents/scripts .claude/hooks/harness-kit .github \
   -type f ! -path '*/local-thing/*' ! -name 'domain-advisor.*' | sed 's#^\./##' | LC_ALL=C sort)
 recorded=$(json "'\n'.join(sorted(d['files']))" "$lock")
 check lock-lists-every-vendored-file test "$expected" = "$recorded"
@@ -116,6 +116,8 @@ sys.exit(any(hashlib.sha256((root / f).read_bytes()).hexdigest() != h for f, h i
 PY
 }
 check lock-hash-per-file hashes_match "$proj"
+check update-workflow-vendored cmp "$plugin/skills/meta/harness/harness-update.yml" "$proj/.github/workflows/harness-update.yml"
+check update-workflow-in-lock test "$(json "'.github/workflows/harness-update.yml' in d['files']" "$lock")" = True
 check lock-records-chosen-skills test "$(json "' '.join(sorted(d['skills']))" "$lock")" = "commit harness tdd"
 check lock-records-chosen-agents test "$(json "' '.join(sorted(d['agents']))" "$lock")" = "verifier"
 
@@ -176,6 +178,9 @@ check discard-edits-leaves-tree-clean test -z "$(git -C "$proj" status --porcela
 echo 'stray' >"$proj/.agents/skills/tdd/extra.md"
 expect_guard added-file-refused "added: .agents/skills/tdd/extra.md"
 rm "$proj/.agents/skills/tdd/extra.md"
+sed -i.bak 's/23 7/0 0/' "$proj/.github/workflows/harness-update.yml" && rm "$proj/.github/workflows/harness-update.yml.bak"
+expect_guard edited-workflow-refused "edited: .github/workflows/harness-update.yml"
+git -C "$proj" checkout -q -- .
 rm "$proj/.claude/hooks/harness-kit/retro-nudge.sh"
 expect_guard deleted-file-refused "deleted: .claude/hooks/harness-kit/retro-nudge.sh"
 git -C "$proj" checkout -q -- .

@@ -1,0 +1,40 @@
+# Vendored by harness-kit's vendor-snapshot.sh and owned by .harness/lock.json:
+# the next update replaces this file, and the edit check fails if it is edited.
+#
+# When harness-kit publishes a release newer than the snapshot in
+# .harness/lock.json, this opens (or updates) one pull request that replaces
+# the snapshot. The PR changes only the snapshot's files, .harness/lock.json,
+# and the hook entries in .claude/settings.json; the job fails rather than
+# push anything else. It uses only GITHUB_TOKEN. The repository must allow
+# GitHub Actions to create pull requests (Settings > Actions > General).
+# The steps live in the vendored harness skill, so this file rarely changes:
+# GITHUB_TOKEN can't push a change to a workflow file.
+name: Harness update
+
+on:
+  schedule:
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: harness-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Update the vendored harness snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # owner/repo of the harness to follow; unset means
+          # .claude/harness-upstream, then dougborg/harness-kit.
+          HARNESS_UPSTREAM: ${{ vars.HARNESS_UPSTREAM }}
+        run: .claude/skills/harness/harness-update.sh
