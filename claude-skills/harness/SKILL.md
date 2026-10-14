@@ -3,15 +3,16 @@ name: harness
 description: >-
   Audits, bootstraps, updates, and improves a project's agent harness: the
   skills, agents, hooks, and instructions for Claude Code and Codex. Modes:
-  audit, bootstrap, update, add, retro, hoist; each reads its own protocol
-  reference.
+  audit, bootstrap, update, add, migrate, retro, hoist; each reads its own
+  protocol reference.
 when_to_use: >-
-  When the user asks to audit, bootstrap, update, or retro a harness; when
-  setting up Claude Code and Codex project harnesses; when adding skills from
-  another marketplace; and when a harness mode hands off to another mode
-  (retro to hoist).
-argument-hint: "[audit|bootstrap|update|add|retro|hoist]"
-allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh*), Bash(${CLAUDE_SKILL_DIR}/vendor-snapshot.sh*), Bash(${CLAUDE_SKILL_DIR}/check-snapshot.sh*), Read, Glob, Write, Edit
+  When the user asks to audit, bootstrap, update, migrate, or retro a harness;
+  when setting up Claude Code and Codex project harnesses; when moving a
+  project off `.harness-lock.json`; when adding skills from another
+  marketplace; and when a harness mode hands off to another mode (retro to
+  hoist).
+argument-hint: "[audit|bootstrap|update|add|migrate|retro|hoist]"
+allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh*), Bash(${CLAUDE_SKILL_DIR}/vendor-snapshot.sh*), Bash(${CLAUDE_SKILL_DIR}/check-snapshot.sh*), Bash(${CLAUDE_SKILL_DIR}/migrate-inventory.sh*), Read, Glob, Write, Edit
 ---
 
 # Harness
@@ -38,12 +39,14 @@ harness audit        Audit the current harness (delegates setup health to /docto
 harness bootstrap    Analyze the project, write its facts and project-specific additions, vendor the generic set
 harness update       Re-vendor the snapshot from a newer harness-kit release
 harness add <repo>   Vendor skills from another repository
+harness migrate      Move a copy-and-edit harness (.harness-lock.json) to a vendored snapshot
 harness retro        Post-session retrospective on the environment
 harness hoist        Propose generic local improvements back upstream
 ```
 
 With no mode given, run `bootstrap` if none of `.claude/`, `.agents/`, or
-`.codex/` holds harness content, and `audit` otherwise.
+`.codex/` holds harness content, and `audit` otherwise. A project with a
+`.harness-lock.json` predates vendoring: suggest `migrate` before auditing.
 
 Read the file for the selected mode before doing any work, and only that one;
 each is self-contained.
@@ -54,6 +57,7 @@ each is self-contained.
 | `bootstrap` | `${CLAUDE_SKILL_DIR}/bootstrap.md` | harness-builder handoff, approval gate, facts and project-local content, vendoring the snapshot |
 | `update` | `${CLAUDE_SKILL_DIR}/update.md` | Running the vendoring script against a newer release; acting on its report |
 | `add` | `${CLAUDE_SKILL_DIR}/update.md` | Adding third-party skills to the vendored set (second half of the file) |
+| `migrate` | `${CLAUDE_SKILL_DIR}/migrate.md` | Inventory of `.harness-lock.json` copies, each edit to a fact or fork, preview gate, vendoring |
 | `retro` | `${CLAUDE_SKILL_DIR}/retro.md` | Environment audit, gap classification A/B/C/D/E, routing lessons to facts, local skills, or hoist |
 | `hoist` | `${CLAUDE_SKILL_DIR}/hoist.md` | Proposing project-local content, facts patterns, and forks back upstream |
 
