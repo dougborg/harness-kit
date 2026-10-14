@@ -5,7 +5,8 @@ generic skills, agents, and hooks into a project (ADR 0001). It reads the
 project's `.harness/config.toml` (keys in `${CLAUDE_SKILL_DIR}/project-facts.md`),
 copies real files, never symlinks, and records what it wrote in
 `.harness/lock.json`. It does no merging. Read this when a mode vendors or
-re-vendors a project, or when explaining what the snapshot owns.
+re-vendors a project, checks that a snapshot is unedited, or explains what
+the snapshot owns.
 
 ## Run it
 
@@ -71,7 +72,7 @@ never touched. A re-run at the same version and config writes nothing.
 - `skills`, `agents`: each vendored name and its source, `harness-kit` or a
   third-party source string.
 - `hooks.claude`: the entries added to `.claude/settings.json`, by event.
-- `files`: each vendored file's SHA-256, which an edit check compares against.
+- `files`: each vendored file's SHA-256, which the edit check compares against.
 
 ## Third-party skills
 
@@ -80,3 +81,42 @@ A skill from another repository is listed in `skills` and given a source in
 records that source in place of `harness-kit`. Fetching sources isn't
 implemented yet: a chosen skill with a source makes the script exit 1 and
 name it, and a source must be for a name in `skills`.
+
+## The edit check
+
+`${CLAUDE_SKILL_DIR}/check-snapshot.sh [project-dir]` compares the project with
+`.harness/lock.json` and fails on any change to the snapshot, naming each
+file and the fix: move the project-specific part into facts
+(`.harness/config.toml` or the `## Project facts` section of `AGENTS.md`), or
+declare a fork. It reports:
+
+- `edited:` a vendored file whose SHA-256 differs from the lock, or that was
+  replaced by a symlink.
+- `deleted:` a vendored file that is gone.
+- `added:` a file in a vendored skill's directory that the lock doesn't list.
+- `hook:` a vendored hook entry edited or removed in `.claude/settings.json`.
+
+Skills and agents named in `[forks.skills]` or `[forks.agents]` pass, even
+before the next vendoring run drops them from the lock. Project-local files,
+other hook entries, the config, and `AGENTS.md` are never checked. It needs
+`python3`, and 3.11 or later when the config exists.
+
+| Exit | Meaning |
+| --- | --- |
+| 0 | The snapshot is unedited, or there is no lock: not a vendored project, nothing to check |
+| 1 | A vendored file or hook entry changed, or the lock, config, or settings can't be parsed |
+| 2 | Bad usage |
+
+It runs as part of the project's gate without a config change.
+`discover-verification-cmd.sh` prints
+`.claude/skills/harness/check-snapshot.sh && <command>` whenever
+`.harness/lock.json` exists (the `.agents/skills/harness/` copy when the
+Claude tree lacks one), so every skill that runs the discovered gate (commit,
+open-pr, review-pr, rebase) and the verifier agent run the check first. A
+project without a lock gets the same output as before. A lock with no
+vendored check script makes discovery exit 1. A CI workflow that runs the
+gate command directly, rather than the discovered one, adds the check itself.
+
+Inside the GitHub Action, a pull request runs the base branch's `.claude/`
+against the PR's lock (`${CLAUDE_SKILL_DIR}/github-action.md`), so the check reports
+an update PR's new files as edited there. Run it in the project's own CI.

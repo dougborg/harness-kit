@@ -57,6 +57,12 @@ Otherwise, find the project's verification command by checking (in order):
 - `flake.nix` → `nix flake check`
 - `pyproject.toml` (no poe) → `pytest`
 
+In a vendored project (`.harness/lock.json` exists), the gate also runs the
+snapshot edit check first:
+`.claude/skills/harness/check-snapshot.sh && <command>`. Use the
+`.agents/skills/harness/` copy when the `.claude/` one is absent. Its failure
+names each changed vendored file and is a validation failure like any other.
+
 ## Checklist
 
 Run these checks in order. Stop early if a critical check fails.

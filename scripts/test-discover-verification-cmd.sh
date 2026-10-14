@@ -92,4 +92,33 @@ verification_command = moon ci
 TOML
 expect unquoted-value-fails "$dir" "" 1
 
+# A vendored project (one with .harness/lock.json) runs the snapshot edit
+# check before its gate, from whichever host tree holds the harness skill.
+# vendored <name> <host tree...>: a project with a lock and the check script
+vendored() {
+  local dir tree
+  dir=$(new_repo "$1")
+  shift
+  echo '{}' >"$dir/.harness/lock.json"
+  for tree in "$@"; do
+    mkdir -p "$dir/$tree/skills/harness"
+    printf '#!/bin/sh\n' >"$dir/$tree/skills/harness/check-snapshot.sh"
+    chmod +x "$dir/$tree/skills/harness/check-snapshot.sh"
+  done
+  echo "$dir"
+}
+
+dir=$(vendored vendored-discovered .claude .agents)
+expect vendored-prefixes-check "$dir" ".claude/skills/harness/check-snapshot.sh && just check"
+
+dir=$(vendored vendored-config .claude .agents)
+printf '[facts]\nverification_command = "moon ci"\n' >"$dir/.harness/config.toml"
+expect vendored-prefixes-config "$dir" ".claude/skills/harness/check-snapshot.sh && moon ci"
+
+dir=$(vendored vendored-codex-only .agents)
+expect vendored-codex-tree "$dir" ".agents/skills/harness/check-snapshot.sh && just check"
+
+dir=$(vendored vendored-no-check)
+expect vendored-without-check-fails "$dir" "" 1
+
 exit "$fail"
