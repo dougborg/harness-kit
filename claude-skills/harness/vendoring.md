@@ -40,6 +40,14 @@ or declare a fork, and run it again. `--discard-edits` skips the check and
 overwrites those changes with the pristine snapshot; use it only when the
 changes are meant to be thrown away.
 
+Each file is written to a temporary file beside it and renamed into place,
+so a file is never left half-written, and the script refuses to write through
+a directory inside the project that is a symlink. A run that is interrupted
+part-way (killed, or out of disk) can still leave the snapshot mixed: some
+files from the new release, the lock still at the old one. The edit check
+then reports the new files as edited. Run the same command again with
+`--discard-edits` to re-vendor cleanly.
+
 ## What it writes
 
 | Path | From the plugin root |
