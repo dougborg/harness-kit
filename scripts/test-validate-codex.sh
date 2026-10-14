@@ -64,4 +64,8 @@ cat >>"$work/skills/engineering/rebase/assess.sh" <<'SH'
 SH
 expect missing-sibling-call fail "calls no-such-helper.sh"
 
+copy old-lock
+echo '- Create .harness-lock.json tracking every installed file' >>"$work/skills/meta/harness/bootstrap.md"
+expect bootstrap-writes-old-lock fail "bootstrap writes .harness/lock.json, not .harness-lock.json"
+
 exit "$fail"
