@@ -94,11 +94,20 @@ except tomllib.TOMLDecodeError as e:
     die(f"{config_path}: {e}")
 
 
+def valid(where, names_):
+    """Every name becomes a path component, so it must be exactly one."""
+    for n in names_:
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", n) or ".." in n:
+            die(f"{config_path}: {where}: \"{n}\" is not a valid name "
+                "(letters, digits, '.', '_', '-'; no '..' or '/')")
+    return names_
+
+
 def names(key):
     value = config.get(key, [])
     if not isinstance(value, list) or not all(isinstance(n, str) for n in value):
         die(f"{config_path}: {key} must be an array of names")
-    return set(value)
+    return set(valid(key, value))
 
 
 def table(*keys):
@@ -107,6 +116,7 @@ def table(*keys):
         value = value.get(key, {}) if isinstance(value, dict) else None
     if not isinstance(value, dict) or not all(isinstance(v, str) for v in value.values()):
         die(f"{config_path}: [{'.'.join(keys)}] must map names to strings")
+    valid(f"[{'.'.join(keys)}]", value)
     return value
 
 
@@ -163,6 +173,9 @@ hook_scripts, codex_helpers = set(), set()
 vendored_hook = re.compile(re.escape(HOOK_DIR) + r"/([\w.-]+)")
 
 
+# rewrite() also records the shared scripts each file names into hook_scripts
+# and codex_helpers, so every add_file() call must run before the loop below
+# that copies those scripts.
 def rewrite(text):
     hook_scripts.update(claude_root.findall(text))
     text = claude_root.sub(r"${CLAUDE_PROJECT_DIR}/" + HOOK_DIR + r"/\1", text)

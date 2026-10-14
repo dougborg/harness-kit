@@ -347,6 +347,47 @@ proj=$(new_project bad-source '["frontend-design"]' '[]')
 printf '\n[sources.skills]\nfrontend-design = "frontend-design"\n' >>"$proj/.harness/config.toml"
 commit_all "$proj"
 expect_refusal malformed-source "$proj" "owner/repo@ref:path"
+# A name is one path component: anything else could escape the snapshot.
+n=0
+for bad in '..' '.' '' 'a/b'; do
+  n=$((n + 1))
+  proj=$(new_project "bad-skill-name-$n" "[\"$bad\"]" '[]')
+  expect_refusal "bad-skill-name '$bad'" "$proj" "not a valid name"
+done
+proj=$(new_project bad-agent-name '[]' '["../verifier"]')
+expect_refusal bad-agent-name "$proj" "not a valid name"
+proj=$(new_project bad-fork-name '["tdd"]' '[]')
+printf '\n[forks.skills]\n"../tdd" = "1.0.0"\n' >>"$proj/.harness/config.toml"
+commit_all "$proj"
+expect_refusal bad-fork-name "$proj" "not a valid name"
+proj=$(new_project bad-source-name '["tdd"]' '[]')
+printf '\n[sources.skills]\n"a/b" = "anthropics/skills@main:skills/x"\n' >>"$proj/.harness/config.toml"
+commit_all "$proj"
+expect_refusal bad-source-name "$proj" "not a valid name"
+
+# A lock that claims a path outside the snapshot's trees is refused before
+# anything is removed, even when the edit check is skipped.
+proj=$(new_project bad-lock '["tdd"]' '[]')
+run "$proj" >/dev/null
+commit_all "$proj"
+echo keep >"$scratch/outside.txt"
+for claimed in '../outside.txt' '.claude/skills/../../../outside.txt' 'AGENTS.md' '.github/workflows/ci.yml'; do
+  python3 - "$proj/.harness/lock.json" "$claimed" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p)); d["files"][sys.argv[2]] = "0" * 64; open(p, "w").write(json.dumps(d))
+PY
+  set +e
+  out=$("$vendor" --discard-edits "$plugin" "$proj" 2>&1)
+  rc=$?
+  set -e
+  if [ "$rc" = 1 ] && [[ "$out" == *"refusing to manage $claimed"* ]] && [ -f "$scratch/outside.txt" ]; then
+    pass "lock-path-refused $claimed"
+  else
+    flunk "lock-path-refused $claimed: exit $rc: $out"
+  fi
+  git -C "$proj" checkout -q -- .
+done
 
 # A forked skill is the project's own: listed in skills, never vendored.
 proj=$(new_project forked '["tdd", "commit"]' '[]')
