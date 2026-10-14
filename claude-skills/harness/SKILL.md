@@ -68,6 +68,7 @@ Read these as needed from any mode; each is linked directly from here.
 | Bundled skills and official plugin catalog | `${CLAUDE_SKILL_DIR}/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
 | Multi-agent architecture patterns | `${CLAUDE_SKILL_DIR}/architecture-patterns.md` | Bootstrap picks an architecture pattern for the project |
 | Plugin `hooks.json` schema | `${CLAUDE_SKILL_DIR}/hooks-reference.md` | Writing or debugging a plugin's `hooks/hooks.json` |
+| Claude Code GitHub Action in CI | `${CLAUDE_SKILL_DIR}/github-action.md` | Setting up or auditing a workflow that runs `claude-code-action` on a repo with a vendored snapshot |
 | Release Please setup | `${CLAUDE_SKILL_DIR}/release-please-reference.md` | Recommending automated semver releases for a Conventional Commits + GitHub project |
 
 ## Treat the audit as advice
