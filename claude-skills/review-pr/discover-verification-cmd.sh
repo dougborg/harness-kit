@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # Discover the project's verification/CI command.
 #
-# Searches for common project configuration files and returns the
-# appropriate test/check command. Exits 1 if no verification command found.
+# A project that states its gate in .harness/config.toml wins:
+#
+#   [facts]
+#   verification_command = "moon ci"
+#
+# Otherwise searches for common project configuration files and returns the
+# appropriate test/check command. Exits 1 if no verification command found,
+# or if the config sets the key to something other than a non-empty
+# one-line string.
 #
 # Usage: discover-verification-cmd.sh [directory]
 # Output: Prints the verification command to stdout
@@ -11,6 +18,56 @@ set -euo pipefail
 
 dir="${1:-.}"
 cd "$dir"
+
+# Read [facts].verification_command from the config. Exit 0 and print it when
+# set, 3 when the file or key is absent, 2 when the value is malformed.
+# shortcut: one-line TOML strings in a [facts] table only (no dotted keys,
+# multi-line strings, or \u escapes) | revisit when a project needs them
+config_cmd() {
+  [ -f .harness/config.toml ] || return 3
+  awk '
+    function bad(msg) { print FILENAME ":" NR ": " msg > "/dev/stderr"; status = 2; exit }
+    /^[[:space:]]*\[/ {
+      in_facts = ($0 ~ /^[[:space:]]*\[[[:space:]]*facts[[:space:]]*\][[:space:]]*(#.*)?$/)
+      next
+    }
+    in_facts && /^[[:space:]]*"?verification_command"?[[:space:]]*=/ {
+      v = $0
+      sub(/^[^=]*=[[:space:]]*/, "", v)
+      q = substr(v, 1, 1)
+      if (q != "\"" && q != "'\''") bad("verification_command must be a quoted string")
+      out = ""; closed = 0
+      for (i = 2; i <= length(v); i++) {
+        c = substr(v, i, 1)
+        if (c == q) { closed = 1; break }
+        if (q == "\"" && c == "\\") {
+          i++; e = substr(v, i, 1)
+          if (e == "\"" || e == "\\") c = e
+          else if (e == "t") c = "\t"
+          else bad("unsupported escape \\" e " in verification_command")
+        }
+        out = out c
+      }
+      rest = substr(v, i + 1)
+      if (!closed) bad("verification_command string is not closed on its line")
+      if (rest !~ /^[[:space:]]*(#.*)?$/) bad("unexpected text after verification_command")
+      if (out == "") bad("verification_command is empty")
+      print out; status = 0; exit
+    }
+    END { exit (status == "" ? 3 : status) }
+  ' .harness/config.toml
+}
+
+set +e
+from_config=$(config_cmd)
+config_status=$?
+set -e
+if [ "$config_status" -eq 0 ]; then
+  echo "$from_config"
+  exit 0
+elif [ "$config_status" -ne 3 ]; then
+  exit 1
+fi
 
 if [ -f justfile ] && grep -qE '^(check|ci):' justfile; then
   recipe=$(grep -oE '^(ci|check):' justfile | head -1 | tr -d ':')

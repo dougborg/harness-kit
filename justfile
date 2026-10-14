@@ -8,7 +8,11 @@ check: validate-all lint-shell lint-md hygiene
 validate-all: validate validate-codex validate-hooks tests
 
 # Every regression test script
-tests: test-hooks test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-codex-install
+tests: test-hooks test-discover-verification-cmd test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-codex-install
+
+# Resolve the verification command from .harness/config.toml and by discovery
+test-discover-verification-cmd:
+    ./scripts/test-discover-verification-cmd.sh
 
 # Exercise rebase preflight against throwaway repos with a local bare origin
 test-rebase-preflight:
