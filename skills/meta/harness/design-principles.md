@@ -22,9 +22,9 @@ Commands are legacy in Claude Code — skills supersede them. Always use skills.
 - Skills have richer frontmatter (`context: fork`, `user-invocable`, etc.)
 - If a skill and command share the same name, the skill takes precedence
 
-**Plugin distribution:** Skills and agents are distributed via the harness-kit plugin. `/harness bootstrap` copies them into the project's `.claude/` directory so they're committed and portable.
+**Plugin distribution:** Skills and agents are distributed via the harness-kit plugin and vendored into each project as a pristine snapshot (`.claude/`, `.agents/`, `.codex/`), committed so collaborators, cloud sessions, and CI get them without installing anything. The project disables the plugin so only the snapshot loads.
 
-**Project-local extension pattern:** When a project needs to customize an upstream skill, modify the local copy and mark it as `modified: true` in `.harness-lock.json`. `/harness update` will warn before overwriting modified files.
+**Customizing a vendored skill:** Nobody edits a vendored file ([ADR 0001](https://github.com/dougborg/harness-kit/blob/main/docs/adr/0001-vendored-harness-snapshots.md)). A project states what is specific to it as facts, which generic skills read: machine-read keys in `.harness/config.toml`, prose in `AGENTS.md`'s `## Project facts` (`<skill-dir>/project-facts.md`). A need the facts can't express becomes a fork, declared in the config, that the project owns outright; update leaves it alone and reports upstream changes since. A generic improvement goes upstream through hoist and returns in the next update. When writing a generic skill, read the fact rather than hard-coding a project's answer, so no project has to fork it.
 
 ## Progressive Disclosure and File Size
 
@@ -88,7 +88,7 @@ When a global skill already exists, project-local versions should:
 - Reference the global skill for the core protocol
 - Add value, don't reimplement
 
-Example: `/commit` (upstream) handles conventional format; project-local `/commit` adds project-specific quality gates (e.g., `nix flake check`, `cargo clippy`, `npm run lint`).
+Example: `/commit` (upstream) runs the project's quality gate, which it reads from `[facts] verification_command` (e.g., `nix flake check`, `moon ci`). The project states the fact; it doesn't write a second `/commit`. A project-local skill earns its place with a workflow upstream doesn't have, such as a domain-specific debug loop.
 
 ## Prerequisite Automation
 

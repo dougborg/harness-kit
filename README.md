@@ -74,7 +74,14 @@ Then in your project:
 /harness bootstrap
 ```
 
-This analyzes your project, recommends which skills/agents to install, copies them to `.claude/`, generates project-specific additions, and creates a `.harness-lock.json` tracking provenance.
+This analyzes your project, writes its facts (starting with the verification
+command) and any project-specific skills and agents, and vendors the generic
+skills and agents you choose as a snapshot in `.claude/`, `.agents/`, and
+`.codex/`. Commit the result; the repo then works without the plugin.
+
+Upgrading a project bootstrapped before 2.0.0 (one with a
+`.harness-lock.json`): run `/harness migrate` once. It turns edited copies
+into facts or forks and vendors the snapshot.
 
 ## Install for Codex CLI
 
@@ -88,9 +95,9 @@ example `$harness audit` or `$code-reviewer`. Claude Code uses `/harness audit`
 and `/code-reviewer`.
 
 Codex plugins are available in the CLI but not loaded directly by the IDE
-extension. Run `$harness bootstrap` once to install repository-local
+extension. Run `$harness bootstrap` once to vendor repository-local
 `AGENTS.md`, `.agents/skills/`, and `.codex/agents/` content for both CLI and
-IDE use. Bootstrap installs both Claude and Codex destinations by default.
+IDE use. Bootstrap vendors both Claude and Codex destinations by default.
 
 Each skill's `agents/openai.yaml` declares whether the agent may start it on
 its own. User-invoked skills (such as `/groom`, `/rebase`, `/standup`) run only
@@ -100,29 +107,52 @@ implicitly and reports it unsupported when selected explicitly.
 
 ## How it works
 
-1. **Plugins provide skills globally** — each host loads its native manifest
-2. **`harness bootstrap` copies to your project** — selected skills and agents go into `.claude/`, `.agents/`, and `.codex/` and are committed
-3. **Every repo is self-contained** — Anyone cloning your repo gets the full harness without needing the plugin
-4. **`harness update` syncs changes** — smart-merges each host destination, preserving local modifications
-5. **`.harness-lock.json` tracks provenance** — Which files came from where, what's been locally modified
+Each project carries a vendored snapshot of harness-kit's generic skills and
+agents that nobody edits, and customizes them through facts. The reasons and
+the rejected alternatives are in
+[ADR 0001](docs/adr/0001-vendored-harness-snapshots.md).
 
-## Multi-source
+1. **The snapshot is committed.** Bootstrap vendors the chosen skills, agents,
+   and hooks into `.claude/`, `.agents/`, and `.codex/`, and sets
+   `"harness-kit@harness-kit": false` in `.claude/settings.json` so only the
+   snapshot loads. Collaborators, cloud sessions, CI, and the Codex IDE
+   extension get the harness with no install.
+2. **Facts say what is specific to the project.** `.harness/config.toml`
+   lists the chosen skills and holds machine-read keys such as
+   `verification_command`; prose facts go in a `## Project facts` section of
+   `AGENTS.md`. Generic skills read both.
+3. **An edit check keeps the snapshot pristine.** `.harness/lock.json` records
+   the snapshot's version and a hash for every file, and the verification
+   command fails when a vendored file changes, naming the fix.
+4. **A fork is the escape hatch.** When facts can't express a need, the
+   project declares a fork in the config and owns that skill or agent
+   outright. Updates leave it alone and report what changed upstream since.
+5. **Update PRs keep every project on one version.** A scheduled workflow
+   re-vendors the snapshot on each release and opens a PR, which goes through
+   the project's own CI and review. `harness update` does the same by hand.
+6. **Lessons go upstream.** `harness retro` sends a project lesson to facts or
+   a project-local skill, and a generic one upstream as a hoist PR, which
+   returns to every project in the next update PR.
 
-You can install skills from multiple plugin marketplaces:
+## Third-party skills
+
+`harness add <repo>` adds skills from another repository to the snapshot,
+recorded with their source in the config's `[sources.skills]` and covered by
+the same lock, edit check, and forks:
 
 ```bash
-/harness add vercel-labs/agent-skills    # React/Next.js skills
-/harness add pbakaus/impeccable          # Frontend design skills
+/harness add anthropics/skills
 ```
 
-The lock file tracks all sources.
+Fetching third-party sources is not implemented yet: the vendoring script
+validates and records a source, then stops with an error naming the skill.
 
 ## Philosophy
 
 - **Quality over quantity** — a focused catalog, not a sprawling one. Each skill is well-structured with progressive disclosure.
 - **Self-improving** — `/harness retro` identifies gaps after sessions; `/harness hoist` proposes upstream improvements.
 - **Scripts over inline bash** — Shell logic is extracted to testable scripts, not inlined in skills.
-- **Composition over duplication** — Project-local skills extend upstream skills with project-specific flavor.
+- **Facts over forks** — projects shape generic skills by stating facts the skills read, not by editing copies. Project-local skills add workflows upstream doesn't have.
 
 ## Compatibility model
 
