@@ -8,7 +8,7 @@ check: validate-all lint-shell lint-md hygiene
 validate-all: validate validate-codex validate-hooks tests
 
 # Every regression test script
-tests: test-hooks test-discover-verification-cmd test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-vendor-snapshot test-check-snapshot test-codex-install
+tests: test-hooks test-discover-verification-cmd test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-vendor-snapshot test-check-snapshot test-harness-update test-codex-install
 
 # Resolve the verification command from .harness/config.toml and by discovery
 test-discover-verification-cmd:
@@ -77,6 +77,10 @@ test-vendor-snapshot:
 # Edit, add, and delete files in vendored scratch projects and run the edit check
 test-check-snapshot:
     ./scripts/test-check-snapshot.sh
+
+# Run the vendored update workflow's script against a scratch upstream and a stub gh
+test-harness-update:
+    ./scripts/test-harness-update.sh
 
 # Install the repository through an isolated Codex marketplace/profile
 test-codex-install:
