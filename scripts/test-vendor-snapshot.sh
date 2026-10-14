@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Scratch-repo tests for skills/meta/harness/vendor-snapshot.sh: vendor a
 # chosen subset from a scratch copy of this plugin into scratch projects and
-# check both host trees, the lock, settings, hooks, and re-run behavior.
-# The assertions grep for literal ${...} text, so single quotes are meant.
-# shellcheck disable=SC2016
+# check both host trees, the lock, settings, hooks, re-run behavior, and an
+# update from release A to B with forks, removed skills, and new ones.
+# The assertions grep for literal ${...} text, so single quotes are meant, and
+# some helpers are only called through check.
+# shellcheck disable=SC2016,SC2329
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -24,15 +26,19 @@ check() {
   if "$@" >/dev/null 2>&1; then pass "$name"; else flunk "$name"; fi
 }
 
-# The plugin: the working tree's tracked and new files, like a release checkout.
+# new_plugin <dir>: the working tree's tracked and new files, like a release
+# checkout without its git history.
+new_plugin() {
+  mkdir -p "$1"
+  (
+    cd "$repo_root"
+    git ls-files -z -co --exclude-standard | while IFS= read -r -d '' f; do
+      if [ -e "$f" ] || [ -L "$f" ]; then printf '%s\0' "$f"; fi
+    done | xargs -0 tar cf -
+  ) | tar xf - -C "$1"
+}
 plugin="$scratch/plugin"
-mkdir -p "$plugin"
-(
-  cd "$repo_root"
-  git ls-files -z -co --exclude-standard | while IFS= read -r -d '' f; do
-    if [ -e "$f" ] || [ -L "$f" ]; then printf '%s\0' "$f"; fi
-  done | xargs -0 tar cf -
-) | tar xf - -C "$plugin"
+new_plugin "$plugin"
 vendor="$plugin/skills/meta/harness/vendor-snapshot.sh"
 version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$plugin/.claude-plugin/plugin.json")
 
@@ -99,13 +105,17 @@ expected=$(cd "$proj" && find .claude/skills .agents/skills .claude/agents .code
   -type f ! -path '*/local-thing/*' ! -name 'domain-advisor.*' | sed 's#^\./##' | LC_ALL=C sort)
 recorded=$(json "'\n'.join(sorted(d['files']))" "$lock")
 check lock-lists-every-vendored-file test "$expected" = "$recorded"
-hashes_ok=true
-while IFS= read -r f; do
-  want=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["files"][sys.argv[2]])' "$lock" "$f")
-  got=$(shasum -a 256 "$proj/$f" | cut -d' ' -f1)
-  [ "$want" = "$got" ] || hashes_ok=false
-done <<<"$recorded"
-check lock-hash-per-file "$hashes_ok"
+# hashes_match <project>: every file in the lock is on disk with its hash.
+hashes_match() {
+  python3 - "$1" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+files = json.loads((root / ".harness/lock.json").read_text())["files"]
+sys.exit(any(hashlib.sha256((root / f).read_bytes()).hexdigest() != h for f, h in files.items()))
+PY
+}
+check lock-hash-per-file hashes_match "$proj"
 check lock-records-chosen-skills test "$(json "' '.join(sorted(d['skills']))" "$lock")" = "commit harness tdd"
 check lock-records-chosen-agents test "$(json "' '.join(sorted(d['agents']))" "$lock")" = "verifier"
 
@@ -164,6 +174,103 @@ check dropped-hook-entry-removed test "$(json "'Stop' in d['hooks']" "$settings"
 check project-hook-survives-update test "$(json "d['hooks']['PostToolUse'][0]['hooks'][0]['command']" "$settings")" = "./.claude/hooks/fmt.sh"
 check local-survives-update test -f "$proj/.claude/skills/local-thing/SKILL.md" -a -f "$proj/.claude/agents/domain-advisor.md"
 
+# --- Updating from release A to B, with forks ----------------------------------
+# A release checkout: a git clone holding tag v<A>, whose files then become B.
+up_plugin="$scratch/plugin-up"
+new_plugin "$up_plugin"
+git -C "$up_plugin" init -q
+git -C "$up_plugin" add -A
+git -C "$up_plugin" -c user.name=t -c user.email=t@t commit -qm release
+git -C "$up_plugin" tag "v$version"
+proj=$(new_project update '["commit", "tdd", "grilling", "pr-body"]' '["verifier", "code-reviewer"]')
+"$vendor" "$up_plugin" "$proj" >/dev/null
+commit_all "$proj"
+
+# The project forks tdd and verifier from A (and edits its copies), forks
+# pr-body from a version with no tag, and forks domain-modeling, which B drops.
+cat >>"$proj/.harness/config.toml" <<TOML
+
+[forks.skills]
+tdd = "$version"
+pr-body = "0.0.1"
+domain-modeling = "$version"
+
+[forks.agents]
+verifier = "$version"
+TOML
+echo 'fork edit' >>"$proj/.claude/skills/tdd/SKILL.md"
+echo 'fork edit' >>"$proj/.claude/agents/verifier.md"
+commit_all "$proj"
+fork_paths=(.claude/skills/tdd .agents/skills/tdd .claude/skills/pr-body .agents/skills/pr-body
+  .claude/agents/verifier.md .codex/agents/verifier.toml)
+fork_sum() { (cd "$proj" && find "${fork_paths[@]}" -type f | LC_ALL=C sort | xargs shasum -a 256); }
+fork_before=$(fork_sum)
+
+# Release B: commit changes (a file edited, one added, one deleted), tdd
+# changes upstream, grilling and domain-modeling are removed, and a skill and
+# an agent are new.
+(
+  cd "$up_plugin"
+  for d in skills/engineering/commit claude-skills/commit; do
+    echo 'B change' >>"$d/SKILL.md"
+    echo 'B reference' >"$d/new-ref.md"
+    rm "$d/uv-lock-drift.md"
+  done
+  echo 'B change' >>skills/engineering/tdd/SKILL.md
+  echo 'B change' >>claude-skills/tdd/SKILL.md
+  rm -rf skills/thinking/grilling claude-skills/grilling skills/thinking/domain-modeling claude-skills/domain-modeling
+  cp -R skills/engineering/tdd skills/engineering/brand-new
+  cp -R claude-skills/tdd claude-skills/brand-new
+  cp agents/code-reviewer.md agents/new-agent.md
+  cp .codex/agents/code-reviewer.toml .codex/agents/new-agent.toml
+  for m in .claude-plugin/plugin.json .codex-plugin/plugin.json; do
+    sed -i.bak "s/\"version\": \"$version\"/\"version\": \"9.9.9\"/" "$m" && rm "$m.bak"
+  done
+)
+report=$("$vendor" "$up_plugin" "$proj")
+lock="$proj/.harness/lock.json"
+has() { grep -qF -- "$1" <<<"$report"; }
+
+check update-lock-is-b test "$(json "d['version']" "$lock")" = 9.9.9
+check update-replaces-edited-file cmp "$up_plugin/claude-skills/commit/SKILL.md" "$proj/.claude/skills/commit/SKILL.md"
+check update-adds-new-file test -f "$proj/.claude/skills/commit/new-ref.md" -a -f "$proj/.agents/skills/commit/new-ref.md"
+check update-deletes-dropped-file test ! -e "$proj/.claude/skills/commit/uv-lock-drift.md" -a ! -e "$proj/.agents/skills/commit/uv-lock-drift.md"
+check update-lock-hashes-are-b hashes_match "$proj"
+check update-codex-skill-is-b diff -r "$up_plugin/skills/engineering/commit" "$proj/.agents/skills/commit"
+
+check forks-byte-for-byte test "$fork_before" = "$(fork_sum)"
+check forks-leave-the-lock test "$(json "len([f for f in d['files'] if '/tdd/' in f or '/pr-body/' in f or 'verifier' in f])" "$lock")" = 0
+check fork-report-changed has "skill \`tdd\` (forked from $version): 2 files changed upstream"
+check fork-report-lists-claude-change has "  - M \`.claude/skills/tdd/SKILL.md\`"
+check fork-report-lists-codex-change has "  - M \`.agents/skills/tdd/SKILL.md\`"
+check fork-report-unchanged has "agent \`verifier\` (forked from $version): no upstream changes"
+check fork-report-missing-tag has "skill \`pr-body\` (forked from 0.0.1): not compared: tag v0.0.1 is not in"
+check fork-report-removed has "skill \`domain-modeling\` (forked from $version): removed upstream in 9.9.9"
+
+check removed-skill-dropped test ! -e "$proj/.claude/skills/grilling" -a ! -e "$proj/.agents/skills/grilling"
+check removed-skill-reported has "- skill \`grilling\`"
+check removed-skill-not-in-lock test "$(json "'grilling' in d['skills']" "$lock")" = False
+
+check new-skill-offered has "- skill \`brand-new\`"
+check new-agent-offered has "- agent \`new-agent\`"
+check new-not-installed test ! -e "$proj/.claude/skills/brand-new" -a ! -e "$proj/.claude/agents/new-agent.md"
+check unchosen-old-skill-not-offered sh -c '! grep -qF "\`wayfinder\`" <<<"$1"' _ "$report"
+check report-names-both-versions has "vendored harness-kit 9.9.9 (from $version)"
+
+# The machine-readable report. A rerun at B still reports the removed skill
+# the config lists, and offers nothing new.
+commit_all "$proj"
+jreport=$("$vendor" --json "$up_plugin" "$proj")
+jq_() { python3 -c "import json,sys; d=json.loads(sys.argv[1]); print($1)" "$jreport"; }
+check json-versions test "$(jq_ "d['from'], d['to']")" = "9.9.9 9.9.9"
+check json-removed-carried test "$(jq_ "d['removed']")" = "{'skills': ['grilling'], 'agents': []}"
+check json-nothing-new test "$(jq_ "d['new']")" = "{'skills': [], 'agents': []}"
+check json-fork-status test "$(jq_ "[(f['kind'], f['name'], f['status']) for f in d['forks']]")" = \
+  "[('skill', 'domain-modeling', 'removed'), ('skill', 'pr-body', 'not-compared'), ('skill', 'tdd', 'changed'), ('agent', 'verifier', 'unchanged')]"
+check json-fork-changes test "$(jq_ "[f['changes'] for f in d['forks'] if f['name'] == 'tdd'][0]")" = \
+  "[{'status': 'M', 'path': '.agents/skills/tdd/SKILL.md'}, {'status': 'M', 'path': '.claude/skills/tdd/SKILL.md'}]"
+check json-rerun-writes-nothing test -z "$(git -C "$proj" status --porcelain)"
+
 # --- Refusals: nothing is written ---------------------------------------------
 # expect_refusal <name> <project> <message>
 expect_refusal() {
@@ -204,8 +311,9 @@ expect_refusal malformed-source "$proj" "owner/repo@ref:path"
 proj=$(new_project forked '["tdd", "commit"]' '[]')
 printf '\n[forks.skills]\ntdd = "1.0.0"\n' >>"$proj/.harness/config.toml"
 mkdir -p "$proj/.claude/skills/tdd" && echo fork >"$proj/.claude/skills/tdd/SKILL.md"
-run "$proj" >/dev/null
+report=$(run "$proj")
 check fork-left-alone test "$(cat "$proj/.claude/skills/tdd/SKILL.md")" = fork
+check fork-without-git-not-compared grep -qE '^- skill `tdd` \(forked from 1\.0\.0\): not compared: .*/plugin is not a git checkout' <<<"$report"
 check fork-not-in-lock test "$(json "'tdd' in d['skills']" "$proj/.harness/lock.json")" = False
 
 exit "$fail"
