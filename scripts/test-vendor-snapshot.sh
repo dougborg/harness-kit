@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Helpers run indirectly through check(), which ShellCheck cannot see.
+# shellcheck disable=SC2317
 # Scratch-repo tests for skills/meta/harness/vendor-snapshot.sh: vendor a
 # chosen subset from a scratch copy of this plugin into scratch projects and
 # check both host trees, the lock, settings, hooks, re-run behavior, and an
@@ -268,6 +270,7 @@ fork_before=$(fork_sum)
 report=$("$vendor" "$up_plugin" "$proj")
 lock="$proj/.harness/lock.json"
 has() { grep -qF -- "$1" <<<"$report"; }
+lacks() { ! has "$1"; }
 
 check update-lock-is-b test "$(json "d['version']" "$lock")" = 9.9.9
 check update-replaces-edited-file cmp "$up_plugin/claude-skills/commit/SKILL.md" "$proj/.claude/skills/commit/SKILL.md"
@@ -292,7 +295,7 @@ check removed-skill-not-in-lock test "$(json "'grilling' in d['skills']" "$lock"
 check new-skill-offered has "- skill \`brand-new\`"
 check new-agent-offered has "- agent \`new-agent\`"
 check new-not-installed test ! -e "$proj/.claude/skills/brand-new" -a ! -e "$proj/.claude/agents/new-agent.md"
-check unchosen-old-skill-not-offered sh -c '! grep -qF "\`wayfinder\`" <<<"$1"' _ "$report"
+check unchosen-old-skill-not-offered lacks "\`wayfinder\`"
 check report-names-both-versions has "vendored harness-kit 9.9.9 (from $version)"
 
 # The machine-readable report. A rerun at B still reports the removed skill
