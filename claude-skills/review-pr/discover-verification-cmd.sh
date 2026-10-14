@@ -11,6 +11,11 @@
 # or if the config sets the key to something other than a non-empty
 # one-line string.
 #
+# In a vendored project (one with .harness/lock.json), the command is
+# prefixed with the harness skill's check-snapshot.sh, so the gate also fails
+# when a vendored file is edited. It exits 1 if the lock is there and the
+# check script is not. Without a lock, the output is unchanged.
+#
 # Usage: discover-verification-cmd.sh [directory]
 # Output: Prints the verification command to stdout
 
@@ -18,6 +23,23 @@ set -euo pipefail
 
 dir="${1:-.}"
 cd "$dir"
+
+# Vendored projects run the snapshot edit check first. The .claude/ copy wins
+# because the GitHub Action restores .claude/ from a PR's base branch.
+prefix=""
+if [ -f .harness/lock.json ]; then
+  for check in .claude/skills/harness/check-snapshot.sh .agents/skills/harness/check-snapshot.sh; do
+    if [ -x "$check" ]; then
+      prefix="$check && "
+      break
+    fi
+  done
+  if [ -z "$prefix" ]; then
+    echo ".harness/lock.json is present but the harness skill's check-snapshot.sh is not; re-vendor the snapshot" >&2
+    exit 1
+  fi
+fi
+emit() { echo "$prefix$1"; }
 
 # Read [facts].verification_command from the config. Exit 0 and print it when
 # set, 3 when the file or key is absent, 2 when the value is malformed.
@@ -63,7 +85,7 @@ from_config=$(config_cmd)
 config_status=$?
 set -e
 if [ "$config_status" -eq 0 ]; then
-  echo "$from_config"
+  emit "$from_config"
   exit 0
 elif [ "$config_status" -ne 3 ]; then
   exit 1
@@ -71,10 +93,10 @@ fi
 
 if [ -f justfile ] && grep -qE '^(check|ci):' justfile; then
   recipe=$(grep -oE '^(ci|check):' justfile | head -1 | tr -d ':')
-  echo "just $recipe"
+  emit "just $recipe"
 elif [ -f Makefile ] && grep -qE '^(ci|check|test):' Makefile; then
   target=$(grep -oE '^(ci|check|test):' Makefile | head -1 | tr -d ':')
-  echo "make $target"
+  emit "make $target"
 elif [ -f pyproject.toml ] && grep -q '\[tool\.poe\.tasks' pyproject.toml; then
   # Python project with poe — check before package.json so monorepos that
   # carry a TS workspace at the root still resolve to the documented Python
@@ -103,30 +125,30 @@ elif [ -f pyproject.toml ] && grep -q '\[tool\.poe\.tasks' pyproject.toml; then
   # command that can't run. Verifier agent allowlist must cover all three
   # forms (see agents/verifier.md).
   if command -v uv >/dev/null 2>&1; then
-    echo "uv run poe $task"
+    emit "uv run poe $task"
   elif command -v poetry >/dev/null 2>&1; then
-    echo "poetry run poe $task"
+    emit "poetry run poe $task"
   elif command -v poe >/dev/null 2>&1; then
-    echo "poe $task"
+    emit "poe $task"
   else
     echo "Found [tool.poe.tasks] in pyproject.toml, but none of uv, poetry, or poe is installed" >&2
     exit 1
   fi
 elif [ -f package.json ] && command -v jq >/dev/null; then
   if jq -e '.scripts.check' package.json >/dev/null 2>&1; then
-    echo "npm run check"
+    emit "npm run check"
   elif jq -e '.scripts.test' package.json >/dev/null 2>&1; then
-    echo "npm test"
+    emit "npm test"
   else
     echo "No verification command found in package.json" >&2
     exit 1
   fi
 elif [ -f Cargo.toml ]; then
-  echo "cargo test"
+  emit "cargo test"
 elif [ -f flake.nix ]; then
-  echo "nix flake check"
+  emit "nix flake check"
 elif [ -f pyproject.toml ]; then
-  echo "pytest"
+  emit "pytest"
 else
   echo "No verification command found" >&2
   exit 1

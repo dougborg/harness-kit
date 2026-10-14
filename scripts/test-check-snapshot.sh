@@ -59,6 +59,25 @@ expect no-lock-passes 0 "$scratch/plain" "not a vendored project"
 dir=$(vendored clean)
 expect clean-passes 0 "$dir"
 
+# The vendored discovery helpers put the check in front of the gate, and the
+# command they print runs the vendored check.
+want='.claude/skills/harness/check-snapshot.sh && make ci'
+for helper in .agents/scripts/shared .claude/skills/commit; do
+  got=$("$dir/$helper/discover-verification-cmd.sh" "$dir")
+  if [ "$got" = "$want" ]; then
+    echo "PASS: gate-from-$helper"
+  else
+    echo "FAIL: gate-from-$helper: got '$got', want '$want'"
+    fail=1
+  fi
+done
+if (cd "$dir" && .claude/skills/harness/check-snapshot.sh >/dev/null); then
+  echo "PASS: gate-runs-vendored-check"
+else
+  echo "FAIL: gate-runs-vendored-check"
+  fail=1
+fi
+
 mkdir -p "$dir/.claude/skills/local-thing" "$dir/.agents/skills/local-thing"
 echo 'local' >"$dir/.claude/skills/local-thing/SKILL.md"
 echo 'local' >"$dir/.agents/skills/local-thing/SKILL.md"
