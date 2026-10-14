@@ -18,7 +18,7 @@ unedited, or explains what the snapshot owns.
 ## Run it
 
 ```bash
-<skill-dir>/vendor-snapshot.sh [--json] <plugin-root> .
+<skill-dir>/vendor-snapshot.sh [--json] [--discard-edits] <plugin-root> .
 ```
 
 The first argument is a harness-kit plugin root: the installed plugin, or a
@@ -29,6 +29,14 @@ version. The second is the project directory, which defaults to `.`. It needs
 config names an unknown skill or agent or a vendored path holds a
 project-local file. It prints a Markdown report, or the same report as JSON
 with `--json` (see [Updating to a new release](#updating-to-a-new-release)).
+
+When a lock exists, it first runs [the edit check](#the-edit-check) against
+it. If the current snapshot was changed (a vendored file edited, added, or
+deleted, or a vendored hook entry changed), it prints the check's findings and
+exits 1 without writing anything: move the project-specific part into facts,
+or declare a fork, and run it again. `--discard-edits` skips the check and
+overwrites those changes with the pristine snapshot; use it only when the
+changes are meant to be thrown away.
 
 ## What it writes
 

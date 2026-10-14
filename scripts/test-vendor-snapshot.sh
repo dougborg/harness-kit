@@ -149,10 +149,43 @@ run "$proj" >/dev/null
 check rerun-changes-nothing test -z "$(git -C "$proj" status --porcelain)"
 check rerun-writes-nothing test -z "$(find "$proj" -path "$proj/.git" -prune -o -type f -newer "$scratch/marker" -print)"
 
-# An edited vendored file is restored to the pristine copy.
+# An edited snapshot is refused, writing nothing, with the edit check's
+# findings and the fix; --discard-edits restores the pristine copy.
+# expect_guard <name> <message>: the run fails, prints <message>, and leaves
+# the working tree as it was.
+expect_guard() {
+  local out rc before
+  before=$(git -C "$proj" status --porcelain; git -C "$proj" diff)
+  set +e
+  out=$(run "$proj" 2>&1)
+  rc=$?
+  set -e
+  if [ "$rc" = 1 ] && [[ "$out" == *"$2"* ]] && [[ "$out" == *--discard-edits* ]] &&
+    [ "$before" = "$(git -C "$proj" status --porcelain; git -C "$proj" diff)" ]; then
+    pass "$1"
+  else
+    flunk "$1: want exit 1 with \"$2\" and no writes, got exit $rc: $out"
+  fi
+}
 echo 'local edit' >>"$proj/.claude/skills/tdd/SKILL.md"
-run "$proj" >/dev/null
-check edited-file-restored cmp "$plugin/claude-skills/tdd/SKILL.md" "$proj/.claude/skills/tdd/SKILL.md"
+expect_guard edited-file-refused "edited: .claude/skills/tdd/SKILL.md"
+check refusal-names-facts-fix sh -c '"$1" "$2" "$3" 2>&1 | grep -qF "declare a fork"' _ "$vendor" "$plugin" "$proj"
+"$vendor" --discard-edits "$plugin" "$proj" >/dev/null
+check discard-edits-restores cmp "$plugin/claude-skills/tdd/SKILL.md" "$proj/.claude/skills/tdd/SKILL.md"
+check discard-edits-leaves-tree-clean test -z "$(git -C "$proj" status --porcelain)"
+echo 'stray' >"$proj/.agents/skills/tdd/extra.md"
+expect_guard added-file-refused "added: .agents/skills/tdd/extra.md"
+rm "$proj/.agents/skills/tdd/extra.md"
+rm "$proj/.claude/hooks/harness-kit/retro-nudge.sh"
+expect_guard deleted-file-refused "deleted: .claude/hooks/harness-kit/retro-nudge.sh"
+git -C "$proj" checkout -q -- .
+python3 - "$settings" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p)); del d["hooks"]["Stop"]; open(p, "w").write(json.dumps(d, indent=2) + "\n")
+PY
+expect_guard hook-drift-refused "hook: Stop"
+git -C "$proj" checkout -q -- .
 
 # --- A smaller set and a new release -----------------------------------------
 printf 'skills = ["commit"]\nagents = []\n' >"$proj/.harness/config.toml"
