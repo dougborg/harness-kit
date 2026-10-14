@@ -84,6 +84,17 @@ not_skills = {"name"}  # placeholders the router uses in prose
 stale = sorted(name for name in routed - skill_names - not_skills if "-" in name or f"`/{name}" in router)
 assert not stale, f"skills/meta/ask-harness/SKILL.md names skills that don't exist: {stale}"
 
+# Bootstrap vendors the generic set (ADR 0001). Its docs run the vendoring
+# script and name the old .harness-lock.json only to send it to migrate mode,
+# so the copy-and-lock install can't creep back in.
+bootstrap = root / "skills/meta/harness/bootstrap.md"
+assert "<skill-dir>/vendor-snapshot.sh" in bootstrap.read_text(), f"{bootstrap}: must run <skill-dir>/vendor-snapshot.sh"
+for doc in (bootstrap, root / "skills/meta/harness-builder/SKILL.md", root / "agents/harness-builder.md"):
+    for n, line in enumerate(doc.read_text().splitlines(), 1):
+        assert ".harness-lock.json" not in line or "migrate" in line, (
+            f"{doc.relative_to(root)}:{n}: bootstrap writes .harness/lock.json, not .harness-lock.json"
+        )
+
 names = [skill.name for skill in skills]
 duplicates = sorted({name for name in names if names.count(name) > 1})
 assert not duplicates, f"skill names must be unique across areas: {duplicates}"
@@ -137,7 +148,7 @@ missing = sorted(
 )
 assert not missing, "sibling scripts missing beside their caller: " + "; ".join(missing)
 
-# scripts/shared/ ships into projects (bootstrap copies it), so it holds only
+# scripts/shared/ ships into projects (the vendoring script copies it), so it holds only
 # what a skill or hook uses: each file named by a skill's <shared-scripts-dir>
 # reference or by hooks/hooks.json, and no subdirectories. Repo tests and
 # fixtures live in scripts/.
