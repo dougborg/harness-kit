@@ -11,7 +11,7 @@ when_to_use: >-
   another marketplace; and when a harness mode hands off to another mode
   (retro to hoist).
 argument-hint: "[audit|bootstrap|update|add|retro|hoist]"
-allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh*), Read, Glob, Write, Edit
+allowed-tools: Bash(ls*), Bash(grep*), Bash(git*), Bash(claude plugin*), Bash(${CLAUDE_SKILL_DIR}/discover-verification-cmd.sh*), Bash(${CLAUDE_SKILL_DIR}/vendor-snapshot.sh*), Read, Glob, Write, Edit
 ---
 
 # Harness
@@ -64,6 +64,7 @@ Read these as needed from any mode; each is linked directly from here.
 | Topic | Read | When |
 | --- | --- | --- |
 | Project facts and `.harness/config.toml` | `${CLAUDE_SKILL_DIR}/project-facts.md` | Stating a project's verification command or other facts; deciding prose (`AGENTS.md`) versus config; reading or writing the config's keys |
+| Vendoring a snapshot and `.harness/lock.json` | `${CLAUDE_SKILL_DIR}/vendoring.md` | Writing or rewriting a project's vendored skills, agents, and hooks with `vendor-snapshot.sh`; reading the lock |
 | Skill and agent design patterns | `${CLAUDE_SKILL_DIR}/design-principles.md` | Writing or reviewing a skill or agent; deciding what belongs upstream vs local |
 | Hook staging and exit codes | `${CLAUDE_SKILL_DIR}/hooks-patterns.md` | Configuring or auditing hooks (PostToolUse stages, Stop hooks); a hook that exits non-zero on a no-op is covered under Hook Exit Code Safety |
 | Bundled skills and official plugin catalog | `${CLAUDE_SKILL_DIR}/external-plugins.md` | Bootstrap or audit needs bundled-skill delegation targets, stack-matched plugin recommendations, and overlap flags |
