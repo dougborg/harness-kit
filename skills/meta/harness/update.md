@@ -1,68 +1,91 @@
 # Update and Add Modes
 
-Both modes install content into the host destinations recorded in
-`.harness-lock.json`. `update` syncs from upstream; `add` pulls skills from
-another marketplace.
+Both modes change a project's vendored snapshot (ADR 0001) and nothing else.
+`update` moves the snapshot to a newer harness-kit release; `add` brings a
+skill from another repository into the chosen set. Neither edits a vendored
+file by hand: the snapshot is rewritten by `<skill-dir>/vendor-snapshot.sh`,
+which `<skill-dir>/vendoring.md` documents in full.
 
 ## Update Mode
 
-Pull latest changes from upstream sources and smart-merge with local modifications. **Run after the harness-kit plugin is updated.**
+Updating is a deterministic script run, not a merge. Done when the snapshot
+is at the new version, the edit check passes, and the report is in the
+commit or PR.
 
-1. **Read and migrate `.harness-lock.json`** — Missing `schemaVersion` means
-   v1 Claude-only. Upgrade in memory while preserving every source, path, and
-   modified flag; write only after the normal confirmation gate.
+1. **Check the project is vendored.** A `.harness/config.toml` and
+   `.harness/lock.json` mean it is. A `.harness-lock.json` (the 0.x/1.x
+   copy-and-edit lock) means it isn't yet: stop and run migrate (see #174)
+   instead, which turns its edited copies into facts or forks first. A
+   project with neither has no harness; run bootstrap.
 
-2. **Check for upstream updates:**
-   - Compare plugin version (`<plugin-root>` has the latest) vs lock file version
-   - List files that differ in each recorded Claude or Codex destination.
-     Projects install skills flat by name, but the plugin groups them by
-     topic area. Map each installed skill to its upstream by name: Claude
-     copies come from `<plugin-root>/claude-skills/<skill>/`, Codex copies
-     from `<plugin-root>/skills/<area>/<skill>/` (find the area with
-     `ls <plugin-root>/skills/*/<skill>`).
+2. **Get the newer release root**, written `<release-root>` below: the
+   installed plugin's directory when it is the release you want, or a
+   release checkout:
+   `git clone --depth 1 --branch vX.Y.Z https://github.com/dougborg/harness-kit`.
+   The lock's `version` is the current snapshot; when it already equals the
+   release root's version, there is nothing to sync from upstream. Report that
+   and point session-learning improvements to `harness retro` (#90).
 
-3. **For each upstream file:**
-   - `modified: false` → **Overwrite** with latest from plugin. Silent.
-   - `modified: true` → **Show diff** between upstream and local. Ask user:
-     - Accept upstream (overwrite local changes)
-     - Keep local (skip this file)
-     - Merge manually (show both versions)
-   - `source: "local"` → **Never touch**. These are project-specific.
+3. **Run the vendoring script** against that root:
 
-4. **Check for new upstream files** — Files in the plugin that aren't in the lock file yet. Offer to install them. This includes new sibling reference files inside an already-installed skill directory (e.g. a skill that grew an `audit.md`) — a stale copy that's missing them will send Claude looking for content that isn't there.
+   ```bash
+   <skill-dir>/vendor-snapshot.sh <release-root> .
+   ```
 
-5. **Check for removed upstream files** — Lock entries with `source` set to an upstream whose file no longer exists there. Offer to delete each unmodified one, and show modified ones for the user to keep as `source: "local"` or delete. Example: harness-kit #118 moved `agents/references/*.md` into the harness skill, so older installs carry stale `.claude/agents/references/` copies.
+   It replaces the snapshot wholesale, removes files the release dropped,
+   rewrites `.harness/lock.json`, and leaves every fork untouched. It will not
+   overwrite a snapshot that fails the edit check: an edited vendored file
+   has to move into facts or a declared fork first, or be discarded
+   explicitly. Comparing forks with upstream needs the forked-from tag in the
+   release root; a shallow clone lacks it, and `<skill-dir>/vendoring.md` gives the fetch.
 
-6. **Update `.harness-lock.json`** — New version, updated timestamps, modified flags, removed entries dropped.
+4. **Act on the report.** It lists three things the script does not decide:
+   - **Removed upstream**: drop the name from the config's `skills` or
+     `agents`, or replace it with what superseded it.
+   - **New upstream**: offer each to the user; vendor one by adding it to the
+     config and re-running the script.
+   - **Forks**: for each fork with upstream changes, the owner re-syncs it by
+     hand and bumps its forked-from version, or proposes the fork's change
+     upstream with hoist mode.
 
-7. **Show changelog** — Summary of what was updated, what was skipped, what's new.
+5. **Run the verification command**, which runs the edit check first in a
+   vendored project, and commit the snapshot, the lock, and any config change
+   together, with the report in the commit or PR body.
 
-If versions match and every tracked file is local, report that there is
-nothing to sync from upstream and point session-learning improvements to
-`harness retro` (issue #90).
+In a repo with the scheduled update workflow, steps 2 to 5 happen on their
+own: on each release it runs the script and opens a PR carrying the report,
+which goes through the project's own CI and review before it lands. Run
+update by hand to pick up a release early, or when that PR needs redoing.
 
 ## Add Mode
 
-Add skills from another plugin marketplace into the project's `.claude/`.
+Add a skill from another repository to the vendored set, under the same
+lock, edit check, and fork rules as harness-kit's own skills.
 
 ```bash
-/harness add vercel-labs/agent-skills
+/harness add anthropics/skills
 ```
 
-1. **Check if marketplace is already added:**
+1. **Pick the skills.** Browse the repository (a plugin marketplace or any
+   repo with skill directories) and agree with the user which skills to add.
+   Prefer a harness-kit skill that already covers the job; adding an
+   overlapping one leaves two skills to keep apart.
 
-   ```bash
-   claude plugin marketplace list
-   ```
+2. **Record each in the config.** Add the name to `skills` and its source to
+   `[sources.skills]` as `"owner/repo@ref:path"` (format in
+   `<skill-dir>/project-facts.md`). The name must not clash with a
+   harness-kit skill or a project-local one.
 
-   If not, instruct user: `/plugin marketplace add vercel-labs/agent-skills`
+3. **Vendor it** with `vendor-snapshot.sh`, as in update step 3. Its lock
+   entry records the source in place of `harness-kit`.
 
-2. **Browse available skills** from the marketplace.
+   Fetching third-party sources is not implemented yet: the script validates
+   and records the source, then exits 1 naming each sourced skill, and writes
+   nothing. Until it lands, leave the config entry out, or keep the skill as
+   project-local content (files outside the lock that the project owns and
+   updates itself), and say which in the report.
 
-3. **User selects** which skills to install into `.claude/`.
+4. **Run the verification command** to confirm nothing broke.
 
-4. **Copy selected skills** from `claude-skills/` to `.claude/skills/` — whole directories, including reference files and scripts. The generated projection contains the host-specific paths and regular helper files needed by project-local skills; do not rewrite paths in the copied files.
-
-5. **Update `.harness-lock.json`** with new source and file entries.
-
-6. **Run verification command** to confirm nothing broke.
+A plugin the user installs with `/plugin install` is not added this way:
+it stays outside the project and outside the lock.

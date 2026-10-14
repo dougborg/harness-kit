@@ -21,10 +21,12 @@ teach agents how to work in a project. Harness quality is agent quality; a
 stale or badly structured skill gets followed exactly as written.
 
 The skill works on a project that has harness content in `.claude/`,
-`.agents/`, or `.codex/`, or one you are bootstrapping. It expects the
-harness-kit plugin to be installed (it supplies the base skills and agents),
-the project's verification command to be runnable, and `.harness-lock.json`
-to record which files came from upstream and which are project-local.
+`.agents/`, or `.codex/`, or one you are bootstrapping. Generic skills and
+agents arrive as a vendored snapshot that nobody edits (ADR 0001): what is
+specific to the project lives in facts, and a need the facts can't express
+becomes a declared fork. `.harness/lock.json` lists the snapshot's files;
+anything else in the host trees is project-local. The project's verification
+command must be runnable.
 
 ## Pick the mode
 
@@ -34,8 +36,8 @@ On Claude Code the modes are `/harness <mode>`; on Codex, `$harness <mode>`.
 harness              Auto-detect: bootstrap if no harness, audit if one exists
 harness audit        Audit the current harness (delegates setup health to /doctor)
 harness bootstrap    Analyze the project, write its facts and project-specific additions, vendor the generic set
-harness update       Pull the latest from upstream sources and smart-merge with local changes
-harness add <repo>   Add skills from another plugin marketplace
+harness update       Re-vendor the snapshot from a newer harness-kit release
+harness add <repo>   Vendor skills from another repository
 harness retro        Post-session retrospective on the environment
 harness hoist        Propose generic local improvements back upstream
 ```
@@ -50,10 +52,10 @@ each is self-contained.
 | --- | --- | --- |
 | `audit` | `${CLAUDE_SKILL_DIR}/audit.md` | Audit protocol, `/doctor` division of labor, gap classification, output format |
 | `bootstrap` | `${CLAUDE_SKILL_DIR}/bootstrap.md` | harness-builder handoff, approval gate, facts and project-local content, vendoring the snapshot |
-| `update` | `${CLAUDE_SKILL_DIR}/update.md` | Smart-merge with upstream using lock-file provenance |
-| `add` | `${CLAUDE_SKILL_DIR}/update.md` | Installing skills from another marketplace (second half of the file) |
-| `retro` | `${CLAUDE_SKILL_DIR}/retro.md` | Environment audit, gap classification A/B/C/D/E, upstream promotion pass |
-| `hoist` | `${CLAUDE_SKILL_DIR}/hoist.md` | Proposing project-local improvements back upstream |
+| `update` | `${CLAUDE_SKILL_DIR}/update.md` | Running the vendoring script against a newer release; acting on its report |
+| `add` | `${CLAUDE_SKILL_DIR}/update.md` | Adding third-party skills to the vendored set (second half of the file) |
+| `retro` | `${CLAUDE_SKILL_DIR}/retro.md` | Environment audit, gap classification A/B/C/D/E, routing lessons to facts, local skills, or hoist |
+| `hoist` | `${CLAUDE_SKILL_DIR}/hoist.md` | Proposing project-local content, facts patterns, and forks back upstream |
 
 Done when the mode file is read and its final step reports done.
 
@@ -96,8 +98,9 @@ goes:
   pointer, or access grant) made in the project; also Type C when the builder
   should have recommended it (retro only).
 
-For a file sourced from upstream (per `.harness-lock.json`), a Type A or a
-generic Type B is usually an upstream fix, not only a local one.
+A vendored file (one `.harness/lock.json` lists) is never the fix site: a
+Type A on it is a project fact, a project-local skill, or an upstream fix,
+and a generic Type B goes upstream too. Retro mode routes each one.
 
 ## Fix gaps as you meet them
 
@@ -106,7 +109,7 @@ harness:
 
 1. Fix the immediate issue in the current task.
 2. Decide the scope: upstream (a generic workflow that helps every project) or
-   project-local (domain-specific).
+   project-local (a fact, or a domain-specific skill).
 3. Hand the fix to a background subagent and keep working.
 
 An upstream fix clones harness-kit (or the other upstream source), fixes it,
@@ -129,12 +132,15 @@ Agent(
 )
 ```
 
-On Codex, give the same prompt to a subagent. A project-local fix edits the
-host-specific file tracked in `.harness-lock.json`, commits normally, and
-marks the file `modified: true`.
+On Codex, give the same prompt to a subagent. A project-local fix states
+the fact in `.harness/config.toml` or `AGENTS.md`'s `## Project facts`
+(`${CLAUDE_SKILL_DIR}/project-facts.md`), or edits a project-local skill, and commits
+normally. It never edits a vendored file; the edit check fails on that. A
+fork is only for a need the facts can't express, declared as an explicit
+decision with the user.
 
-The upstream PR is reviewed and merged separately; `harness update` then pulls
-the fix into every project. Encode behavioral gaps in skills through PRs
+The upstream PR is reviewed and merged separately; the next update PR then
+brings the fix into every project. Encode behavioral gaps in skills through PRs
 rather than memories, because memories fade and skills persist. Done when the
 current task is unblocked and the fix is either committed locally or running
 in a background subagent.

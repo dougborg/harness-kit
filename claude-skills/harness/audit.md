@@ -1,7 +1,7 @@
 # Audit Mode
 
 The audit protocol for `harness audit`. Run it across Claude Code and Codex
-instructions, skills, agents, hooks, and provenance.
+instructions, skills, agents, hooks, and the vendored snapshot.
 
 ## Division of labor with `/doctor`
 
@@ -10,7 +10,7 @@ Claude Code ships a bundled `/doctor` skill (alias `/checkup`) that is available
 | Owner | Covers |
 | --- | --- |
 | `/doctor` | Installation and PATH problems, unused skills and MCP servers, slow hooks, CLAUDE.md boilerplate/bloat, frequently-denied read-only commands |
-| `/harness audit` | harness-kit-specific structure, frontmatter validity, description signal quality, provenance (`.harness-lock.json`), cross-skill consistency, gap classification |
+| `/harness audit` | harness-kit-specific structure, frontmatter validity, description signal quality, vendored snapshot (config, lock, edit check), cross-skill consistency, gap classification |
 
 If a check you are about to add belongs in the left column, it does not belong in this file.
 
@@ -39,6 +39,8 @@ If `/doctor` is unavailable in the current session, say so in the report rather 
 
 Find the verification command for this project:
 
+- Check `.harness/config.toml` for `[facts] verification_command`; it wins
+  over everything below
 - Check `justfile` for `check` or `ci` recipe
 - Check `Makefile` for `ci`, `check`, or `test` target
 - Check `package.json` for `test` or `check` script
@@ -60,8 +62,19 @@ Find the verification command for this project:
 - Do `AGENTS.md` and `CLAUDE.md` contain only non-derivable shared and
   Claude-specific conventions? Do not require a reconstructable inventory.
 - Does CLAUDE.md include the `<new-diagnostics>` protocol (verify LSP diagnostics with the project's type-check CLI before dismissing as stale)? See the baseline section in `agents/harness-builder.md`.
-- Does every managed file in both host trees appear in lock schema v2, and
-  does every entry still exist with the correct host and component?
+- Does the vendored snapshot hold (ADR 0001; `${CLAUDE_SKILL_DIR}/vendoring.md`)?
+  - `.harness/config.toml` parses, and every name in `skills`, `agents`,
+    `[forks.*]`, and `[sources.skills]` is one the snapshot or the project
+    actually has.
+  - `.harness/lock.json` exists, and its `version` is the current
+    harness-kit release, or an update PR for it is open.
+  - `${CLAUDE_SKILL_DIR}/check-snapshot.sh` passes, and the verification command
+    runs it (`discover-verification-cmd.sh` adds it whenever the lock
+    exists; a CI job that runs the gate directly must add it).
+  - `.claude/settings.json` sets `"harness-kit@harness-kit": false`, so the
+    plugin's copies don't load beside the snapshot's.
+  - No `.harness-lock.json` is left. One means the project is still on
+    copy-and-edit, or a migration didn't finish: recommend migrate (#174).
 
 ## 5. Check Model Tiering
 

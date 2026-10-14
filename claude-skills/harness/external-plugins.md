@@ -13,7 +13,7 @@ Read top to bottom. Bundled skills come first: nothing should be installed to so
 
 ## Already in the Box: Bundled Skills
 
-Claude Code ships a set of **bundled skills** — available in every session, with no marketplace, no `/plugin install`, and no `.harness-lock.json` entry. Several do work harness-kit would otherwise implement itself. Recommend *delegation* to these before recommending anything be installed or built.
+Claude Code ships a set of **bundled skills** — available in every session, with no marketplace, no `/plugin install`, and nothing vendored. Several do work harness-kit would otherwise implement itself. Recommend *delegation* to these before recommending anything be installed or built.
 
 Invoke them by typing `/` plus the name. Claude invokes some automatically; `/verify` and `/code-review` are user-invocable only as of Claude Code v2.1.215.
 
@@ -105,7 +105,7 @@ A `code-review` plugin still exists in the marketplace, but the bundled `/code-r
 | `commit-commands` | Commit, push, and PR creation commands | `/commit`, `/open-pr` | Pick one, or compose: harness-kit `/commit` adds project quality gates; `commit-commands` is a lighter generic flow. |
 | `code-simplifier` | Simplifies recently modified code while preserving behavior | `minimal-change` (applied by `/open-pr`) | Compose freely — same goal, invoked at different times. |
 | `feature-dev` | Feature workflow: exploration, architecture, quality review agents | `/to-spec`, `/to-tickets` | Compose: `/to-spec` and `/to-tickets` write the spec and tickets; `feature-dev` drives implementation. Or pick one end-to-end flow. |
-| `claude-code-setup` | Analyzes codebase, recommends hooks/skills/MCP servers/subagents | `/harness bootstrap` | Pick one — both scaffold the project harness. harness-kit adds provenance tracking (`.harness-lock.json`), update/retro/hoist loops. |
+| `claude-code-setup` | Analyzes codebase, recommends hooks/skills/MCP servers/subagents | `/harness bootstrap` | Pick one — both scaffold the project harness. harness-kit adds a vendored snapshot with an edit check, facts, and update/retro/hoist loops. |
 | `claude-md-management` | Audit CLAUDE.md quality, capture session learnings | `/harness retro` + bootstrap's CLAUDE.md generation | Compose: retro captures harness gaps; claude-md-management focuses on CLAUDE.md hygiene. |
 | `skill-creator` | Create, improve, and eval skills | `/skill-writer` | Pick one. harness-kit teaches the scannable-contract structure; skill-creator adds eval/benchmark tooling. |
 | `hookify` | Generate custom hooks from conversation patterns or instructions | Automation-First Hooks guidance in `/harness` | Compose: harness-kit defines the formatter/validator/guidance ordering; hookify authors the individual hooks. |
@@ -119,4 +119,4 @@ A `code-review` plugin still exists in the marketplace, but the bundled `/code-r
 - **Avoid double-installs** — never leave two active tools covering the same job (e.g. harness-kit `code-reviewer` AND Anthropic `code-review`). Recommend one and record the choice.
 - **Overlap is not always conflict** — some pairs compose (quality-gate commit + AI messages; spec writing + feature workflow). When recommending both, state the division of labor in one line.
 - **Record decisions in CLAUDE.md** — bootstrap should add an "External plugins" section listing what was installed or deliberately skipped, with rationale, so audit can check it later.
-- **Plugins are installed, not copied** — external plugins are managed by `/plugin install`, live outside `.claude/`, and are NOT tracked in `.harness-lock.json`. Only harness-kit files copied into `.claude/` get lock-file entries.
+- **Plugins are installed, not copied** — external plugins are managed by `/plugin install`, live outside `.claude/`, and are not in `.harness/lock.json`. Only the vendored snapshot's files get lock entries.

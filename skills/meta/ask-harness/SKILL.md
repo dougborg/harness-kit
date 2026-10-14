@@ -34,7 +34,9 @@ for it by name.
    the standards and spec review passes (`review-pr`, `code-reviewer`), and
    waits for CI.
 6. **Improve the environment.** `/harness retro` looks back over the session
-   for missing checks, standards, pointers, and access, and `/session-retro`
+   for missing checks, standards, pointers, and access, and sends each
+   lesson to the project's facts, a project-local skill, or upstream, never
+   into a vendored file. `/session-retro`
    records what the work itself taught. Run them in the session they look
    back on, before you clear it.
 

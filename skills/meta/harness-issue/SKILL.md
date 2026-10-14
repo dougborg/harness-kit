@@ -105,7 +105,7 @@ Compose a title of 70 characters or fewer and this body:
 
 - File: `path/to/affected.md`
 - Skill / agent: `<name>` (if applicable)
-- harness-kit version: `<from .harness-lock.json>` (or `unknown`)
+- harness-kit version: `<version from .harness/lock.json>` (or `unknown`)
 
 ## Why it matters
 
