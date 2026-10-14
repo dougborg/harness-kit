@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Helpers run indirectly through check(), which ShellCheck cannot see.
+# shellcheck disable=SC2317
 # Tests for the vendored update workflow: static checks that
 # skills/meta/harness/harness-update.yml runs harness-update.sh, which runs
 # vendor-snapshot.sh and the diff guard; then harness-update.sh itself against
