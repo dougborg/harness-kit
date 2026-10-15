@@ -8,8 +8,9 @@
 #
 # Otherwise searches for common project configuration files and returns the
 # appropriate test/check command. Exits 1 if no verification command found,
-# or if the config sets the key to something other than a non-empty
-# one-line string.
+# if the config sets the key to something other than a non-empty one-line
+# string, or if the config names the key anywhere it isn't read (an inline
+# table, a dotted key, another table), naming the file and line.
 #
 # In a vendored project (one with .harness/lock.json), the command is
 # prefixed with the harness skill's check-snapshot.sh, so the gate also fails
@@ -88,6 +89,16 @@ if [ "$config_status" -eq 0 ]; then
   emit "$from_config"
   exit 0
 elif [ "$config_status" -ne 3 ]; then
+  exit 1
+fi
+# The key written anywhere else (an inline table, a dotted key, another
+# table) would silently be ignored, so fail and say where it is.
+unread=$(grep -nE '^[^#]*verification_command' .harness/config.toml 2>/dev/null || true)
+if [ -n "$unread" ]; then
+  while IFS=: read -r line _; do
+    echo ".harness/config.toml:$line: verification_command is not read here; write it as" \
+      "verification_command = \"...\" on its own line under [facts]" >&2
+  done <<<"$unread"
   exit 1
 fi
 

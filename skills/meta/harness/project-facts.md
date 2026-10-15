@@ -88,6 +88,8 @@ discovering the command from `justfile`, `Makefile`, `pyproject.toml`,
 `package.json`, `Cargo.toml`, or `flake.nix`, unchanged from before.
 
 Write the value as a one-line TOML string, basic (`"..."`, with `\"`, `\\`,
-and `\t` escapes) or literal (`'...'`). A key outside `[facts]` is not read.
+and `\t` escapes) or literal (`'...'`), on its own line under `[facts]`.
 An unquoted, empty, or multi-line value makes the script exit 1 with the file
-and line, rather than silently falling back to a different gate.
+and line, rather than silently falling back to a different gate. So does the
+key written anywhere it isn't read: an inline `facts = { ... }` table, a
+dotted `facts.verification_command` key, or another table.

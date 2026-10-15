@@ -253,7 +253,12 @@ declare a fork. It reports:
 
 Skills and agents named in `[forks.skills]` or `[forks.agents]` pass, even
 before the next vendoring run drops them from the lock. Project-local files,
-other hook entries, the config, and `AGENTS.md` are never checked. It needs
+other hook entries, the config, and `AGENTS.md` are never checked. That
+leaves one accepted gap: the GitHub Action doesn't restore the facts from the
+base branch, so a PR that changes `verification_command` changes what CI
+runs on it, and the check has no base to compare against. Review fact
+changes like code (`<skill-dir>/github-action.md`, "Pull requests run the
+base branch's harness"). It needs
 `python3`, and 3.11 or later when the config exists.
 
 | Exit | Meaning |

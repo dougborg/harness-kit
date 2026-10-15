@@ -65,7 +65,26 @@ verification_command = "not a fact"
 
 [facts]
 TOML
-expect key-outside-facts-ignored "$dir" "just check"
+expect key-outside-facts-fails "$dir" "" 1
+
+# A key that isn't read from [facts] fails rather than silently running the
+# discovered command: inline tables and dotted keys aren't parsed.
+dir=$(new_repo inline-table)
+printf 'facts = { verification_command = "moon ci" }\n' >"$dir/.harness/config.toml"
+expect inline-table-fails "$dir" "" 1
+dir=$(new_repo dotted-key)
+printf 'skills = []\nfacts.verification_command = "moon ci"\n' >"$dir/.harness/config.toml"
+expect dotted-key-fails "$dir" "" 1
+err=$("$script" "$dir" 2>&1 >/dev/null || true)
+if [[ "$err" == *"config.toml:2: verification_command"* ]]; then
+  echo "PASS: unread-key-names-line"
+else
+  echo "FAIL: unread-key-names-line: $err"
+  fail=1
+fi
+dir=$(new_repo comment-mention)
+printf '# verification_command lives in CI for now\n[facts]\n' >"$dir/.harness/config.toml"
+expect comment-mention-falls-back "$dir" "just check"
 
 dir=$(new_repo absent-key)
 cat >"$dir/.harness/config.toml" <<'TOML'
