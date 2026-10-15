@@ -373,7 +373,15 @@ leaves one accepted gap: the GitHub Action doesn't restore the facts from the
 base branch, so a PR that changes `verification_command` changes what CI
 runs on it, and the check has no base to compare against. Review fact
 changes like code (`${CLAUDE_SKILL_DIR}/github-action.md`, "Pull requests run the
-base branch's harness"). It needs
+base branch's harness").
+
+`[update] schedule` and `[sources.skills]` are config a pull request can
+change too. The update workflow reads the config on the default branch, so a
+change takes effect only once merged, and a new or moved source lands as a
+reviewable diff of the fetched skill's files and the lock. Review config
+changes like code.
+
+The check needs
 `python3`, and 3.11 or later when the config exists.
 
 | Exit | Meaning |
