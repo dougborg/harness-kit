@@ -86,6 +86,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from pathlib import Path
 
 
@@ -311,14 +312,25 @@ def fetch(name):
         listing = raw.decode()
     except UnicodeDecodeError:
         die(f"[sources.skills] {name}: a file name in {where} is not UTF-8; refusing to vendor it")
-    entries, total = [], 0
+    # Snapshots are written on Linux and macOS, whose filesystems may fold
+    # case and Unicode normalization (macOS does by default), so two paths
+    # equal under folding would land on one file. Windows-only aliases of
+    # .git (trailing dots or spaces, git~1) aren't checked.
+    entries, total, folded = [], 0, {}
     for line in filter(None, listing.split("\0")):
         meta, rel = line.split("\t", 1)
         mode, _, obj, size = meta.split()
         if mode == "120000":
             die(f"[sources.skills] {name}: {path}/{rel} is a symlink; a snapshot holds real files only")
-        if mode == "160000" or any(p.lower() in ("", ".", "..", ".git") for p in rel.split("/")):
+        parts = rel.split("/")
+        if mode == "160000" or any(p.lower() in ("", ".", "..", ".git") for p in parts):
             die(f"[sources.skills] {name}: refusing to vendor {path}/{rel}")
+        for i in range(1, len(parts) + 1):
+            prefix = "/".join(parts[:i])
+            other = folded.setdefault(unicodedata.normalize("NFC", prefix).casefold(), prefix)
+            if other != prefix:
+                die(f"[sources.skills] {name}: {path}/{other} and {path}/{prefix} differ only in case; "
+                    "refusing to vendor them")
         entries.append((rel, mode, obj))
         total += int(size)
         if len(entries) > MAX_FILES:
