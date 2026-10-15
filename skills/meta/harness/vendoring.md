@@ -187,8 +187,11 @@ which:
    pull request, or edits the open one, so there is only ever one. The body
    links the release notes, includes them (with each `@` followed by a
    zero-width joiner, so the notes mention no one), and ends with the
-   update's Markdown report (removed, new, and forks). A run whose result
-   matches the branch already pushed doesn't push again.
+   update's Markdown report (removed, new, and forks). When the update adds
+   or removes hook entries in `.claude/settings.json`, a `## Hook changes`
+   section lists each one with its event, matcher, and command, since they
+   run on every session. A run whose result matches the branch already
+   pushed doesn't push again.
 
 **The diff guard.** The update PR changes only snapshot-owned paths: files the
 old or new lock lists, `.harness/lock.json`, and the hook entries in
@@ -214,6 +217,17 @@ The workflow is snapshot-owned, so the edit check fails if it is edited. To
 follow a fork of harness-kit, set `HARNESS_UPSTREAM` rather than editing it.
 A release must be published as a GitHub release whose tag is `v<version>`;
 a private upstream needs a token this workflow doesn't have.
+
+**Choosing the upstream is a code-execution trust decision.** The job runs the
+upstream release's own `vendor-snapshot.sh` in a job that can push to the
+repository, and the PR it opens changes skills, agents, and hook commands that
+run in every later session. Set `HARNESS_UPSTREAM` or `.claude/harness-upstream`
+only to a repository whose releases you would merge as code. The checkout
+keeps no credentials (`persist-credentials: false`), the release's script runs
+with `GH_TOKEN` removed from its environment, and the token reaches git only on
+the fetch and push of the update branch. That keeps the token out of
+`.git/config` and the release's environment; it isn't a sandbox, since the
+release runs in the same job.
 
 ## Third-party skills
 

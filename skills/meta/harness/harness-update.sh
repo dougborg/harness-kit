@@ -15,7 +15,8 @@
 #    .harness/lock.json, or .claude/settings.json; and fail when the change
 #    touches a workflow file, which GITHUB_TOKEN can't push.
 # 5. Commit to branch harness-kit/update, force-push it, and open a PR, or
-#    edit the open one, with the release notes and the update report.
+#    edit the open one, with the release notes, the update report, and the
+#    hook entries it changes in .claude/settings.json.
 #
 # Clones from ${GITHUB_SERVER_URL:-https://github.com}/<owner>/<repo>.
 # Usage: harness-update.sh
@@ -38,6 +39,19 @@ if [ -z "$upstream" ] && [ -f .claude/harness-upstream ]; then
 fi
 upstream=${upstream:-dougborg/harness-kit}
 [[ "$upstream" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "not an owner/repo: $upstream"
+
+# The checkout keeps no credentials (persist-credentials: false), so the
+# token reaches git only on the commands that talk to origin, never through
+# .git/config, and the release's own scripts run without it.
+origin_git() {
+  if [ -n "${GH_TOKEN:-}" ]; then
+    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader \
+      GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')" \
+      git "$@"
+  else
+    git "$@"
+  fi
+}
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
@@ -80,7 +94,7 @@ while IFS= read -r fork_tag; do
 done <"$work/fork-tags"
 
 git show HEAD:.harness/lock.json >"$work/old-lock.json"
-"$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" . >"$work/report.md"
+env -u GH_TOKEN -u GITHUB_TOKEN "$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" . >"$work/report.md"
 
 # The release's manifest must be the version its tag names.
 vendored=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' .harness/lock.json)
@@ -132,17 +146,34 @@ title="chore(harness): update harness-kit snapshot to ${tag#v}"
   echo "</details>"
   echo
   cat "$work/report.md"
+  # Hook entries run commands on every session, so list each one that changed.
+  python3 - "$work/old-lock.json" .harness/lock.json <<'PY'
+import json, sys
+old, new = (json.load(open(p)).get("hooks", {}).get("claude", {}) for p in sys.argv[1:3])
+lines = []
+for event in sorted(set(old) | set(new)):
+    for label, a, b in (("removed", old, new), ("added", new, old)):
+        for entry in a.get(event, []):
+            if entry not in b.get(event, []):
+                matcher = f" (matcher `{entry['matcher']}`)" if entry.get("matcher") else ""
+                cmds = "; ".join(f"`{h.get('command', '')}`" for h in entry.get("hooks", []))
+                lines.append(f"- {label} `{event}`{matcher}: {cmds}")
+if lines:
+    print("\n## Hook changes\n\nThis update changes the harness hook entries in `.claude/settings.json`,"
+          " which run on every session. Review each command:\n")
+    print("\n".join(lines))
+PY
 } >"$work/body.md"
 
 git switch -q -C "$branch"
 git -c user.name='github-actions[bot]' \
   -c user.email='41898283+github-actions[bot]@users.noreply.github.com' commit -q -m "$title"
 # Don't push a new commit with the same content as the branch already has.
-if git fetch -q origin "$branch" 2>/dev/null &&
+if origin_git fetch -q origin "$branch" 2>/dev/null &&
   [ "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')" ]; then
   echo "harness-update: $branch already holds this update"
 else
-  git push -q --force origin "HEAD:refs/heads/$branch"
+  origin_git push -q --force origin "HEAD:refs/heads/$branch"
 fi
 
 pr=$(gh pr list --head "$branch" --base "$base" --state open --json number --jq '.[0].number // empty')
