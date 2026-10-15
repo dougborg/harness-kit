@@ -312,4 +312,23 @@ check no-hook-change-exits-0 test "$rc" = 0
 check body-says-no-hook-changes body_has "This update changes no harness hook entries"
 check body-no-hook-entries-listed sh -c '! grep -qE "^- (added|removed) " "$1"' _ "$STUB_DIR/body.md"
 
+# --- The update token leaves the environment before any child process runs ---------
+# A project whose resolver records its environment: the resolver is the first
+# script harness-update.sh runs, so it must not see HARNESS_UPDATE_TOKEN.
+main_proj=$proj
+proj="$scratch/resolver-project"
+git clone -q -b main "$scratch/origin.git" "$proj"
+cat >"$proj/.claude/skills/harness/resolve-upstream.sh" <<'STUB'
+#!/usr/bin/env bash
+env >"$STUB_DIR/resolver-env"
+echo dougborg/harness-kit
+STUB
+pgit commit -qam 'stub resolver'
+update_token=test-app-s3cret
+update v9.9.15
+update_token=
+check resolver-stub-ran test -s "$STUB_DIR/resolver-env"
+check resolver-gets-no-update-token sh -c '! grep -q test-app-s3cret "$1" && ! grep -q HARNESS_UPDATE_TOKEN "$1"' _ "$STUB_DIR/resolver-env"
+proj=$main_proj
+
 exit "$fail"
