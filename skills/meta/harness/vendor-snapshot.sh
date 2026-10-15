@@ -97,11 +97,12 @@ except tomllib.TOMLDecodeError as e:
 
 
 def valid(where, names_):
-    """Every name becomes a path component, so it must be exactly one."""
+    """Every name becomes a path component, so it must be exactly one. The
+    leading letter or digit already rules out '.' and '..'."""
     for n in names_:
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", n) or ".." in n:
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", n):
             die(f"{config_path}: {where}: \"{n}\" is not a valid name "
-                "(letters, digits, '.', '_', '-'; no '..' or '/')")
+                "(starts with a letter or digit, then letters, digits, '.', '_', '-'; no '/')")
     return names_
 
 

@@ -354,6 +354,10 @@ for bad in '..' '.' '' 'a/b'; do
   proj=$(new_project "bad-skill-name-$n" "[\"$bad\"]" '[]')
   expect_refusal "bad-skill-name '$bad'" "$proj" "not a valid name"
 done
+# '..' inside a name is still one component: it's looked up, not refused.
+proj=$(new_project dots-in-name '["a..b"]' '[]')
+expect_refusal dots-in-name-is-valid "$proj" "a..b"
+check dots-in-name-not-invalid sh -c '! "$1" "$2" "$3" 2>&1 | grep -qF "not a valid name"' _ "$vendor" "$plugin" "$proj"
 proj=$(new_project bad-agent-name '[]' '["../verifier"]')
 expect_refusal bad-agent-name "$proj" "not a valid name"
 proj=$(new_project bad-fork-name '["tdd"]' '[]')
@@ -364,6 +368,17 @@ proj=$(new_project bad-source-name '["tdd"]' '[]')
 printf '\n[sources.skills]\n"a/b" = "anthropics/skills@main:skills/x"\n' >>"$proj/.harness/config.toml"
 commit_all "$proj"
 expect_refusal bad-source-name "$proj" "not a valid name"
+
+# A write that fails after its temp file exists (an empty directory where a
+# file goes) exits non-zero and leaves no temp file behind.
+proj=$(new_project write-fails '["tdd"]' '[]')
+mkdir -p "$proj/.claude/skills/tdd/SKILL.md"
+set +e
+run "$proj" >/dev/null 2>&1
+rc=$?
+set -e
+check write-failure-exits-nonzero test "$rc" != 0
+check write-failure-leaves-no-temp test -z "$(find "$proj" -name '.*.tmp')"
 
 # A symlinked directory inside the project is never written through.
 proj=$(new_project symlinked-parent '["tdd"]' '[]')
