@@ -17,9 +17,9 @@
 # directories; the lock records the commit it resolved to. A source may not
 # take a harness-kit skill's name (fork that skill instead), and its SKILL.md
 # frontmatter name, if any, must match. Each git call times out after 300s
-# and a sourced tree may hold 2000 files and 50 MB; the environment overrides
+# and a sourced tree may hold 2000 files and 50 MB. The environment variables
 # HARNESS_SOURCE_FETCH_TIMEOUT, HARNESS_SOURCE_MAX_FILES, and
-# HARNESS_SOURCE_MAX_BYTES are test hooks, never config.
+# HARNESS_SOURCE_MAX_BYTES override these as test hooks; the config can't.
 # The harness skill is always included; forked skills and agents are the
 # project's own and are never written or removed. The plugin's hook entries
 # are merged into .claude/settings.json, harness-kit is set to false there,
@@ -220,7 +220,7 @@ def limit(var, default):
     """A fetch bound. The environment override is a test hook only; the
     config can't change it."""
     value = os.environ.get(var, str(default))
-    if not value.isdigit() or int(value) < 1:
+    if not (value.isascii() and value.isdigit()) or int(value) < 1:
         die(f"{var} must be a positive whole number, got \"{value}\"")
     return int(value)
 
@@ -231,6 +231,7 @@ def limit(var, default):
 FETCH_TIMEOUT = limit("HARNESS_SOURCE_FETCH_TIMEOUT", 300)
 MAX_FILES = limit("HARNESS_SOURCE_MAX_FILES", 2000)
 MAX_BYTES = limit("HARNESS_SOURCE_MAX_BYTES", 50 * 1024 * 1024)
+TIMED_OUT = f"timed out after {FETCH_TIMEOUT}s (HARNESS_SOURCE_FETCH_TIMEOUT)"
 GIT_ENV = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_ALLOW_PROTOCOL": "https:ssh:file"}
 fetch_dir = tempfile.TemporaryDirectory()  # removed when the run exits
 fetched = {}  # (owner, repo, ref) -> (scratch repo, commit): one fetch each
@@ -268,14 +269,14 @@ def fetch_commit(name, owner, repo, ref):
         except subprocess.CalledProcessError as e:
             die(f"[sources.skills] {name}: can't create a scratch repository: {e.stderr.decode(errors='replace').strip()}")
         except subprocess.TimeoutExpired:
-            die(f"[sources.skills] {name}: git init timed out after {FETCH_TIMEOUT}s")
+            die(f"[sources.skills] {name}: git init {TIMED_OUT}")
         try:
             git_in(repo_dir, "fetch", "-q", "--depth", "1", "--no-tags", "--", url, ref)
             commit = git_in(repo_dir, "rev-parse", "--verify", "-q", "FETCH_HEAD^{commit}").decode().strip()
         except subprocess.CalledProcessError as e:
             die(f"[sources.skills] {name}: can't fetch {ref} from {url}: {e.stderr.decode(errors='replace').strip()}")
         except subprocess.TimeoutExpired:
-            die(f"[sources.skills] {name}: fetching {ref} from {url} timed out after {FETCH_TIMEOUT}s")
+            die(f"[sources.skills] {name}: fetching {ref} from {url} {TIMED_OUT}")
         fetched[key] = (repo_dir, commit)
     return fetched[key]
 
@@ -307,7 +308,7 @@ def fetch(name):
     except subprocess.CalledProcessError:
         die(f"[sources.skills] {name}: {path} is not a directory in {owner}/{repo} at {commit}")
     except subprocess.TimeoutExpired:
-        die(f"[sources.skills] {name}: listing {where} timed out after {FETCH_TIMEOUT}s")
+        die(f"[sources.skills] {name}: listing {where} {TIMED_OUT}")
     try:
         listing = raw.decode()
     except UnicodeDecodeError:
@@ -344,7 +345,7 @@ def fetch(name):
     except subprocess.CalledProcessError as e:
         die(f"[sources.skills] {name}: can't read {where}: {e.stderr.decode(errors='replace').strip()}")
     except subprocess.TimeoutExpired:
-        die(f"[sources.skills] {name}: reading {where} timed out after {FETCH_TIMEOUT}s")
+        die(f"[sources.skills] {name}: reading {where} {TIMED_OUT}")
     files, at = {}, 0
     for rel, mode, obj in entries:
         # Each object is "<oid> blob <size>\n<content>\n", or "<oid> missing\n".
