@@ -174,15 +174,21 @@ which:
    variable, then `.claude/harness-upstream`, then `dougborg/harness-kit`.
 2. Reads the upstream's latest release (`gh api repos/<upstream>/releases/latest`)
    and stops, writing nothing, unless it is newer than the lock's `version`.
+   Only `vX.Y.Z` tags are followed: a pre-release or build tag such as
+   `v1.2.0-rc.1` fails the job with a message rather than being compared.
 3. Shallow-clones the release tag, fetches the `v<version>` tag of each fork
    in the config so the fork report can compare it, and runs that release's
    `vendor-snapshot.sh`. An edited snapshot fails here, as it would locally.
+   The job also fails when the version the release vendored isn't its tag's
+   (a manifest that doesn't match its tag), and exits 0 without a commit when
+   vendoring changed nothing.
 4. Runs the diff guard (below).
 5. Commits to the branch `harness-kit/update`, force-pushes it, and opens a
    pull request, or edits the open one, so there is only ever one. The body
-   links the release notes, includes them, and ends with the update's
-   Markdown report (removed, new, and forks). A run whose result matches the
-   branch already pushed doesn't push again.
+   links the release notes, includes them (with each `@` followed by a
+   zero-width joiner, so the notes mention no one), and ends with the
+   update's Markdown report (removed, new, and forks). A run whose result
+   matches the branch already pushed doesn't push again.
 
 **The diff guard.** The update PR changes only snapshot-owned paths: files the
 old or new lock lists, `.harness/lock.json`, and the hook entries in
