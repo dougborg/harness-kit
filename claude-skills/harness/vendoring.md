@@ -299,11 +299,23 @@ someone else reviews it.
 
 A skill from another repository is listed in `skills` and given a source in
 `[sources.skills]` as `"owner/repo@ref:path"` (format in
-`${CLAUDE_SKILL_DIR}/project-facts.md`); a source must be for a name in `skills`. On
+`${CLAUDE_SKILL_DIR}/project-facts.md`); a source must be for a name in `skills`, and
+not for `harness` or any other skill in harness-kit's catalog: to replace a
+harness-kit skill, fork it under `[forks.skills]`. On
 every run the script fetches that ref, shallow, from
 `https://github.com/<owner>/<repo>` and reads the files under `path` from git
 objects; nothing is checked out and none of it runs. The directory must hold
-a `SKILL.md` and only regular files: a symlink or submodule in it is refused.
+a `SKILL.md` and only regular files: a symlink, a submodule, a `.git`
+component in any case, or a file name that isn't UTF-8 is refused. When the
+`SKILL.md` frontmatter has a `name:`, it must be the config's name. Several
+skills from one repository at one ref are fetched once.
+
+The fetch is bounded: each git call is killed after 300 seconds, and a
+sourced skill's directory may hold at most 2000 files and 50 MB, checked
+before any file is read. `HARNESS_SOURCE_FETCH_TIMEOUT`,
+`HARNESS_SOURCE_MAX_FILES`, and `HARNESS_SOURCE_MAX_BYTES` override these
+from the environment only; they are test hooks, not settings, and the config
+can't change them.
 
 Third-party repositories ship one open-format tree, so the same files go to
 both `.claude/skills/<skill>/` and `.agents/skills/<skill>/`, byte for byte.
@@ -317,9 +329,9 @@ compare it with its source by hand), and dropping it from `skills` removes it.
 
 A malformed source, an unreachable repository or ref, or a path that isn't a
 skill directory makes the script exit 1 before it writes anything. The fetch
-never prompts for credentials. It uses the git transports `https`, `ssh` (so a
-`url.insteadOf` rewrite for a private repository still works) and `file`
-only.
+never prompts for credentials. The base URL must be `https://` or `file://`;
+`ssh` is reachable only through your own `url.<base>.insteadOf` rewrite (for
+a private repository), never from the config.
 
 The report lists each source and its commit, under "Third-party sources"
 (`sources` in the JSON report, with `commit`, the lock's `previous` commit,
