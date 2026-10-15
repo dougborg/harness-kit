@@ -699,7 +699,12 @@ wrapped_refusal() {
 proj=$(new_sourced source-timeout "acme/skills@$sha1:skills/frontend-design")
 export HARNESS_SOURCE_FETCH_TIMEOUT=1 GIT_WRAP_SLEEP=30
 wrapped_refusal fetch-timeout-refused "$proj" "timed out"
+wrapped_refusal fetch-timeout-names-hook "$proj" "HARNESS_SOURCE_FETCH_TIMEOUT"
 unset HARNESS_SOURCE_FETCH_TIMEOUT GIT_WRAP_SLEEP
+# A bound is ASCII digits only: Python's isdigit() alone takes other scripts'.
+export HARNESS_SOURCE_MAX_FILES=$'\xd9\xa1'
+expect_refusal non-ascii-limit-refused "$proj" "positive whole number"
+unset HARNESS_SOURCE_MAX_FILES
 
 # An interrupted run (Ctrl-C reaches its process group) takes its git with
 # it rather than leaving the fetch running.
