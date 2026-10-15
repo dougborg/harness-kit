@@ -106,8 +106,12 @@ body() {
 }
 case "$1 $2" in
   "api repos/dougborg/harness-kit/releases/latest")
-    printf '{"tag_name": "%s", "html_url": "https://github.com/dougborg/harness-kit/releases/tag/%s", "body": "### Features\\n\\n* the B change"}\n' "$STUB_TAG" "$STUB_TAG" ;;
-  "pr list") cat "$STUB_DIR/prs" 2>/dev/null || echo '[]' ;;
+    printf '{"tag_name": "%s", "html_url": "https://github.com/dougborg/harness-kit/releases/tag/%s", "body": "### Features\\n\\n* the B change, thanks @octocat"}\n' "$STUB_TAG" "$STUB_TAG" ;;
+  "pr list")
+    # Only the --jq form harness-update.sh uses: the first number, or nothing.
+    [ "${*: -2:1}" = --jq ] && [ "${*: -1}" = '.[0].number // empty' ] || { echo "stub gh: want --jq" >&2; exit 1; }
+    python3 -c 'import json,sys; prs=json.load(open(sys.argv[1])) if len(sys.argv) > 1 else []; print(prs[0]["number"]) if prs else None' \
+      $([ -f "$STUB_DIR/prs" ] && echo "$STUB_DIR/prs") ;;
   "pr create") body "$@"; echo '[{"number": 7}]' >"$STUB_DIR/prs"; echo "https://github.com/o/r/pull/7" ;;
   "pr edit") body "$@" ;;
   *) echo "stub gh: unexpected $*" >&2; exit 1 ;;
@@ -149,6 +153,7 @@ check newer-leaves-config git --git-dir "$scratch/origin.git" diff --quiet main 
 check newer-opens-pr grep -qF 'pr create --head harness-kit/update --base main' "$STUB_DIR/log"
 check body-links-release-notes body_has "[release notes](https://github.com/dougborg/harness-kit/releases/tag/v9.9.9)"
 check body-has-release-notes body_has "* the B change"
+check body-neutralises-mentions sh -c '! grep -qF "@octocat" "$1" && grep -qF "octocat" "$1"' _ "$STUB_DIR/body.md"
 check body-has-report body_has "vendored harness-kit 9.9.9 (from $version)"
 check body-reports-fork-with-fetched-tag body_has "skill \`tdd\` (forked from $version): 2 files changed upstream"
 first=$(origin_branch)
@@ -181,5 +186,23 @@ update v9.9.11
 check workflow-change-fails test "$rc" = 1
 check workflow-change-explains has "GITHUB_TOKEN can't push"
 check workflow-change-pushes-nothing test "$(origin_branch)" = "$first"
+
+# --- A release whose manifest doesn't match its tag is refused ----------------------
+pgit reset -q --hard
+pgit clean -qfd
+pgit switch -q main
+release 9.9.13 git checkout -q v9.9.9 -- skills/meta/harness/harness-update.yml claude-skills/harness/harness-update.yml
+ugit tag v9.9.12
+update v9.9.12
+check tag-mismatch-fails test "$rc" = 1
+check tag-mismatch-explains has "9.9.13, not the tag's 9.9.12"
+check tag-mismatch-pushes-nothing test "$(origin_branch)" = "$first"
+
+# --- Pre-release tags are not followed -----------------------------------------------
+pgit reset -q --hard
+pgit clean -qfd
+update v9.9.14-rc.1
+check prerelease-fails test "$rc" = 1
+check prerelease-explains has "pre-release"
 
 exit "$fail"

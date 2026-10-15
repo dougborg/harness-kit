@@ -10,6 +10,7 @@
 #    .harness/lock.json, stop: nothing is written.
 # 3. Shallow-clone the release tag, fetch the tags the config's forks name
 #    (for the fork report), and run that release's vendor-snapshot.sh.
+#    Fail unless the vendored version is the tag's; stop when nothing changed.
 # 4. Fail unless every changed path is a file the old or new lock owns,
 #    .harness/lock.json, or .claude/settings.json; and fail when the change
 #    touches a workflow file, which GITHUB_TOKEN can't push.
@@ -48,9 +49,11 @@ import json, re, sys
 release = json.load(open(sys.argv[1]))
 current = json.load(open(sys.argv[2]))["version"]
 def parse(v):
+    # Only X.Y.Z releases are followed; a pre-release or build tag is refused.
     m = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", v)
     if not m:
-        sys.exit(f"harness-update: not a release version: {v}")
+        why = " (a pre-release or build version)" if re.fullmatch(r"v?\d+\.\d+\.\d+[-+].*", v) else ""
+        sys.exit(f"harness-update: not a release version{why}: {v}; only vX.Y.Z releases are followed")
     return tuple(map(int, m.groups()))
 tag = release["tag_name"]
 print(tag, release["html_url"], int(parse(tag) > parse(current)))
@@ -79,8 +82,18 @@ done <"$work/fork-tags"
 git show HEAD:.harness/lock.json >"$work/old-lock.json"
 "$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" . >"$work/report.md"
 
-# The diff guard: the update PR may change only what the snapshot owns.
+# The release's manifest must be the version its tag names.
+vendored=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' .harness/lock.json)
+[ "$vendored" = "${tag#v}" ] ||
+  die "release $tag vendored version $vendored, not the tag's ${tag#v}; its plugin manifest doesn't match its tag"
+
 git add -A
+if git diff --cached --quiet HEAD; then
+  echo "harness-update: the snapshot is already up to date with $upstream $tag"
+  exit 0
+fi
+
+# The diff guard: the update PR may change only what the snapshot owns.
 git diff --cached --name-only --no-renames HEAD >"$work/changed"
 python3 - "$work/old-lock.json" .harness/lock.json "$work/changed" <<'PY'
 import json, sys
@@ -112,7 +125,9 @@ title="chore(harness): update harness-kit snapshot to ${tag#v}"
   echo
   echo "<details><summary>Release notes</summary>"
   echo
-  python3 -c 'import json,sys; print((json.load(open(sys.argv[1])).get("body") or "(none)")[:40000])' "$work/release.json"
+  # A zero-width joiner after each @ keeps the notes from mentioning anyone.
+  python3 -c 'import json,sys; print((json.load(open(sys.argv[1])).get("body") or "(none)")[:40000].replace("@", "@\u200d"))' \
+    "$work/release.json"
   echo
   echo "</details>"
   echo
@@ -130,8 +145,7 @@ else
   git push -q --force origin "HEAD:refs/heads/$branch"
 fi
 
-pr=$(gh pr list --head "$branch" --base "$base" --state open --json number |
-  python3 -c 'import json,sys; prs=json.load(sys.stdin); print(prs[0]["number"] if prs else "")')
+pr=$(gh pr list --head "$branch" --base "$base" --state open --json number --jq '.[0].number // empty')
 if [ -n "$pr" ]; then
   gh pr edit "$pr" --title "$title" --body-file "$work/body.md"
   echo "harness-update: updated PR #$pr"
