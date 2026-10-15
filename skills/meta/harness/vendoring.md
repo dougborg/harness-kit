@@ -306,7 +306,11 @@ every run the script fetches that ref, shallow, from
 `https://github.com/<owner>/<repo>` and reads the files under `path` from git
 objects; nothing is checked out and none of it runs. The directory must hold
 a `SKILL.md` and only regular files: a symlink, a submodule, a `.git`
-component in any case, or a file name that isn't UTF-8 is refused. When the
+component in any case, a file name that isn't UTF-8, or two paths that
+differ only in case is refused. Snapshots are written on Linux and macOS,
+whose filesystems may be case-insensitive (macOS is by default), where two
+such paths would land on one file; Windows-only aliases of `.git`, such as
+trailing dots or `git~1`, aren't checked. When the
 `SKILL.md` frontmatter has a `name:`, it must be the config's name. Several
 skills from one repository at one ref are fetched once.
 

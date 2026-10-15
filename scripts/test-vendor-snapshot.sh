@@ -758,6 +758,14 @@ for entry in "160000 commit $missing"$'\tmod' $'040000 tree TREE\t.git' $'040000
   [ "$n" != 5 ] || want="not UTF-8"
   wrapped_refusal "bad-tree-refused $n" "$proj" "$want"
 done
+# Paths that differ only in case would overwrite each other on a
+# case-insensitive filesystem (macOS by default): a file, or a directory.
+for entry in $'100644 blob BLOB\tskill.md' $'040000 tree TREE\tSkill.MD'; do
+  n=$((n + 1))
+  bad_source "bad-$n" "$entry"
+  proj=$(new_sourced "source-bad-tree-$n" "acme/bad-$n@main:skills/x" x)
+  wrapped_refusal "case-collision-refused $n" "$proj" "differ only in case"
+done
 
 # Only https and file transports: plain http is refused before any fetch.
 proj=$(new_sourced source-http "acme/skills@$sha1:skills/frontend-design")
