@@ -175,6 +175,26 @@ json_is v2-shared-script "$v2" "$(status .agents/scripts/shared/discover-verific
 json_is v2-codex-agent "$v2" "$(status .codex/agents/verifier.toml modified)"
 json_is v2-other-source "$v2" "$(status .claude/skills/frontend-design/SKILL.md other-source)"
 
+# --- A plugin clone in SHA-256 object format ---------------------------------------
+p256="$scratch/plugin256"
+mkdir -p "$p256"
+git -C "$p256" init -q --object-format=sha256
+put "$p256/.claude-plugin/plugin.json" '{"name": "harness-kit", "version": "1.0.0"}'
+put "$p256/claude-skills/commit/SKILL.md" 'commit 1.0.0 (claude)'
+git -C "$p256" add -A
+git -C "$p256" -c user.name=t -c user.email=t@t commit -qm 1.0.0
+git -C "$p256" tag v1.0.0
+s256="$scratch/s256"
+put "$s256/.claude/skills/commit/SKILL.md" 'commit 1.0.0 (claude)'
+put "$s256/.harness-lock.json" '{"sources": {"harness-kit": {"version": "1.0.0"}},
+  "files": {".claude/skills/commit/SKILL.md": {"source": "harness-kit"}}}'
+out=$("$inventory" --json "$p256" "$s256" 2>&1 || true)
+if python3 -c 'import json, sys; sys.exit(json.loads(sys.argv[1])["files"][0]["status"] != "pristine")' "$out" 2>/dev/null; then
+  pass sha256-plugin-pristine
+else
+  flunk sha256-plugin-pristine "$out"
+fi
+
 # --- Refusals --------------------------------------------------------------------
 mkdir -p "$scratch/plain"
 run no-lock 1 'no .harness-lock.json' "$plugin" "$scratch/plain"

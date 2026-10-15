@@ -35,7 +35,6 @@ fi
 
 python3 - "$as_json" "$1" "${2:-.}" <<'PY'
 import difflib
-import hashlib
 import json
 import posixpath
 import re
@@ -90,6 +89,12 @@ for row in git("ls-tree", "-r", "-z", tag).decode().split("\0"):
         meta, path = row.split("\t", 1)
         mode, _, blob = meta.split()
         tree[path] = (mode, blob)
+# The release's open-format skills by (skill, path inside it), across areas.
+by_skill = {}
+for path in tree:
+    m = re.fullmatch(r"skills/[^/]+/([^/]+)/(.+)", path)
+    if m:
+        by_skill.setdefault(m.groups(), []).append(path)
 
 
 def resolve(path):
@@ -110,8 +115,7 @@ def counterpart(path):
     flat skills/<skill>/ (0.x) and claude-skills/ plus skills/<area>/ (1.x)."""
     rules = [
         (r"\.claude/skills/([^/]+)/(.+)", lambda s, r: [f"claude-skills/{s}/{r}", f"skills/{s}/{r}"]),
-        (r"\.agents/skills/([^/]+)/(.+)", lambda s, r: sorted(
-            p for p in tree if re.fullmatch(rf"skills/[^/]+/{re.escape(s)}/{re.escape(r)}", p)) + [f"skills/{s}/{r}"]),
+        (r"\.agents/skills/([^/]+)/(.+)", lambda s, r: sorted(by_skill.get((s, r), [])) + [f"skills/{s}/{r}"]),
         (r"\.agents/scripts/shared/(.+)", lambda n: [f"scripts/shared/{n}"]),
         (r"\.claude/agents/(.+)", lambda r: [f"agents/{r}"]),
         (r"\.codex/agents/(.+)", lambda n: [f".codex/agents/{n}"]),
@@ -135,7 +139,9 @@ def owner(path):
 
 
 def blob_id(data):
-    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+    """The id git gives these bytes in the plugin's repo, in its object format."""
+    return subprocess.run(["git", "-C", str(plugin), "hash-object", "--stdin"], input=data,
+                          capture_output=True, check=True).stdout.decode().strip()
 
 
 files, diffs = [], {}  # diffs: diff text -> paths
