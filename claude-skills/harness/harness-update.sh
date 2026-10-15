@@ -29,6 +29,8 @@ die() {
   echo "harness-update: $*" >&2
   exit 1
 }
+# mention_free: stdin to stdout with a zero-width joiner after each @.
+mention_free() { python3 -c 'import sys; sys.stdout.write(sys.stdin.read().replace("@", "@‍"))'; }
 
 [ -f .harness/lock.json ] || die "no .harness/lock.json: not a vendored project"
 [ -z "$(git status --porcelain)" ] || die "the working tree is not clean"
@@ -83,6 +85,9 @@ print(tag, release["html_url"], int(parse(tag) > parse(current)))
 PY
 )
 read -r tag url newer <<<"$info"
+# Up to date: exit without touching GitHub. An update PR still open (say, the
+# release was vendored by hand) is left as it is, for a person to close; the
+# job never closes PRs.
 if [ "$newer" != 1 ]; then
   echo "harness-update: the snapshot is up to date with $upstream $tag"
   exit 0
@@ -112,6 +117,7 @@ git show HEAD:.harness/lock.json >"$work/old-lock.json"
 env -u GH_TOKEN -u GITHUB_TOKEN "$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" . >"$work/report.md"
 
 git add -A
+# As above, an open update PR is left as it is.
 if git diff --cached --quiet HEAD; then
   echo "harness-update: the snapshot is already up to date with $upstream $tag"
   exit 0
@@ -149,29 +155,43 @@ title="chore(harness): update harness-kit snapshot to ${tag#v}"
   echo
   echo "<details><summary>Release notes</summary>"
   echo
-  # A zero-width joiner after each @ keeps the notes from mentioning anyone.
-  python3 -c 'import json,sys; print((json.load(open(sys.argv[1])).get("body") or "(none)")[:40000].replace("@", "@\u200d"))' \
-    "$work/release.json"
+  # A zero-width joiner after each @ keeps the release's and the config's
+  # text from mentioning anyone: the notes and the report, which names forks.
+  python3 -c 'import json,sys; print((json.load(open(sys.argv[1])).get("body") or "(none)")[:40000])' \
+    "$work/release.json" | mention_free
   echo
   echo "</details>"
   echo
-  cat "$work/report.md"
+  mention_free <"$work/report.md"
   # Hook entries run commands on every session, so list each one that changed.
+  # Event, matcher, and commands are shown exactly, in code spans and fences
+  # longer than any backtick run they hold; mentions don't fire in code.
   python3 - "$work/old-lock.json" .harness/lock.json <<'PY'
-import json, sys
+import json, re, sys
 old, new = (json.load(open(p)).get("hooks", {}).get("claude", {}) for p in sys.argv[1:3])
-lines = []
+def ticks(s, least):
+    return "`" * max(least, max((len(r) for r in re.findall(r"`+", s)), default=0) + 1)
+def span(s):
+    pad = " " if s[:1] == "`" or s[-1:] == "`" else ""
+    return f"{ticks(s, 1)}{pad}{s}{pad}{ticks(s, 1)}"
+out = []
 for event in sorted(set(old) | set(new)):
     for label, a, b in (("removed", old, new), ("added", new, old)):
         for entry in a.get(event, []):
             if entry not in b.get(event, []):
-                matcher = f" (matcher `{entry['matcher']}`)" if entry.get("matcher") else ""
-                cmds = "; ".join(f"`{h.get('command', '')}`" for h in entry.get("hooks", []))
-                lines.append(f"- {label} `{event}`{matcher}: {cmds}")
-if lines:
-    print("\n## Hook changes\n\nThis update changes the harness hook entries in `.claude/settings.json`,"
+                matcher = f" (matcher {span(str(entry['matcher']))})" if entry.get("matcher") else ""
+                cmds = "\n".join(str(h.get("command", "")) for h in entry.get("hooks", []))
+                fence = ticks(cmds, 3)
+                out.append(f"- {label} {span(str(event))}{matcher}:\n\n  {fence}text")
+                out.extend(f"  {line}" for line in cmds.split("\n"))
+                out.append(f"  {fence}\n")
+print("\n## Hook changes\n")
+if out:
+    print("This update changes the harness hook entries in `.claude/settings.json`,"
           " which run on every session. Review each command:\n")
-    print("\n".join(lines))
+    print("\n".join(out))
+else:
+    print("This update changes no harness hook entries in `.claude/settings.json`.")
 PY
 } >"$work/body.md"
 

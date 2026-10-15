@@ -185,13 +185,14 @@ which:
 4. Runs the diff guard (below).
 5. Commits to the branch `harness-kit/update`, force-pushes it, and opens a
    pull request, or edits the open one, so there is only ever one. The body
-   links the release notes, includes them (with each `@` followed by a
-   zero-width joiner, so the notes mention no one), and ends with the
-   update's Markdown report (removed, new, and forks). When the update adds
-   or removes hook entries in `.claude/settings.json`, a `## Hook changes`
-   section lists each one with its event, matcher, and command, since they
-   run on every session. A run whose result matches the branch already
-   pushed doesn't push again.
+   links the release notes, includes them and the update's Markdown report
+   (removed, new, and forks) with each `@` followed by a zero-width joiner,
+   so neither mentions anyone. A `## Hook changes` section lists each hook
+   entry the update adds to or removes from `.claude/settings.json`, with its
+   event, matcher, and commands shown exactly in code, since they run on
+   every session; it says so when there are none. A run whose result matches
+   the branch already pushed doesn't push again. When the snapshot is
+   already current, the job exits without touching an open update PR.
 
 **The diff guard.** The update PR changes only snapshot-owned paths: files the
 old or new lock lists, `.harness/lock.json`, and the hook entries in

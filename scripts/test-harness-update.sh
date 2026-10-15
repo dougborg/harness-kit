@@ -91,8 +91,18 @@ pgit remote add origin "$scratch/origin.git"
 pgit push -q origin main
 origin_branch() { git --git-dir "$scratch/origin.git" rev-parse -q --verify refs/heads/harness-kit/update || true; }
 
+# B drops the Stop hook and adds a SessionEnd hook whose command has a
+# mention and a run of backticks, which the PR body must render safely.
+cat >"$scratch/edit-hooks.py" <<'PY'
+import json
+p = "hooks/hooks.json"
+d = json.load(open(p))
+del d["hooks"]["Stop"]
+d["hooks"]["SessionEnd"] = [{"hooks": [{"type": "command", "command": 'echo "@hubot ``` done"'}]}]
+open(p, "w").write(json.dumps(d, indent=2))
+PY
 release 9.9.9 sh -c 'echo "B change" >>skills/engineering/tdd/SKILL.md; echo "B change" >>claude-skills/tdd/SKILL.md
-  python3 -c "import json; p = \"hooks/hooks.json\"; d = json.load(open(p)); del d[\"hooks\"][\"Stop\"]; open(p, \"w\").write(json.dumps(d, indent=2))"'
+  python3 "$1"' _ "$scratch/edit-hooks.py"
 
 # --- A stub gh ------------------------------------------------------------------
 mkdir -p "$scratch/bin"
@@ -175,8 +185,14 @@ check body-links-release-notes body_has "[release notes](https://github.com/doug
 check body-has-release-notes body_has "* the B change"
 check body-neutralises-mentions sh -c '! grep -qF "@octocat" "$1" && grep -qF "octocat" "$1"' _ "$STUB_DIR/body.md"
 check body-has-report body_has "vendored harness-kit 9.9.9 (from $version)"
-check body-lists-hook-changes body_has '- removed `Stop`: `"${CLAUDE_PROJECT_DIR}/.claude/hooks/harness-kit/retro-nudge.sh"`'
 check body-hook-section body_has "## Hook changes"
+check body-lists-hook-removed body_has '- removed `Stop`:'
+check body-shows-removed-command grep -qxF '  "${CLAUDE_PROJECT_DIR}/.claude/hooks/harness-kit/retro-nudge.sh"' "$STUB_DIR/body.md"
+check body-lists-hook-added body_has '- added `SessionEnd`:'
+# The command is shown byte for byte in a fence longer than its backtick run;
+# mentions don't fire inside a code block.
+check body-shows-added-command grep -qxF '  echo "@hubot ``` done"' "$STUB_DIR/body.md"
+check body-hook-fence-outlasts-command grep -qxF '  ````text' "$STUB_DIR/body.md"
 check body-reports-fork-with-fetched-tag body_has "skill \`tdd\` (forked from $version): 2 files changed upstream"
 check push-gets-token grep -qx 'push auth=ok keep=kept' "$STUB_DIR/git-log"
 check token-masked-in-actions has "::add-mask::$(printf 'x-access-token:test-token-s3cret' | base64 | tr -d '\n')"
@@ -232,5 +248,18 @@ pgit clean -qfd
 update v9.9.14-rc.1
 check prerelease-fails test "$rc" = 1
 check prerelease-explains has "pre-release"
+
+# --- With B merged, a release that changes no hook says so ----------------------------
+pgit reset -q --hard
+pgit clean -qfd
+pgit fetch -q origin harness-kit/update
+pgit merge -q --ff-only FETCH_HEAD
+pgit push -q origin main
+release 9.9.15 sh -c 'echo "C change" >>skills/engineering/tdd/SKILL.md; echo "C change" >>claude-skills/tdd/SKILL.md'
+update v9.9.15
+check no-hook-change-exits-0 test "$rc" = 0
+[ "$rc" = 0 ] || echo "$out"
+check body-says-no-hook-changes body_has "This update changes no harness hook entries"
+check body-no-hook-entries-listed sh -c '! grep -qE "^- (added|removed) " "$1"' _ "$STUB_DIR/body.md"
 
 exit "$fail"
