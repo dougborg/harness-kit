@@ -35,6 +35,7 @@ check workflow-runs-update-script grep -qE '^ +run: \.claude/skills/harness/harn
 check workflow-on-schedule grep -qE '^  schedule:' "$wf"
 check workflow-on-dispatch grep -qE '^  workflow_dispatch:' "$wf"
 check workflow-uses-github-token grep -qF 'GH_TOKEN: ${{ github.token }}' "$wf"
+check workflow-checkout-keeps-no-credentials grep -qE '^ +persist-credentials: false$' "$wf"
 check workflow-no-other-secrets sh -c '! grep -q "secrets\." "$1"' _ "$wf"
 check workflow-permissions python3 -c 'import sys; sys.exit("\npermissions:\n  contents: write\n  pull-requests: write\n\n" not in open(sys.argv[1]).read())' "$wf"
 check workflow-actions-pinned sh -c '! grep -E "uses: " "$1" | grep -vqE "uses: [^@ ]+@[0-9a-f]{40}( |$)"' _ "$wf"
@@ -90,7 +91,8 @@ pgit remote add origin "$scratch/origin.git"
 pgit push -q origin main
 origin_branch() { git --git-dir "$scratch/origin.git" rev-parse -q --verify refs/heads/harness-kit/update || true; }
 
-release 9.9.9 sh -c 'echo "B change" >>skills/engineering/tdd/SKILL.md; echo "B change" >>claude-skills/tdd/SKILL.md'
+release 9.9.9 sh -c 'echo "B change" >>skills/engineering/tdd/SKILL.md; echo "B change" >>claude-skills/tdd/SKILL.md
+  python3 -c "import json; p = \"hooks/hooks.json\"; d = json.load(open(p)); del d[\"hooks\"][\"Stop\"]; open(p, \"w\").write(json.dumps(d, indent=2))"'
 
 # --- A stub gh ------------------------------------------------------------------
 mkdir -p "$scratch/bin"
@@ -98,6 +100,7 @@ cat >"$scratch/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 # Stub gh: the latest release is $STUB_TAG; open PRs are in $STUB_DIR/prs.
 echo "$*" >>"$STUB_DIR/log"
+[ "${GH_TOKEN:-}" = test-token-s3cret ] || { echo "stub gh: no GH_TOKEN" >&2; exit 1; }
 body() {
   while [ $# -gt 0 ]; do
     if [ "$1" = --body-file ]; then cp "$2" "$STUB_DIR/body.md"; fi
@@ -126,7 +129,7 @@ mkdir -p "$STUB_DIR"
 update() {
   set +e
   out=$(cd "$proj" && PATH="$scratch/bin:$PATH" STUB_TAG=$1 GITHUB_SERVER_URL="file://$srv" \
-    HARNESS_UPSTREAM='' .claude/skills/harness/harness-update.sh 2>&1)
+    HARNESS_UPSTREAM='' GH_TOKEN=test-token-s3cret .claude/skills/harness/harness-update.sh 2>&1)
   rc=$?
   set -e
 }
@@ -155,6 +158,8 @@ check body-links-release-notes body_has "[release notes](https://github.com/doug
 check body-has-release-notes body_has "* the B change"
 check body-neutralises-mentions sh -c '! grep -qF "@octocat" "$1" && grep -qF "octocat" "$1"' _ "$STUB_DIR/body.md"
 check body-has-report body_has "vendored harness-kit 9.9.9 (from $version)"
+check body-lists-hook-changes body_has '- removed `Stop`: `"${CLAUDE_PROJECT_DIR}/.claude/hooks/harness-kit/retro-nudge.sh"`'
+check body-hook-section body_has "## Hook changes"
 check body-reports-fork-with-fetched-tag body_has "skill \`tdd\` (forked from $version): 2 files changed upstream"
 first=$(origin_branch)
 
@@ -170,12 +175,15 @@ check rerun-same-content-not-pushed test "$(origin_branch)" = "$first"
 # --- The diff guard: a release that touches a project file is refused --------------
 pgit switch -q main
 calls=$(pr_calls)
-release 9.9.10 sh -c 'echo "echo tampered >>AGENTS.md" >>skills/meta/harness/vendor-snapshot.sh'
+release 9.9.10 sh -c 'echo "echo tampered >>AGENTS.md; env >\"\$STUB_DIR/upstream-env\"" >>skills/meta/harness/vendor-snapshot.sh'
 update v9.9.10
 check guard-fails test "$rc" = 1
 check guard-names-path has "  AGENTS.md"
 check guard-pushes-nothing test "$(origin_branch)" = "$first"
 check guard-touches-no-pr test "$(pr_calls)" = "$calls"
+check upstream-script-ran test -s "$STUB_DIR/upstream-env"
+check upstream-script-gets-no-token sh -c '! grep -q s3cret "$1"' _ "$STUB_DIR/upstream-env"
+check no-token-in-git-config sh -c '! grep -rq s3cret "$1/.git/config"' _ "$proj"
 
 # --- A release that changes the workflow itself can't be pushed by GITHUB_TOKEN ---
 pgit reset -q --hard
