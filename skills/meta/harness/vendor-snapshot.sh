@@ -334,9 +334,9 @@ def fetch(name):
         entries.append((rel, mode, obj))
         total += int(size)
         if len(entries) > MAX_FILES:
-            die(f"[sources.skills] {name}: {where} has more than {MAX_FILES} files")
+            die(f"[sources.skills] {name}: {where} has more than {MAX_FILES} file{'s' * (MAX_FILES != 1)}")
         if total > MAX_BYTES:
-            die(f"[sources.skills] {name}: {where} has more than {MAX_BYTES} bytes")
+            die(f"[sources.skills] {name}: {where} has more than {MAX_BYTES} byte{'s' * (MAX_BYTES != 1)}")
     # One git process reads every blob, so FETCH_TIMEOUT bounds them all.
     try:
         out = git_in(repo_dir, "cat-file", "--batch",
