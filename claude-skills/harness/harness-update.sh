@@ -8,9 +8,10 @@
 #    .claude/harness-upstream, then dougborg/harness-kit.
 # 2. Read its latest release. When it is not newer than the version in
 #    .harness/lock.json, stop: nothing is written.
-# 3. Shallow-clone the release tag, fetch the tags the config's forks name
-#    (for the fork report), and run that release's vendor-snapshot.sh.
-#    Fail unless the vendored version is the tag's; stop when nothing changed.
+# 3. Shallow-clone the release tag; fail, writing nothing, unless its plugin
+#    manifest is the tag's version. Fetch the tags the config's forks name
+#    (for the fork report) and run that release's vendor-snapshot.sh; stop
+#    when nothing changed.
 # 4. Fail unless every changed path is a file the old or new lock owns,
 #    .harness/lock.json, or .claude/settings.json; and fail when the change
 #    touches a workflow file, which GITHUB_TOKEN can't push.
@@ -89,6 +90,12 @@ fi
 
 plugin="$work/harness-kit"
 git clone -q --depth 1 --branch "$tag" "${GITHUB_SERVER_URL:-https://github.com}/$upstream" "$plugin"
+# The release's manifest must be the version its tag names; checked before
+# vendoring so a mismatch writes nothing.
+manifest=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$plugin/.claude-plugin/plugin.json")
+[ "$manifest" = "${tag#v}" ] ||
+  die "release $tag has plugin manifest version $manifest, not the tag's ${tag#v}; its manifest doesn't match its tag"
+
 # Forks are compared against the release they were forked from; a tag that
 # can't be fetched is reported as not compared.
 python3 - <<'PY' >"$work/fork-tags"
@@ -103,11 +110,6 @@ done <"$work/fork-tags"
 
 git show HEAD:.harness/lock.json >"$work/old-lock.json"
 env -u GH_TOKEN -u GITHUB_TOKEN "$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" . >"$work/report.md"
-
-# The release's manifest must be the version its tag names.
-vendored=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' .harness/lock.json)
-[ "$vendored" = "${tag#v}" ] ||
-  die "release $tag vendored version $vendored, not the tag's ${tag#v}; its plugin manifest doesn't match its tag"
 
 git add -A
 if git diff --cached --quiet HEAD; then
