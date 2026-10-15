@@ -82,6 +82,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -235,13 +236,17 @@ fetched = {}  # (owner, repo, ref) -> (scratch repo, commit): one fetch each
 
 
 def git_in(repo_dir, *args):
-    """git in a scratch repo, killed with its children after FETCH_TIMEOUT."""
+    """git in a scratch repo, killed with its children after FETCH_TIMEOUT,
+    or when the run is interrupted, so no git outlives the run."""
     p = subprocess.Popen(["git", "-C", repo_dir, *args], stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE, env=GIT_ENV, start_new_session=True)
     try:
         out, err = p.communicate(timeout=FETCH_TIMEOUT)
-    except subprocess.TimeoutExpired:
-        os.killpg(p.pid, 9)
+    except BaseException:  # the timeout, or Ctrl-C
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass  # it exited on its own just now
         p.communicate()
         raise
     if p.returncode:

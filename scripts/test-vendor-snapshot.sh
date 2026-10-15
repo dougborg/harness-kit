@@ -656,6 +656,7 @@ cat >"$scratch/gitwrap/git" <<'WRAP'
 #!/bin/sh
 if [ "${3:-}" = fetch ]; then
   echo fetch >>"$GIT_WRAP_LOG"
+  if [ -n "${GIT_WRAP_PIDFILE:-}" ]; then echo $$ >"$GIT_WRAP_PIDFILE"; fi
   if [ -n "${GIT_WRAP_SLEEP:-}" ]; then exec sleep "$GIT_WRAP_SLEEP"; fi
 fi
 if [ "${3:-}" = init ] && [ -n "${GIT_WRAP_FAIL_INIT:-}" ]; then
@@ -695,6 +696,24 @@ proj=$(new_sourced source-timeout "acme/skills@$sha1:skills/frontend-design")
 export HARNESS_SOURCE_FETCH_TIMEOUT=1 GIT_WRAP_SLEEP=30
 wrapped_refusal fetch-timeout-refused "$proj" "timed out"
 unset HARNESS_SOURCE_FETCH_TIMEOUT GIT_WRAP_SLEEP
+
+# An interrupted run (Ctrl-C reaches its process group) takes its git with
+# it rather than leaving the fetch running.
+proj=$(new_sourced source-interrupt "acme/skills@$sha1:skills/frontend-design")
+pidfile="$scratch/git-wrap.pid"
+set -m
+GIT_WRAP_SLEEP=30 GIT_WRAP_PIDFILE="$pidfile" wrapped "$proj" >/dev/null 2>&1 &
+job=$!
+set +m
+for _ in $(seq 100); do
+  if [ -s "$pidfile" ]; then break; fi
+  sleep 0.1
+done
+kill -INT -- "-$job"
+wait "$job" || true
+git_pid=$(cat "$pidfile" 2>/dev/null || true)
+check interrupt-kills-git sh -c 'test -n "$1" && ! kill -0 "$1" 2>/dev/null' _ "$git_pid"
+if [ -n "$git_pid" ]; then kill "$git_pid" 2>/dev/null || true; fi
 proj=$(new_sourced source-init-fails "acme/skills@$sha1:skills/frontend-design")
 export GIT_WRAP_FAIL_INIT=1
 wrapped_refusal init-failure-reported "$proj" "can't create a scratch repository"
