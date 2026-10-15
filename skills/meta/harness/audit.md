@@ -74,7 +74,8 @@ Find the verification command for this project:
   - `.claude/settings.json` sets `"harness-kit@harness-kit": false`, so the
     plugin's copies don't load beside the snapshot's.
   - No `.harness-lock.json` is left. One means the project is still on
-    copy-and-edit, or a migration didn't finish: recommend migrate (#174).
+    copy-and-edit, or a migration didn't finish: recommend migrate
+    (`<skill-dir>/migrate.md`).
 
 ## 5. Check Model Tiering
 

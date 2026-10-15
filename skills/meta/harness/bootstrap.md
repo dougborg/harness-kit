@@ -121,8 +121,9 @@ Done when `<plugin-root>/.claude-plugin/plugin.json` exists.
    - `/doctor` (bundled with Claude Code, alias `/checkup`): ongoing setup
      hygiene such as installation and PATH problems, unused skills and MCP
      servers, slow hooks, and CLAUDE.md bloat. No install needed.
-   - `/harness audit`: harness structure, frontmatter validity, and the
-     snapshot. Advisory, not a gate.
+   - The `harness` skill's audit mode (`/harness audit` in Claude Code,
+     `$harness audit` in Codex): harness structure, frontmatter validity,
+     and the snapshot. Advisory, not a gate.
 
    Also recommend running `/run-skill-generator` once, to record this
    project's real build and launch recipe as a `run-<name>` skill that `/run`

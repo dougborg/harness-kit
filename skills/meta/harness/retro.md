@@ -64,7 +64,7 @@ Scope: this mode audits the *harness* (skills, agents, hooks) and the environmen
    | --- | --- |
    | A project fact (the gate command, a path, a convention, a term) | `.harness/config.toml` when a generic skill reads that key, otherwise the `## Project facts` section of `AGENTS.md` (`<skill-dir>/project-facts.md`) |
    | A project-specific capability | A project-local skill or agent, outside the lock |
-   | Generic: it would help every project | Upstream, as a hoist PR or a `/harness-issue`; it returns through the next update PR |
+   | Generic: it would help every project | Upstream, as a hoist PR or a `harness-issue` report; it returns through the next update PR |
 
    A fork is the escape hatch when a vendored skill must behave differently here and facts can't express it: propose it as an explicit decision for the user, recorded in `[forks.skills]` or `[forks.agents]` with the forked-from version, never as a side effect of a fix. Done when every A and B lesson names its destination.
 
@@ -78,8 +78,8 @@ Scope: this mode audits the *harness* (skills, agents, hooks) and the environmen
    - Type D — patterns rarely belong upstream; keep local unless the pattern is genuinely cross-project
 
 7. **Surface upstream candidates and confirm with the user before filing.** Show each upstream-worthy finding and ask per item: file as Issue, open as PR, hoist a local fix, or skip. Then act:
-   - **Issue / PR** → invoke `/harness-issue` (configurable upstream; defaults to harness-kit)
-   - **Hoist** → invoke `/harness hoist` when the improvement already exists in the project: a project-local skill, a facts pattern, or a fork
+   - **Issue / PR** → invoke the `harness-issue` skill (configurable upstream; defaults to harness-kit)
+   - **Hoist** → run hoist mode (`<skill-dir>/hoist.md`) when the improvement already exists in the project: a project-local skill, a facts pattern, or a fork
    - **Skip / keep local** → no upstream action; leave a note in the retro summary so it's not forgotten next session
 
 8. **For Type D patterns:** Save as a brief markdown note. Patterns are lighter than skills — they capture heuristics like "in this codebase, always check X before Y" or "this API returns 404 for deleted resources, not 410." Store in memory files or a `.claude/patterns/` directory.

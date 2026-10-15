@@ -88,7 +88,7 @@ When a global skill already exists, project-local versions should:
 - Reference the global skill for the core protocol
 - Add value, don't reimplement
 
-Example: `/commit` (upstream) runs the project's quality gate, which it reads from `[facts] verification_command` (e.g., `nix flake check`, `moon ci`). The project states the fact; it doesn't write a second `/commit`. A project-local skill earns its place with a workflow upstream doesn't have, such as a domain-specific debug loop.
+Example: the upstream `commit` skill runs the project's quality gate, which it reads from `[facts] verification_command` (e.g., `nix flake check`, `moon ci`). The project states the fact; it doesn't write a second `commit` skill. A project-local skill earns its place with a workflow upstream doesn't have, such as a domain-specific debug loop.
 
 ## Prerequisite Automation
 

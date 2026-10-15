@@ -80,8 +80,8 @@ skills and agents you choose as a snapshot in `.claude/`, `.agents/`, and
 `.codex/`. Commit the result; the repo then works without the plugin.
 
 Upgrading a project bootstrapped before 2.0.0 (one with a
-`.harness-lock.json`): run `/harness migrate` once. It turns edited copies
-into facts or forks and vendors the snapshot.
+`.harness-lock.json`): run `/harness migrate` once (`$harness migrate` in
+Codex). It turns edited copies into facts or forks and vendors the snapshot.
 
 ## Install for Codex CLI
 
