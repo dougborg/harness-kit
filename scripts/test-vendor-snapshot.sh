@@ -430,6 +430,37 @@ check fork-left-alone test "$(cat "$proj/.claude/skills/tdd/SKILL.md")" = fork
 check fork-without-git-not-compared grep -qE '^- skill `tdd` \(forked from 1\.0\.0\): not compared: .*/plugin is not a git checkout' <<<"$report"
 check fork-not-in-lock test "$(json "'tdd' in d['skills']" "$proj/.harness/lock.json")" = False
 
+# --- The update schedule: [update] schedule templates the workflow's cron -------
+cron_line() { grep -E '^ +- cron: ' "$1/.github/workflows/harness-update.yml"; }
+proj=$(new_project scheduled '["commit"]' '[]')
+run "$proj" >/dev/null
+check default-schedule-unchanged test "$(cron_line "$proj")" = "$(grep -E '^ +- cron: ' "$plugin/skills/meta/harness/harness-update.yml")"
+printf '\n[update]\nschedule = "5 4 * * 2"\n' >>"$proj/.harness/config.toml"
+commit_all "$proj"
+run "$proj" >/dev/null
+check schedule-templated test "$(cron_line "$proj")" = '    - cron: "5 4 * * 2"'
+check schedule-only-cron-changes test "$(diff "$plugin/skills/meta/harness/harness-update.yml" \
+  "$proj/.github/workflows/harness-update.yml" | grep -c '^[<>]')" = 2
+check schedule-lock-hashes-templated hashes_match "$proj"
+check schedule-passes-edit-check "$plugin/skills/meta/harness/check-snapshot.sh" "$proj"
+commit_all "$proj"
+sed -i.bak 's/5 4 \* \* 2/*\/30 * * * */' "$proj/.harness/config.toml" && rm "$proj/.harness/config.toml.bak"
+run "$proj" >/dev/null
+check schedule-change-revendors test "$(cron_line "$proj")" = '    - cron: "*/30 * * * *"'
+check schedule-change-passes-edit-check "$plugin/skills/meta/harness/check-snapshot.sh" "$proj"
+n=0
+for bad in '"5 4 * *"' '"5 4 * * 1 2"' '"5 4 * * 1\" #"' '"5  4 * * 1"' '"5 4 * * mon"' '""' '5' '["5 4 * * 1"]'; do
+  n=$((n + 1))
+  proj=$(new_project "bad-schedule-$n" '["commit"]' '[]')
+  printf '\n[update]\nschedule = %s\n' "$bad" >>"$proj/.harness/config.toml"
+  commit_all "$proj"
+  expect_refusal "bad-schedule $bad" "$proj" "[update] schedule"
+done
+proj=$(new_project bad-update-table '["commit"]' '[]')
+printf 'update = "weekly"\n%s\n' "$(cat "$proj/.harness/config.toml")" >"$proj/.harness/config.toml"
+commit_all "$proj"
+expect_refusal "update-not-a-table" "$proj" "[update]"
+
 # --- Third-party skills: fetched from [sources.skills] -------------------------
 # Sources resolve under HARNESS_SOURCE_BASE_URL, here a directory of local
 # repos, so owner/repo "acme/skills" is $scratch/sources/acme/skills.

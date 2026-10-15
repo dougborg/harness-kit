@@ -8,7 +8,8 @@
 #   .agents/scripts/shared/   shared helpers those skills name
 #   .codex/agents/<a>.toml    generated Codex agents (.codex/agents/<a>.toml)
 #   .claude/hooks/harness-kit/  the plugin's hook scripts
-#   .github/workflows/harness-update.yml  the scheduled update workflow
+#   .github/workflows/harness-update.yml  the scheduled update workflow, its
+#                             cron from the config's [update] schedule if set
 # A skill with a [sources.skills] entry is instead fetched at its ref from
 # its own repository (HARNESS_SOURCE_BASE_URL, default https://github.com)
 # and its one tree written byte for byte to both skill directories; the lock
@@ -128,6 +129,18 @@ def table(*keys):
 
 
 forks = {"skills": table("forks", "skills"), "agents": table("forks", "agents")}
+
+# [update] schedule: the update workflow's cron, five fields of digits and
+# * , - / separated by single spaces. It is written into the workflow, so
+# nothing else is accepted.
+update = config.get("update", {})
+if not isinstance(update, dict):
+    die(f"{config_path}: [update] must be a table")
+schedule = update.get("schedule")
+if schedule is not None and not (isinstance(schedule, str)
+                                 and re.fullmatch(r"[0-9*,/-]+( [0-9*,/-]+){4}", schedule)):
+    die(f"{config_path}: [update] schedule must be a five-field cron string such as "
+        f"\"23 7 * * 1\" (digits and * , - / only), got {json.dumps(schedule)}")
 skills = sorted((names("skills") | {"harness"}) - set(forks["skills"]))
 agents = sorted(names("agents") - set(forks["agents"]))
 
@@ -279,10 +292,18 @@ for name in skills:
     if len(found) != 1:
         die(f"skill {name} not found once in {plugin}/skills/<area>/")
     add_tree(found[0], f".agents/skills/{name}", scan_helpers=True)
-# The scheduled workflow that opens the next update PR (harness-update.sh).
+# The scheduled workflow that opens the next update PR (harness-update.sh),
+# with its cron from [update] schedule when the config sets one. The lock
+# hashes the templated file, so the edit check passes it.
 WORKFLOW = ".github/workflows/harness-update.yml"
 roots.append(WORKFLOW)
 add_file(need(plugin / "claude-skills/harness/harness-update.yml", "the update workflow"), WORKFLOW)
+if schedule is not None:
+    data, mode = want[WORKFLOW]
+    text, n = re.subn(r'^(\s+- cron: )"[^"\n]*"$', lambda m: f'{m.group(1)}"{schedule}"', data.decode(), flags=re.M)
+    if n != 1:
+        die(f"the update workflow in {plugin} has {n} cron lines, not one; can't apply [update] schedule")
+    want[WORKFLOW] = (text.encode(), mode)
 for name in agents:
     for src, dest in ((f"agents/{name}.md", f".claude/agents/{name}.md"),
                       (f".codex/agents/{name}.toml", f".codex/agents/{name}.toml")):

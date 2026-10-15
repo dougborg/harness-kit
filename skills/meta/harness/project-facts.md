@@ -16,6 +16,7 @@ when prose needs a config value, point at the key rather than repeating it.
 | --- | --- |
 | The command that gates every commit and PR | `[facts] verification_command` |
 | Which generic skills and agents the project vendors, and which it forks | `skills`, `agents`, `[forks.*]` |
+| When the scheduled update workflow runs | `[update] schedule` |
 | Domain terms, conventions, where things live, what is off-limits | `AGENTS.md` prose |
 | How to deploy, release, or run the app; who reviews what | `AGENTS.md` prose |
 | Why the gate is what it is ("`moon ci` runs every workspace's checks") | `AGENTS.md` prose |
@@ -62,6 +63,10 @@ frontend-design = "anthropics/skills@<40-hex commit SHA>:skills/frontend-design"
 # Facts generic skills read.
 [facts]
 verification_command = "moon ci"
+
+# When the vendored update workflow runs (cron, UTC). Default "23 7 * * 1".
+[update]
+schedule = "0 6 * * 1-5"
 ```
 
 | Key | Type | Read by | Status |
@@ -72,6 +77,7 @@ verification_command = "moon ci"
 | `[forks.skills]` | table, name = forked-from version | `vendor-snapshot.sh` never touches these and reports upstream changes since the version | Implemented |
 | `[forks.agents]` | table, name = forked-from version | `vendor-snapshot.sh` never touches these and reports upstream changes since the version | Implemented |
 | `[sources.skills]` | table, name = `"owner/repo@ref:path"` | `vendor-snapshot.sh` fetches the skill at that ref and records the source and commit | Implemented |
+| `[update] schedule` | five-field cron string | `vendor-snapshot.sh` writes it into the vendored update workflow's `cron` | Implemented |
 
 Forks are split by kind because a skill and an agent can share a name
 (`code-reviewer` is both). Write the forked-from version as the release
@@ -97,3 +103,14 @@ An unquoted, empty, or multi-line value makes the script exit 1 with the file
 and line, rather than silently falling back to a different gate. So does the
 key written anywhere it isn't read: an inline `facts = { ... }` table, a
 dotted `facts.verification_command` key, or another table.
+
+### The update schedule
+
+`[update] schedule` is the `cron` of the vendored
+`.github/workflows/harness-update.yml`, in UTC. It must be exactly five
+fields separated by single spaces, each made of digits and `*`, `,`, `-`,
+`/` (so no day or month names); anything else makes `vendor-snapshot.sh`
+exit 1 before it writes. Without the key the workflow keeps its default,
+`23 7 * * 1` (Mondays, 07:23 UTC). The workflow file is snapshot-owned, so
+change the key, re-run `vendor-snapshot.sh` at the current version, and
+commit both; editing the cron line in place fails the edit check.

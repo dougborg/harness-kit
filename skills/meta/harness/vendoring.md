@@ -59,7 +59,7 @@ then reports the new files as edited. Run the same command again with
 | `.agents/scripts/shared/<name>` | each `scripts/shared/` helper a vendored open-format skill names |
 | `.codex/agents/<agent>.toml` | `.codex/agents/<agent>.toml` (generated Codex agents) |
 | `.claude/hooks/harness-kit/<name>` | the `scripts/shared/` scripts the plugin's hooks run |
-| `.github/workflows/harness-update.yml` | the harness skill's `harness-update.yml` ([The update workflow](#the-update-workflow)) |
+| `.github/workflows/harness-update.yml` | the harness skill's `harness-update.yml`, its `cron` set from `[update] schedule` when the config has one ([The update workflow](#the-update-workflow)) |
 | `.claude/settings.json` | sets `"harness-kit@harness-kit": false` and adds the plugin's hook entries |
 | `.harness/lock.json` | the record of all of the above |
 
@@ -169,9 +169,9 @@ a list of `{status, path}`.
 
 The snapshot includes `.github/workflows/harness-update.yml`, so every
 vendored repo updates itself through a pull request that its own CI and
-review gate. It runs weekly and on `workflow_dispatch`, on the default branch
-only, and calls the vendored `.claude/skills/harness/harness-update.sh`,
-which:
+review gate. It runs weekly (or on `[update] schedule`) and on
+`workflow_dispatch`, on the default branch only, and calls the vendored
+`.claude/skills/harness/harness-update.sh`, which:
 
 1. Resolves the upstream repository with
    `<shared-scripts-dir>/resolve-upstream.sh`, the lookup the `harness-issue`
@@ -223,6 +223,12 @@ It uses only `GITHUB_TOKEN`, with `contents: write` and
 
 The workflow is snapshot-owned, so the edit check fails if it is edited. To
 follow a fork of harness-kit, set `HARNESS_UPSTREAM` rather than editing it.
+To change when it runs, set `[update] schedule` in `.harness/config.toml`
+(`<skill-dir>/project-facts.md`), re-run `vendor-snapshot.sh` against the
+plugin root at the snapshot's current version, and commit the workflow, lock,
+and config together. The script writes the key into the workflow's `cron`
+line and the lock hashes the result, so the edit check passes, and every
+later update keeps the schedule. The default is `23 7 * * 1`.
 A release must be published as a GitHub release whose tag is `v<version>`;
 a private upstream needs a token this workflow doesn't have.
 
