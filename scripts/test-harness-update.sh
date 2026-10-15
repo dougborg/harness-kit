@@ -121,6 +121,21 @@ case "$1 $2" in
 esac
 STUB
 chmod +x "$scratch/bin/gh"
+# A git wrapper that records, for each push, whether the token reached it as
+# an Authorization header and whether the caller's own GIT_CONFIG_* survived.
+REAL_GIT=$(command -v git)
+export REAL_GIT
+cat >"$scratch/bin/git" <<'STUB'
+#!/usr/bin/env bash
+if [ "${1:-}" = push ]; then
+  header=$("$REAL_GIT" config --get-all http.extraheader || true)
+  auth=$(python3 -c 'import base64,sys; print(base64.b64decode(sys.argv[1].rsplit(" ", 1)[-1]).decode())' "$header" 2>/dev/null || true)
+  [ "$auth" = x-access-token:test-token-s3cret ] && auth=ok || auth=missing
+  echo "push auth=$auth keep=$("$REAL_GIT" config --get test.keep || true)" >>"$STUB_DIR/git-log"
+fi
+exec "$REAL_GIT" "$@"
+STUB
+chmod +x "$scratch/bin/git"
 export STUB_DIR="$scratch/stub"
 mkdir -p "$STUB_DIR"
 : >"$STUB_DIR/log"
@@ -128,7 +143,9 @@ mkdir -p "$STUB_DIR"
 # update <tag>: run the vendored harness-update.sh in the project; sets out, rc.
 update() {
   set +e
+  # The caller's own GIT_CONFIG_* entry must survive the token's.
   out=$(cd "$proj" && PATH="$scratch/bin:$PATH" STUB_TAG=$1 GITHUB_SERVER_URL="file://$srv" \
+    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=test.keep GIT_CONFIG_VALUE_0=kept GITHUB_ACTIONS=true \
     HARNESS_UPSTREAM='' GH_TOKEN=test-token-s3cret .claude/skills/harness/harness-update.sh 2>&1)
   rc=$?
   set -e
@@ -161,6 +178,8 @@ check body-has-report body_has "vendored harness-kit 9.9.9 (from $version)"
 check body-lists-hook-changes body_has '- removed `Stop`: `"${CLAUDE_PROJECT_DIR}/.claude/hooks/harness-kit/retro-nudge.sh"`'
 check body-hook-section body_has "## Hook changes"
 check body-reports-fork-with-fetched-tag body_has "skill \`tdd\` (forked from $version): 2 files changed upstream"
+check push-gets-token grep -qx 'push auth=ok keep=kept' "$STUB_DIR/git-log"
+check token-masked-in-actions has "::add-mask::$(printf 'x-access-token:test-token-s3cret' | base64 | tr -d '\n')"
 first=$(origin_branch)
 
 # --- Again, with the PR open: it is updated, not duplicated -----------------------

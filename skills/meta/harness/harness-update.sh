@@ -42,12 +42,20 @@ upstream=${upstream:-dougborg/harness-kit}
 
 # The checkout keeps no credentials (persist-credentials: false), so the
 # token reaches git only on the commands that talk to origin, never through
-# .git/config, and the release's own scripts run without it.
+# .git/config, and the release's own scripts run without it. The header is
+# appended after any GIT_CONFIG_* entries the caller set, and masked in the
+# Actions log; nothing here turns on git tracing.
+auth=
+if [ -n "${GH_TOKEN:-}" ]; then
+  auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+  [ "${GITHUB_ACTIONS:-}" != true ] || echo "::add-mask::$auth"
+fi
 origin_git() {
-  if [ -n "${GH_TOKEN:-}" ]; then
-    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader \
-      GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')" \
-      git "$@"
+  if [ -n "$auth" ]; then
+    local n=${GIT_CONFIG_COUNT:-0}
+    [[ "$n" =~ ^[0-9]+$ ]] || die "GIT_CONFIG_COUNT is not a number: $n"
+    env GIT_CONFIG_COUNT=$((n + 1)) "GIT_CONFIG_KEY_$n=http.extraheader" \
+      "GIT_CONFIG_VALUE_$n=AUTHORIZATION: basic $auth" git "$@"
   else
     git "$@"
   fi
