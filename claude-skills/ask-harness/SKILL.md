@@ -99,8 +99,11 @@ rather than pushing on.
 - `wizard`: a script that walks a person through steps only they can do,
   such as creating accounts and copying API keys into `.env` and CI secrets.
 - `documentation-writer` and `/svg-logo-designer`: docs and logos.
-- `skill-writer`, `/harness`, `/harness-builder`, `harness-issue`: maintain
-  the harness itself.
+- `skill-writer`, `harness`, `/harness-builder`, `harness-issue`: maintain
+  the harness itself. The `harness` skill audits, bootstraps, updates, and
+  improves it, and migrates a copy-and-edit harness to a vendored snapshot;
+  once vendored, updates arrive as pull requests from the project's
+  scheduled update workflow.
 
 ## Between phases
 

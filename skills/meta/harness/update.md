@@ -14,9 +14,10 @@ commit or PR.
 
 1. **Check the project is vendored.** A `.harness/config.toml` and
    `.harness/lock.json` mean it is. A `.harness-lock.json` (the 0.x/1.x
-   copy-and-edit lock) means it isn't yet: stop and run migrate (see #174)
-   instead, which turns its edited copies into facts or forks first. A
-   project with neither has no harness; run bootstrap.
+   copy-and-edit lock) means it isn't yet: stop and run migrate
+   (`<skill-dir>/migrate.md`) instead, which turns its edited copies into
+   facts or forks first. A project with neither has no harness; run
+   bootstrap.
 
 2. **Get the newer release root**, written `<release-root>` below: the
    installed plugin's directory when it is the release you want, or a
@@ -24,7 +25,8 @@ commit or PR.
    `git clone --depth 1 --branch vX.Y.Z https://github.com/dougborg/harness-kit`.
    The lock's `version` is the current snapshot; when it already equals the
    release root's version, there is nothing to sync from upstream. Report that
-   and point session-learning improvements to `harness retro` (#90).
+   and point session-learning improvements to `harness retro`
+   (`<skill-dir>/retro.md`).
 
 3. **Run the vendoring script** against that root:
 
@@ -62,8 +64,9 @@ update by hand to pick up a release early, or when that PR needs redoing.
 Add a skill from another repository to the vendored set, under the same
 lock, edit check, and fork rules as harness-kit's own skills.
 
-```bash
-/harness add anthropics/skills
+```text
+/harness add anthropics/skills    (Claude Code)
+$harness add anthropics/skills    (Codex)
 ```
 
 1. **Pick the skills.** Browse the repository (a plugin marketplace or any
