@@ -55,6 +55,7 @@ then reports the new files as edited. Run the same command again with
 | `.claude/skills/<skill>/` | `claude-skills/<skill>/` (the Claude projection) |
 | `.claude/agents/<agent>.md` | `agents/<agent>.md` |
 | `.agents/skills/<skill>/` | `skills/<area>/<skill>/`, flat by name, with `agents/openai.yaml` |
+| `.claude/skills/<skill>/` and `.agents/skills/<skill>/` | for a sourced skill, its directory in its own repository ([Third-party skills](#third-party-skills)) |
 | `.agents/scripts/shared/<name>` | each `scripts/shared/` helper a vendored open-format skill names |
 | `.codex/agents/<agent>.toml` | `.codex/agents/<agent>.toml` (generated Codex agents) |
 | `.claude/hooks/harness-kit/<name>` | the `scripts/shared/` scripts the plugin's hooks run |
@@ -101,6 +102,8 @@ project-local and never touched. A re-run at the same version and config writes 
 - `version`: the plugin manifest's version the snapshot came from.
 - `skills`, `agents`: each vendored name and its source, `harness-kit` or a
   third-party source string.
+- `source_commits`: for each third-party skill, the commit its ref resolved
+  to. Absent when there are none.
 - `hooks.claude`: the entries added to `.claude/settings.json`, by event.
 - `available`: every skill and agent that release ships, so the next update
   can tell which are new.
@@ -233,10 +236,47 @@ release runs in the same job.
 ## Third-party skills
 
 A skill from another repository is listed in `skills` and given a source in
-`[sources.skills]` (format in `${CLAUDE_SKILL_DIR}/project-facts.md`). Its lock entry
-records that source in place of `harness-kit`. Fetching sources isn't
-implemented yet: a chosen skill with a source makes the script exit 1 and
-name it, and a source must be for a name in `skills`.
+`[sources.skills]` as `"owner/repo@ref:path"` (format in
+`${CLAUDE_SKILL_DIR}/project-facts.md`); a source must be for a name in `skills`. On
+every run the script fetches that ref, shallow, from
+`https://github.com/<owner>/<repo>` and reads the files under `path` from git
+objects; nothing is checked out and none of it runs. The directory must hold
+a `SKILL.md` and only regular files: a symlink or submodule in it is refused.
+
+Third-party repositories ship one open-format tree, so the same files go to
+both `.claude/skills/<skill>/` and `.agents/skills/<skill>/`, byte for byte.
+Unlike harness-kit's own skills, nothing is rewritten and no shared helper is
+added: the skill's paths belong to its repository, not this plugin. Its lock
+entry records the source string in place of `harness-kit`, and
+`source_commits` the commit the ref resolved to. From there it is a vendored
+skill like any other: the edit check covers its files, a fork in
+`[forks.skills]` is left alone (the report doesn't compare it with harness-kit;
+compare it with its source by hand), and dropping it from `skills` removes it.
+
+A malformed source, an unreachable repository or ref, or a path that isn't a
+skill directory makes the script exit 1 before it writes anything. The fetch
+never prompts for credentials. It uses the git transports `https`, `ssh` (so a
+`url.insteadOf` rewrite for a private repository still works) and `file`
+only.
+
+The report lists each source and its commit, under "Third-party sources"
+(`sources` in the JSON report, with `commit`, the lock's `previous` commit,
+and `pinned`). It says when the commit moved since the last run.
+
+**Adding a source is a trust decision.** A skill is instructions an agent
+follows and often scripts it runs, and harness-kit has reviewed none of it.
+Pin each source to a full 40-character commit SHA. A branch or tag is
+accepted, since every snapshot change still lands through a reviewed commit or
+update PR, but it moves without anyone choosing to: the scheduled update would
+bring in whatever the branch holds that day. The report marks such a source as
+not pinned and names the move, so a reviewer sees it; bump a SHA pin
+deliberately, after reading the diff between the two commits.
+
+`HARNESS_SOURCE_BASE_URL` replaces `https://github.com` as the base, for a
+mirror or a directory of local repositories (`file:///path/to/repos`, as the
+tests use). Only `https://` and `file://` bases are accepted. It is read from
+the environment, never from the config, so the config can't point a fetch at
+another host.
 
 ## The edit check
 

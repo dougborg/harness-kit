@@ -74,21 +74,26 @@ $harness add anthropics/skills    (Codex)
    Prefer a harness-kit skill that already covers the job; adding an
    overlapping one leaves two skills to keep apart.
 
-2. **Record each in the config.** Add the name to `skills` and its source to
+2. **Decide to trust it.** A vendored skill is instructions an agent follows
+   and often scripts it runs; read its `SKILL.md` and any scripts before
+   adding it, and say in the report what it can run.
+
+3. **Record each in the config.** Add the name to `skills` and its source to
    `[sources.skills]` as `"owner/repo@ref:path"` (format in
-   `${CLAUDE_SKILL_DIR}/project-facts.md`). The name must not clash with a
-   harness-kit skill or a project-local one.
+   `${CLAUDE_SKILL_DIR}/project-facts.md`). Pin the ref to the full commit SHA you
+   read, from `git ls-remote https://github.com/owner/repo <branch-or-tag>`;
+   a branch or tag is accepted but can move under you. The name must not
+   clash with a harness-kit skill or a project-local one.
 
-3. **Vendor it** with `vendor-snapshot.sh`, as in update step 3. Its lock
-   entry records the source in place of `harness-kit`.
+4. **Vendor it** with `vendor-snapshot.sh`, as in update step 3. It fetches
+   the source at that ref and writes the skill's directory, unchanged, to
+   both `.claude/skills/<name>/` and `.agents/skills/<name>/`. Its lock entry
+   records the source in place of `harness-kit`, and `source_commits` the
+   commit. A source it can't fetch, or a path that isn't a skill directory,
+   stops it with nothing written. `${CLAUDE_SKILL_DIR}/vendoring.md` ("Third-party
+   skills") has the details.
 
-   Fetching third-party sources is not implemented yet: the script validates
-   and records the source, then exits 1 naming each sourced skill, and writes
-   nothing. Until it lands, leave the config entry out, or keep the skill as
-   project-local content (files outside the lock that the project owns and
-   updates itself), and say which in the report.
-
-4. **Run the verification command** to confirm nothing broke.
+5. **Run the verification command** to confirm nothing broke.
 
 A plugin the user installs with `/plugin install` is not added this way:
 it stays outside the project and outside the lock.

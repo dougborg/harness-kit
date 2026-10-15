@@ -127,7 +127,7 @@ Done when every numbered change has a confirmed outcome.
 | `modified` | Delete once its change has an outcome; a fork's files are rewritten in step 7 |
 | `missing` | Nothing to do |
 | `no-upstream` | Ask: usually a stale upstream file (delete), sometimes project content filed under harness-kit (keep as local) |
-| `other-source` | Keep as project-local files; vendoring third-party sources is not implemented yet |
+| `other-source` | Keep as project-local files, or, for a skill with a known repository, re-add it as a source with add mode (`${CLAUDE_SKILL_DIR}/update.md`) |
 | `local`, `untracked` | Keep |
 
 A kept file inside a directory the snapshot will own, such as

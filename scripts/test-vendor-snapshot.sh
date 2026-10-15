@@ -335,10 +335,6 @@ proj=$(new_project collide '["tdd"]' '[]')
 mkdir -p "$proj/.claude/skills/tdd" && echo mine >"$proj/.claude/skills/tdd/SKILL.md"
 commit_all "$proj"
 expect_refusal project-local-collision "$proj" "project-local"
-proj=$(new_project third-party '["frontend-design"]' '[]')
-printf '\n[sources.skills]\nfrontend-design = "anthropics/skills@main:skills/frontend-design"\n' >>"$proj/.harness/config.toml"
-commit_all "$proj"
-expect_refusal third-party-source-not-fetched "$proj" "not implemented"
 proj=$(new_project orphan-source '["tdd"]' '[]')
 printf '\n[sources.skills]\nfrontend-design = "anthropics/skills@main:skills/frontend-design"\n' >>"$proj/.harness/config.toml"
 commit_all "$proj"
@@ -433,5 +429,125 @@ report=$(run "$proj")
 check fork-left-alone test "$(cat "$proj/.claude/skills/tdd/SKILL.md")" = fork
 check fork-without-git-not-compared grep -qE '^- skill `tdd` \(forked from 1\.0\.0\): not compared: .*/plugin is not a git checkout' <<<"$report"
 check fork-not-in-lock test "$(json "'tdd' in d['skills']" "$proj/.harness/lock.json")" = False
+
+# --- Third-party skills: fetched from [sources.skills] -------------------------
+# Sources resolve under HARNESS_SOURCE_BASE_URL, here a directory of local
+# repos, so owner/repo "acme/skills" is $scratch/sources/acme/skills.
+export HARNESS_SOURCE_BASE_URL="file://$scratch/sources"
+src="$scratch/sources/acme/skills"
+mkdir -p "$src/skills/frontend-design/scripts" "$src/skills/no-skill"
+cat >"$src/skills/frontend-design/SKILL.md" <<'MD'
+---
+name: frontend-design
+---
+Run ${CLAUDE_PLUGIN_ROOT}/scripts/shared/discover-verification-cmd.sh and <plugin-root>/scripts/shared/x.sh.
+MD
+printf '#!/bin/sh\necho hi\n' >"$src/skills/frontend-design/scripts/run.sh"
+chmod +x "$src/skills/frontend-design/scripts/run.sh"
+echo 'not a skill' >"$src/skills/no-skill/README.md"
+git -C "$src" init -q -b main
+git -C "$src" add -A
+git -C "$src" -c user.name=t -c user.email=t@t commit -qm one
+sha1=$(git -C "$src" rev-parse HEAD)
+pristine_src="$scratch/frontend-design-1"
+cp -R "$src/skills/frontend-design" "$pristine_src"
+
+# new_sourced <name> <source>: a project vendoring tdd and one sourced skill.
+new_sourced() {
+  local dir
+  dir=$(new_project "$1" "[\"tdd\", \"${3:-frontend-design}\"]" '[]')
+  printf '\n[sources.skills]\n%s = "%s"\n' "${3:-frontend-design}" "$2" >>"$dir/.harness/config.toml"
+  commit_all "$dir"
+  echo "$dir"
+}
+proj=$(new_sourced sourced "acme/skills@$sha1:skills/frontend-design")
+report=$(run "$proj")
+lock="$proj/.harness/lock.json"
+check sourced-claude-tree-verbatim diff -r "$pristine_src" "$proj/.claude/skills/frontend-design"
+check sourced-codex-tree-verbatim diff -r "$pristine_src" "$proj/.agents/skills/frontend-design"
+check sourced-keeps-exec-bit test -x "$proj/.agents/skills/frontend-design/scripts/run.sh"
+check sourced-no-shared-helper-pulled test ! -e "$proj/.agents/scripts/shared/x.sh"
+check sourced-lock-source test "$(json "d['skills']['frontend-design']" "$lock")" = "acme/skills@$sha1:skills/frontend-design"
+check sourced-lock-commit test "$(json "d['source_commits']['frontend-design']" "$lock")" = "$sha1"
+check sourced-lock-hashes hashes_match "$proj"
+check sourced-files-in-lock test "$(json "'.agents/skills/frontend-design/scripts/run.sh' in d['files']" "$lock")" = True
+check sourced-edit-check-passes "$plugin/skills/meta/harness/check-snapshot.sh" "$proj"
+check sourced-report-pinned grep -qF "skill \`frontend-design\`: acme/skills@$sha1:skills/frontend-design at $sha1" <<<"$report"
+check sourced-sha-not-warned sh -c '! printf %s "$1" | grep -qF "not a commit SHA"' _ "$report"
+commit_all "$proj"
+sleep 1
+touch "$scratch/marker"
+run "$proj" >/dev/null
+check sourced-rerun-writes-nothing test -z "$(find "$proj" -path "$proj/.git" -prune -o -type f -newer "$scratch/marker" -print)"
+echo 'local edit' >>"$proj/.claude/skills/frontend-design/SKILL.md"
+expect_guard sourced-edit-refused "edited: .claude/skills/frontend-design/SKILL.md"
+git -C "$proj" checkout -q -- .
+
+# A branch is followed: the report warns it isn't a SHA and says when it moved.
+proj=$(new_sourced sourced-branch "acme/skills@main:skills/frontend-design")
+report=$(run "$proj" 2>&1)
+check branch-vendored diff -r "$pristine_src" "$proj/.claude/skills/frontend-design"
+check branch-warned grep -qF "not a commit SHA" <<<"$report"
+commit_all "$proj"
+echo 'v2' >>"$src/skills/frontend-design/SKILL.md"
+git -C "$src" -c user.name=t -c user.email=t@t commit -qam two
+sha2=$(git -C "$src" rev-parse HEAD)
+report=$(run "$proj" 2>&1)
+check branch-follows-move cmp "$src/skills/frontend-design/SKILL.md" "$proj/.agents/skills/frontend-design/SKILL.md"
+check branch-move-reported grep -qF "moved from $sha1 to $sha2" <<<"$report"
+check branch-lock-commit test "$(json "d['source_commits']['frontend-design']" "$proj/.harness/lock.json")" = "$sha2"
+jreport=$("$vendor" --json "$plugin" "$proj")
+check json-sources test "$(jq_ "[(s['name'], s['commit'], s['previous'], s['pinned']) for s in d['sources']]")" = \
+  "[('frontend-design', '$sha2', '$sha2', False)]"
+
+# Dropping a sourced skill from the config removes it like any vendored skill.
+commit_all "$proj"
+printf 'skills = ["tdd"]\nagents = []\n' >"$proj/.harness/config.toml"
+run "$proj" >/dev/null
+check sourced-dropped test ! -e "$proj/.claude/skills/frontend-design" -a ! -e "$proj/.agents/skills/frontend-design"
+check sourced-dropped-from-lock test "$(json "'frontend-design' in d.get('source_commits', {})" "$proj/.harness/lock.json")" = False
+
+# A forked sourced skill is left alone and not compared with harness-kit.
+proj=$(new_sourced sourced-fork "acme/skills@$sha1:skills/frontend-design")
+printf '\n[forks.skills]\nfrontend-design = "1.0.0"\n' >>"$proj/.harness/config.toml"
+mkdir -p "$proj/.claude/skills/frontend-design" && echo fork >"$proj/.claude/skills/frontend-design/SKILL.md"
+report=$(run "$proj")
+check sourced-fork-left-alone test "$(cat "$proj/.claude/skills/frontend-design/SKILL.md")" = fork
+check sourced-fork-not-compared grep -qF "skill \`frontend-design\` (forked from 1.0.0): not compared: from acme/skills" <<<"$report"
+
+# Unreachable or malformed sources, or a tree that isn't a plain skill, fail
+# with nothing written.
+missing=0123456789abcdef0123456789abcdef01234567
+proj=$(new_sourced sourced-no-ref "acme/skills@$missing:skills/frontend-design")
+expect_refusal unreachable-ref "$proj" "can't fetch"
+proj=$(new_sourced sourced-no-repo "acme/nope@$sha1:skills/frontend-design")
+expect_refusal unreachable-repo "$proj" "can't fetch"
+proj=$(new_sourced sourced-no-path "acme/skills@$sha1:skills/absent")
+expect_refusal missing-path "$proj" "skills/absent"
+proj=$(new_sourced sourced-no-skill-md "acme/skills@$sha1:skills/no-skill" no-skill)
+expect_refusal path-without-skill-md "$proj" "no SKILL.md"
+n=0
+for bad in "acme/skills@--upload-pack=x:skills/frontend-design" "acme/skills@$sha1:../skills" \
+  "acme/skills@$sha1:/etc" "-x/skills@$sha1:skills/frontend-design" "acme/skills@a..b:skills/frontend-design"; do
+  n=$((n + 1))
+  proj=$(new_sourced "sourced-malformed-$n" "$bad")
+  expect_refusal "malformed-source $bad" "$proj" "owner/repo@ref:path"
+done
+proj=$(new_sourced sourced-bad-base "acme/skills@$sha1:skills/frontend-design")
+set +e
+out=$(HARNESS_SOURCE_BASE_URL="ext::sh -c touch% $scratch/pwned" "$vendor" "$plugin" "$proj" 2>&1)
+rc=$?
+set -e
+if [ "$rc" = 1 ] && [[ "$out" == *HARNESS_SOURCE_BASE_URL* ]] && [ ! -e "$scratch/pwned" ] &&
+  [ ! -e "$proj/.harness/lock.json" ]; then
+  pass "base-url-must-be-https-or-file"
+else
+  flunk "base-url-must-be-https-or-file: exit $rc: $out"
+fi
+ln -s ../../../../outside "$src/skills/frontend-design/escape"
+git -C "$src" add -A
+git -C "$src" -c user.name=t -c user.email=t@t commit -qm symlink
+proj=$(new_sourced sourced-symlink "acme/skills@main:skills/frontend-design")
+expect_refusal symlink-in-source-refused "$proj" "symlink"
 
 exit "$fail"
