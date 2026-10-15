@@ -82,6 +82,16 @@ else
   echo "FAIL: unread-key-names-line: $err"
   fail=1
 fi
+# Only a key position counts: the word inside a string value is not the key.
+dir=$(new_repo value-mention)
+printf 'notes = "set verification_command later"\n[facts]\n' >"$dir/.harness/config.toml"
+expect value-mention-falls-back "$dir" "just check"
+dir=$(new_repo inline-table-later-key)
+printf 'facts = { other = "x", verification_command = "moon ci" }\n' >"$dir/.harness/config.toml"
+expect inline-table-later-key-fails "$dir" "" 1
+dir=$(new_repo quoted-dotted-key)
+printf '"facts"."verification_command" = "moon ci"\n' >"$dir/.harness/config.toml"
+expect quoted-dotted-key-fails "$dir" "" 1
 dir=$(new_repo comment-mention)
 printf '# verification_command lives in CI for now\n[facts]\n' >"$dir/.harness/config.toml"
 expect comment-mention-falls-back "$dir" "just check"
