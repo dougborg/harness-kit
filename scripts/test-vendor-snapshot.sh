@@ -603,7 +603,7 @@ expect_refusal source-catalog-name-refused "$proj" "[forks.skills]"
 # The fetched SKILL.md's frontmatter name, when it has one, must be the
 # config's name; with none, the config's name stands.
 proj=$(new_sourced source-name-mismatch "acme/skills@$sha1:skills/frontend-design" other-name)
-expect_refusal source-name-mismatch-refused "$proj" "frontend-design"
+expect_refusal source-name-mismatch-refused "$proj" 'declares itself "frontend-design"'
 proj=$(new_sourced source-name-absent "acme/skills@$sha1:skills/plain" plain)
 check source-name-absent-vendored run "$proj"
 check source-name-absent-tree cmp "$src/skills/plain/SKILL.md" "$proj/.agents/skills/plain/SKILL.md"
@@ -726,7 +726,9 @@ unset GIT_WRAP_FAIL_INIT
 # The fetched tree is capped in files and bytes (test hooks, environment only).
 proj=$(new_sourced source-too-many "acme/skills@$sha1:skills/frontend-design")
 export HARNESS_SOURCE_MAX_FILES=1
-expect_refusal max-files-refused "$proj" "more than 1 files"
+expect_refusal max-files-refused "$proj" "has more than 1 file"
+out=$(run "$proj" 2>&1 || true)
+check max-files-singular sh -c '! printf %s "$1" | grep -qF "1 files"' _ "$out"
 unset HARNESS_SOURCE_MAX_FILES
 export HARNESS_SOURCE_MAX_BYTES=10
 expect_refusal max-bytes-refused "$proj" "more than 10 bytes"
