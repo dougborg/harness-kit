@@ -54,9 +54,10 @@ review-pr = "1.0.0"
 
 [forks.agents]
 
-# Skills from another repository, each listed in `skills` above.
+# Skills from another repository, each listed in `skills` above, pinned to a
+# full commit SHA.
 [sources.skills]
-frontend-design = "anthropics/skills@main:skills/frontend-design"
+frontend-design = "anthropics/skills@<40-hex commit SHA>:skills/frontend-design"
 
 # Facts generic skills read.
 [facts]
@@ -70,14 +71,17 @@ verification_command = "moon ci"
 | `agents` | array of agent names | `vendor-snapshot.sh` | Implemented |
 | `[forks.skills]` | table, name = forked-from version | `vendor-snapshot.sh` never touches these and reports upstream changes since the version | Implemented |
 | `[forks.agents]` | table, name = forked-from version | `vendor-snapshot.sh` never touches these and reports upstream changes since the version | Implemented |
-| `[sources.skills]` | table, name = `"owner/repo@ref:path"` | `vendor-snapshot.sh` validates and records it; fetching is not implemented yet | Partial |
+| `[sources.skills]` | table, name = `"owner/repo@ref:path"` | `vendor-snapshot.sh` fetches the skill at that ref and records the source and commit | Implemented |
 
 Forks are split by kind because a skill and an agent can share a name
 (`code-reviewer` is both). Write the forked-from version as the release
 number without the `v` (`"1.0.0"`); the update report reads that release from
-tag `v1.0.0`. A source names the repository, the ref, and the
-skill's directory in that repository; a skill without one comes from
-harness-kit. `${CLAUDE_SKILL_DIR}/vendoring.md` covers what the vendoring script
+tag `v1.0.0`. A source names the repository (`owner/repo`, fetched from
+`https://github.com/owner/repo`), the ref, and the skill's directory in that
+repository; a skill without one comes from harness-kit. The ref is best a full
+commit SHA; a branch or tag works but can move, and the report says so.
+Adding a source is a trust decision: its files land in the snapshot
+unreviewed by harness-kit, and a skill can carry scripts agents run. `${CLAUDE_SKILL_DIR}/vendoring.md` covers what the vendoring script
 writes from these keys.
 
 ### The verification command

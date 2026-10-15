@@ -9,7 +9,10 @@
 #   .codex/agents/<a>.toml    generated Codex agents (.codex/agents/<a>.toml)
 #   .claude/hooks/harness-kit/  the plugin's hook scripts
 #   .github/workflows/harness-update.yml  the scheduled update workflow
-# The harness skill is always included; forked skills and agents are the
+# A skill with a [sources.skills] entry is instead fetched at its ref from
+# its own repository (HARNESS_SOURCE_BASE_URL, default https://github.com)
+# and its one tree written byte for byte to both skill directories; the lock
+# records the commit it resolved to. The harness skill is always included; forked skills and agents are the
 # project's own and are never written or removed. The plugin's hook entries
 # are merged into .claude/settings.json, harness-kit is set to false there,
 # and .harness/lock.json records the version, each file's sha256, the hook
@@ -22,7 +25,8 @@
 #
 # It reports, as Markdown (or JSON with --json): chosen skills and agents the
 # release removed (dropped from the snapshot), ones new since the last
-# snapshot (offered, not installed), and, for each fork, which of its files
+# snapshot (offered, not installed), each third-party source's commit and
+# whether it moved, and, for each fork, which of its files
 # changed upstream since the version it was forked from. That comparison reads
 # the fork's version from tag v<version> when <plugin-dir> is a git checkout.
 #
@@ -138,10 +142,26 @@ available = {
     "skills": sorted({p.parent.name for p in (plugin / "skills").glob("*/*/SKILL.md")}),
     "agents": sorted(p.stem for p in (plugin / "agents").glob("*.md")),
 }
+
+# Third-party skills name their source; the rest come from this plugin.
+sources = table("sources", "skills")
+SOURCE = re.compile(r"([A-Za-z0-9][\w.-]*)/([A-Za-z0-9][\w.-]*)@([A-Za-z0-9][\w./-]*):([^\s]+)")
+parsed = {}
+for name, source in sorted(sources.items()):
+    if name not in names("skills"):
+        die(f"{config_path}: [sources.skills] {name} is not in skills")
+    m = SOURCE.fullmatch(source)
+    parts = m.group(4).rstrip("/").split("/") if m else []
+    if not m or ".." in m.group(3) or m.group(3).endswith("/") \
+            or any(p in ("", ".", "..") for p in parts):
+        die(f"{config_path}: [sources.skills] {name} must be \"owner/repo@ref:path\" "
+            f"(a ref or commit, and a relative path inside the repository), got \"{source}\"")
+    parsed[name] = (m.group(1), m.group(2), m.group(3), "/".join(parts))
+
 removed = {}
 for kind, chosen in (("skills", skills), ("agents", agents)):
     before = set(old_lock.get(kind, {})) | set(old_lock.get("removed", {}).get(kind, []))
-    removed[kind] = [n for n in chosen if n not in available[kind] and n in before]
+    removed[kind] = [n for n in chosen if n not in available[kind] and n in before and n not in sources]
 skills = [n for n in skills if n not in removed["skills"]]
 agents = [n for n in agents if n not in removed["agents"]]
 old_available = old_lock.get("available")
@@ -151,17 +171,48 @@ new = {
     for kind in ("skills", "agents")
 }
 
-# Third-party skills name their source; the rest come from this plugin.
-sources = table("sources", "skills")
-for name, source in sorted(sources.items()):
-    if name not in names("skills"):
-        die(f"{config_path}: [sources.skills] {name} is not in skills")
-    if not re.fullmatch(r"[\w.-]+/[\w.-]+@[^\s:]+:[^\s]+", source):
-        die(f"{config_path}: [sources.skills] {name} must be \"owner/repo@ref:path\", got \"{source}\"")
-third_party = [s for s in skills if s in sources]
-if third_party:
-    # shortcut: sources are recorded but not fetched | revisit when harness add vendors third-party skills (#173)
-    die("fetching third-party skill sources is not implemented yet: " + ", ".join(third_party))
+# A source is fetched from <base>/<owner>/<repo>, GitHub unless the
+# environment (never the config) names another base, such as a mirror or a
+# directory of local repos in tests. Only https, ssh (for a url.insteadOf
+# rewrite) and file transports are allowed, so a URL can't run a command.
+SOURCE_BASE = os.environ.get("HARNESS_SOURCE_BASE_URL", "https://github.com").rstrip("/")
+if not re.match(r"(https|file)://", SOURCE_BASE):
+    die(f"HARNESS_SOURCE_BASE_URL must start with https:// or file://, got \"{SOURCE_BASE}\"")
+SHA = re.compile(r"[0-9a-fA-F]{40}")
+
+
+def fetch(name):
+    """The sourced skill's commit and files, {relative path: (bytes, mode)},
+    read from git objects at the pinned ref; nothing is checked out."""
+    owner, repo, ref, path = parsed[name]
+    url = f"{SOURCE_BASE}/{owner}/{repo}"
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_ALLOW_PROTOCOL": "https:ssh:file"}
+    with tempfile.TemporaryDirectory() as tmp:
+        def git_(*args):
+            return subprocess.run(["git", "-C", tmp, *args], capture_output=True, check=True, env=env).stdout
+
+        try:
+            git_("init", "-q")
+            git_("fetch", "-q", "--depth", "1", "--no-tags", url, ref)
+            commit = git_("rev-parse", "FETCH_HEAD^{commit}").decode().strip()
+        except subprocess.CalledProcessError as e:
+            die(f"[sources.skills] {name}: can't fetch {ref} from {url}: {e.stderr.decode().strip()}")
+        try:
+            listing = git_("ls-tree", "-r", "-z", f"{commit}:{path}").decode()
+        except subprocess.CalledProcessError:
+            die(f"[sources.skills] {name}: {path} is not a directory in {owner}/{repo} at {commit}")
+        files = {}
+        for line in filter(None, listing.split("\0")):
+            meta, rel = line.split("\t", 1)
+            mode, _, obj = meta.split()
+            if mode == "120000":
+                die(f"[sources.skills] {name}: {path}/{rel} is a symlink; a snapshot holds real files only")
+            if mode == "160000" or any(p in ("", ".", "..", ".git") for p in rel.split("/")):
+                die(f"[sources.skills] {name}: refusing to vendor {path}/{rel}")
+            files[rel] = (git_("cat-file", "blob", obj), 0o755 if mode == "100755" else 0o644)
+    if "SKILL.md" not in files:
+        die(f"[sources.skills] {name}: no SKILL.md in {path} of {owner}/{repo} at {commit}")
+    return commit, files
 
 # The vendored repo has no plugin root, so plugin-root paths to shared
 # scripts are rewritten into the snapshot: the Claude form to the vendored
@@ -212,7 +263,17 @@ def need(path, what):
     return path
 
 
+commits = {}
 for name in skills:
+    if name in sources:
+        # One open-format tree serves both hosts, copied byte for byte: its
+        # paths belong to its own repository, so nothing is rewritten.
+        commits[name], tree = fetch(name)
+        for dest in (f".claude/skills/{name}", f".agents/skills/{name}"):
+            roots.append(dest)
+            for rel, entry in tree.items():
+                want[f"{dest}/{rel}"] = entry
+        continue
     add_tree(need(plugin / "claude-skills" / name, f"skill {name}"), f".claude/skills/{name}")
     found = [p for p in (plugin / "skills").glob(f"*/{name}") if (p / "SKILL.md").is_file()]
     if len(found) != 1:
@@ -312,6 +373,8 @@ lock = {
     "removed": removed,
     "files": {path: hashlib.sha256(data).hexdigest() for path, (data, _) in sorted(want.items())},
 }
+if commits:
+    lock["source_commits"] = commits
 
 
 # Never write or remove through a symlinked directory: it could point out of
@@ -399,6 +462,9 @@ def upstream(kind, name, rev=None):
 
 def fork_report(kind, name, forked_from):
     entry = {"kind": kind[:-1], "name": name, "forked_from": forked_from, "status": "unchanged", "changes": []}
+    if kind == "skills" and name in sources:
+        entry.update(status="not-compared", reason=f"from {sources[name]}, not harness-kit; compare with it by hand")
+        return entry
     now = upstream(kind, name)
     if not now:
         entry["status"] = "removed"
@@ -438,6 +504,10 @@ report = {
     "removed": removed,
     "new": new,
     "forks": [fork_report(kind, name, v) for kind in ("skills", "agents") for name, v in sorted(forks[kind].items())],
+    "sources": [{"name": name, "source": sources[name], "commit": commit,
+                 "previous": old_lock.get("source_commits", {}).get(name),
+                 "pinned": bool(SHA.fullmatch(parsed[name][2]))}
+                for name, commit in sorted(commits.items())],
 }
 if as_json:
     print(json.dumps(report, indent=2))
@@ -456,6 +526,15 @@ def name_section(heading, intro, groups):
 
 name_section("Removed upstream", "Dropped from the snapshot; remove them from `.harness/config.toml`:", removed)
 name_section("New upstream", "Not installed; add them to `.harness/config.toml` to vendor them:", new)
+if report["sources"]:
+    print("\n## Third-party sources\n\nFetched from their own repositories; review their changes like code:\n")
+for s in report["sources"]:
+    line = f"- skill `{s['name']}`: {s['source']} at {s['commit']}"
+    if s["previous"] and s["previous"] != s["commit"]:
+        line += f", moved from {s['previous']} to {s['commit']}"
+    if not s["pinned"]:
+        line += " (the ref is not a commit SHA, so it can move; pin it to a full SHA)"
+    print(line)
 if report["forks"]:
     print("\n## Forks\n\nLeft unchanged. Upstream changes since each was forked:\n")
 for f in report["forks"]:
