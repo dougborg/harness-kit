@@ -33,6 +33,11 @@
 # Exit: 0 when up to date or the PR is open; 1 on any failure.
 set -euo pipefail
 
+# The optional push token leaves the environment before anything runs, so no
+# child process (the resolver, git, the release's scripts) can read it.
+update_token=${HARNESS_UPDATE_TOKEN:-}
+unset HARNESS_UPDATE_TOKEN
+
 branch=harness-kit/update
 die() {
   echo "harness-update: $*" >&2
@@ -49,9 +54,6 @@ base=$(git rev-parse --abbrev-ref HEAD)
 # projection ships it beside this script, and the workflow runs this copy.
 upstream=$(.claude/skills/harness/resolve-upstream.sh) || die "could not resolve the upstream repository"
 
-# The optional push token leaves the environment before anything runs.
-update_token=${HARNESS_UPDATE_TOKEN:-}
-unset HARNESS_UPDATE_TOKEN
 push_token=${update_token:-${GH_TOKEN:-}}
 # pr_gh: gh for the PR calls, as the push token.
 pr_gh() {
