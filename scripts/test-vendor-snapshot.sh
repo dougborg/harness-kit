@@ -483,6 +483,9 @@ MD
 printf '#!/bin/sh\necho hi\n' >"$src/skills/frontend-design/scripts/run.sh"
 chmod +x "$src/skills/frontend-design/scripts/run.sh"
 echo 'not a skill' >"$src/skills/no-skill/README.md"
+# A second skill in the same repo, with no name in its frontmatter.
+mkdir -p "$src/skills/plain"
+echo '# plain' >"$src/skills/plain/SKILL.md"
 git -C "$src" init -q -b main
 git -C "$src" add -A
 git -C "$src" -c user.name=t -c user.email=t@t commit -qm one
@@ -566,7 +569,8 @@ proj=$(new_sourced sourced-no-skill-md "acme/skills@$sha1:skills/no-skill" no-sk
 expect_refusal path-without-skill-md "$proj" "no SKILL.md"
 n=0
 for bad in "acme/skills@--upload-pack=x:skills/frontend-design" "acme/skills@$sha1:../skills" \
-  "acme/skills@$sha1:/etc" "-x/skills@$sha1:skills/frontend-design" "acme/skills@a..b:skills/frontend-design"; do
+  "acme/skills@$sha1:/etc" "-x/skills@$sha1:skills/frontend-design" "acme/skills@a..b:skills/frontend-design" \
+  "acmé/skills@$sha1:skills/frontend-design" "acme/skïlls@$sha1:skills/frontend-design" "acme/skills@mäin:skills/frontend-design"; do
   n=$((n + 1))
   proj=$(new_sourced "sourced-malformed-$n" "$bad")
   expect_refusal "malformed-source $bad" "$proj" "owner/repo@ref:path"
@@ -587,5 +591,149 @@ git -C "$src" add -A
 git -C "$src" -c user.name=t -c user.email=t@t commit -qm symlink
 proj=$(new_sourced sourced-symlink "acme/skills@main:skills/frontend-design")
 expect_refusal symlink-in-source-refused "$proj" "symlink"
+git -C "$src" rm -q skills/frontend-design/escape
+git -C "$src" -c user.name=t -c user.email=t@t commit -qm 'no symlink'
+
+# A harness-kit skill can't be sourced; it is replaced by forking it.
+proj=$(new_sourced source-harness "acme/skills@$sha1:skills/frontend-design" harness)
+expect_refusal source-harness-refused "$proj" "[forks.skills]"
+proj=$(new_sourced source-catalog-name "acme/skills@$sha1:skills/frontend-design" commit)
+expect_refusal source-catalog-name-refused "$proj" "[forks.skills]"
+
+# The fetched SKILL.md's frontmatter name, when it has one, must be the
+# config's name; with none, the config's name stands.
+proj=$(new_sourced source-name-mismatch "acme/skills@$sha1:skills/frontend-design" other-name)
+expect_refusal source-name-mismatch-refused "$proj" "frontend-design"
+proj=$(new_sourced source-name-absent "acme/skills@$sha1:skills/plain" plain)
+check source-name-absent-vendored run "$proj"
+check source-name-absent-tree cmp "$src/skills/plain/SKILL.md" "$proj/.agents/skills/plain/SKILL.md"
+
+# A lock from before source_commits existed still updates.
+proj=$(new_sourced source-old-lock "acme/skills@$sha1:skills/frontend-design")
+run "$proj" >/dev/null
+python3 - "$proj/.harness/lock.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p)); del d["source_commits"]; open(p, "w").write(json.dumps(d, indent=2))
+PY
+commit_all "$proj"
+set +e
+out=$(run "$proj" 2>&1)
+rc=$?
+set -e
+check old-lock-reruns test "$rc" = 0
+check old-lock-no-move-reported sh -c '! printf %s "$1" | grep -qF "moved from"' _ "$out"
+check old-lock-gains-commit test "$(json "d['source_commits']['frontend-design']" "$proj/.harness/lock.json")" = "$sha1"
+
+# A git wrapper that logs each fetch and can stall it or fail git init.
+REAL_GIT=$(command -v git)
+export REAL_GIT GIT_WRAP_LOG="$scratch/git-wrap.log"
+mkdir -p "$scratch/gitwrap"
+cat >"$scratch/gitwrap/git" <<'WRAP'
+#!/bin/sh
+if [ "${3:-}" = fetch ]; then
+  echo fetch >>"$GIT_WRAP_LOG"
+  if [ -n "${GIT_WRAP_SLEEP:-}" ]; then exec sleep "$GIT_WRAP_SLEEP"; fi
+fi
+if [ "${3:-}" = init ] && [ -n "${GIT_WRAP_FAIL_INIT:-}" ]; then
+  echo "wrapped init failure" >&2
+  exit 1
+fi
+exec "$REAL_GIT" "$@"
+WRAP
+chmod +x "$scratch/gitwrap/git"
+wrapped() { PATH="$scratch/gitwrap:$PATH" "$vendor" "$plugin" "$1"; }
+
+# Two skills from one repo at one ref are fetched once.
+proj=$(new_project source-cache '["tdd", "frontend-design", "plain"]' '[]')
+printf '\n[sources.skills]\nfrontend-design = "acme/skills@%s:skills/frontend-design"\nplain = "acme/skills@%s:skills/plain"\n' \
+  "$sha1" "$sha1" >>"$proj/.harness/config.toml"
+commit_all "$proj"
+: >"$GIT_WRAP_LOG"
+check source-cache-vendors wrapped "$proj"
+check source-cache-fetches-once test "$(grep -c fetch "$GIT_WRAP_LOG")" = 1
+check source-cache-both-trees test -f "$proj/.agents/skills/plain/SKILL.md" -a -f "$proj/.agents/skills/frontend-design/SKILL.md"
+
+# A stalled fetch times out; a failed git init says so. Nothing is written.
+wrapped_refusal() {
+  local out rc
+  set +e
+  out=$(wrapped "$2" 2>&1)
+  rc=$?
+  set -e
+  if [ "$rc" != 0 ] && [[ "$out" == *"$3"* ]] && [[ "$out" != *Traceback* ]] &&
+    [ ! -e "$2/.harness/lock.json" ] && [ -z "$(git -C "$2" status --porcelain)" ]; then
+    pass "$1"
+  else
+    flunk "$1: want failure with \"$3\" and no writes, got exit $rc: $out"
+  fi
+}
+proj=$(new_sourced source-timeout "acme/skills@$sha1:skills/frontend-design")
+export HARNESS_SOURCE_FETCH_TIMEOUT=1 GIT_WRAP_SLEEP=30
+wrapped_refusal fetch-timeout-refused "$proj" "timed out"
+unset HARNESS_SOURCE_FETCH_TIMEOUT GIT_WRAP_SLEEP
+proj=$(new_sourced source-init-fails "acme/skills@$sha1:skills/frontend-design")
+export GIT_WRAP_FAIL_INIT=1
+wrapped_refusal init-failure-reported "$proj" "can't create a scratch repository"
+unset GIT_WRAP_FAIL_INIT
+
+# The fetched tree is capped in files and bytes (test hooks, environment only).
+proj=$(new_sourced source-too-many "acme/skills@$sha1:skills/frontend-design")
+export HARNESS_SOURCE_MAX_FILES=1
+expect_refusal max-files-refused "$proj" "more than 1 files"
+unset HARNESS_SOURCE_MAX_FILES
+export HARNESS_SOURCE_MAX_BYTES=10
+expect_refusal max-bytes-refused "$proj" "more than 10 bytes"
+unset HARNESS_SOURCE_MAX_BYTES
+
+# Trees no checkout could hold, built straight from objects: a submodule,
+# a .git directory in any case, and a name that isn't UTF-8.
+# bad_source <repo> <entry>: main holds skills/x with a SKILL.md and <entry>,
+# a raw ls-tree line where BLOB and TREE name a file and a directory.
+bad_source() {
+  local r="$scratch/sources/acme/$1" blob inner skill sub top entry
+  git init -q -b main "$r"
+  blob=$(echo '# x' | git -C "$r" hash-object -w --stdin)
+  inner=$(printf '100644 blob %s\tconfig\n' "$blob" | git -C "$r" mktree)
+  entry=${2//BLOB/$blob}
+  entry=${entry//TREE/$inner}
+  skill=$(printf '100644 blob %s\tSKILL.md\n%s\n' "$blob" "$entry" | git -C "$r" mktree --missing)
+  sub=$(printf '040000 tree %s\tx\n' "$skill" | git -C "$r" mktree)
+  top=$(printf '040000 tree %s\tskills\n' "$sub" | git -C "$r" mktree)
+  git -C "$r" update-ref refs/heads/main "$(git -C "$r" -c user.name=t -c user.email=t@t commit-tree -m bad "$top")"
+}
+n=0
+for entry in "160000 commit $missing"$'\tmod' $'040000 tree TREE\t.git' $'040000 tree TREE\t.GIT' \
+  $'040000 tree TREE\t.Git' $'100644 blob BLOB\tbad\xffname'; do
+  n=$((n + 1))
+  bad_source "bad-$n" "$entry"
+  proj=$(new_sourced "source-bad-tree-$n" "acme/bad-$n@main:skills/x" x)
+  want="refusing to vendor"
+  [ "$n" != 5 ] || want="not UTF-8"
+  wrapped_refusal "bad-tree-refused $n" "$proj" "$want"
+done
+
+# Only https and file transports: plain http is refused before any fetch.
+proj=$(new_sourced source-http "acme/skills@$sha1:skills/frontend-design")
+export HARNESS_SOURCE_BASE_URL=http://example.invalid
+expect_refusal http-base-refused "$proj" "HARNESS_SOURCE_BASE_URL"
+export HARNESS_SOURCE_BASE_URL="file://$scratch/sources"
+
+# The plugin's workflow must have exactly one cron line to template.
+cp -R "$plugin" "$scratch/plugin-2cron"
+python3 - "$scratch/plugin-2cron/claude-skills/harness/harness-update.yml" <<'PY'
+import re, sys
+p = sys.argv[1]
+s = open(p).read()
+s = re.sub(r'^(\s+- cron: "[^"]*"\n)', r"\1\1", s, count=1, flags=re.M)
+open(p, "w").write(s)
+PY
+proj=$(new_project two-crons '["commit"]' '[]')
+printf '\n[update]\nschedule = "5 4 * * 2"\n' >>"$proj/.harness/config.toml"
+commit_all "$proj"
+saved_plugin=$plugin
+plugin="$scratch/plugin-2cron"
+expect_refusal two-cron-lines-refused "$proj" "2 cron lines, not one"
+plugin=$saved_plugin
 
 exit "$fail"

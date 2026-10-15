@@ -11,9 +11,16 @@
 #   .github/workflows/harness-update.yml  the scheduled update workflow, its
 #                             cron from the config's [update] schedule if set
 # A skill with a [sources.skills] entry is instead fetched at its ref from
-# its own repository (HARNESS_SOURCE_BASE_URL, default https://github.com)
-# and its one tree written byte for byte to both skill directories; the lock
-# records the commit it resolved to. The harness skill is always included; forked skills and agents are the
+# its own repository (HARNESS_SOURCE_BASE_URL, default https://github.com;
+# https and file only, so ssh is reachable only through the user's own
+# url.insteadOf rewrite) and its one tree written byte for byte to both skill
+# directories; the lock records the commit it resolved to. A source may not
+# take a harness-kit skill's name (fork that skill instead), and its SKILL.md
+# frontmatter name, if any, must match. Each git call times out after 300s
+# and a sourced tree may hold 2000 files and 50 MB; the environment overrides
+# HARNESS_SOURCE_FETCH_TIMEOUT, HARNESS_SOURCE_MAX_FILES, and
+# HARNESS_SOURCE_MAX_BYTES are test hooks, never config.
+# The harness skill is always included; forked skills and agents are the
 # project's own and are never written or removed. The plugin's hook entries
 # are merged into .claude/settings.json, harness-kit is set to false there,
 # and .harness/lock.json records the version, each file's sha256, the hook
@@ -164,9 +171,15 @@ available = {
 
 # Third-party skills name their source; the rest come from this plugin.
 sources = table("sources", "skills")
-SOURCE = re.compile(r"([A-Za-z0-9][\w.-]*)/([A-Za-z0-9][\w.-]*)@([A-Za-z0-9][\w./-]*):([^\s]+)")
+SOURCE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_.-]*)/([A-Za-z0-9][A-Za-z0-9_.-]*)"
+                    r"@([A-Za-z0-9][A-Za-z0-9_./-]*):([^\s]+)")
 parsed = {}
 for name, source in sorted(sources.items()):
+    # A sourced skill must not shadow one of this plugin's: the harness skill
+    # runs the update itself, and the others are replaced by forking.
+    if name == "harness" or name in available["skills"]:
+        die(f"{config_path}: [sources.skills] {name} is a harness-kit skill and can't be "
+            "sourced elsewhere; to replace it, fork it under [forks.skills] instead")
     if name not in names("skills"):
         die(f"{config_path}: [sources.skills] {name} is not in skills")
     m = SOURCE.fullmatch(source)
@@ -192,45 +205,122 @@ new = {
 
 # A source is fetched from <base>/<owner>/<repo>, GitHub unless the
 # environment (never the config) names another base, such as a mirror or a
-# directory of local repos in tests. Only https, ssh (for a url.insteadOf
-# rewrite) and file transports are allowed, so a URL can't run a command.
+# directory of local repos in tests. Only the https and file transports are
+# allowed, so a URL can't run a command; ssh is reachable only through the
+# user's own url.<base>.insteadOf rewrite of an https base.
 SOURCE_BASE = os.environ.get("HARNESS_SOURCE_BASE_URL", "https://github.com").rstrip("/")
 if not re.match(r"(https|file)://", SOURCE_BASE):
     die(f"HARNESS_SOURCE_BASE_URL must start with https:// or file://, got \"{SOURCE_BASE}\"")
 SHA = re.compile(r"[0-9a-fA-F]{40}")
 
 
+def limit(var, default):
+    """A fetch bound. The environment override is a test hook only; the
+    config can't change it."""
+    value = os.environ.get(var, str(default))
+    if not value.isdigit() or int(value) < 1:
+        die(f"{var} must be a positive whole number, got \"{value}\"")
+    return int(value)
+
+
+# Each git call gets FETCH_TIMEOUT seconds, and a sourced skill's tree may
+# hold at most MAX_FILES files and MAX_BYTES bytes, checked before any blob
+# is read.
+FETCH_TIMEOUT = limit("HARNESS_SOURCE_FETCH_TIMEOUT", 300)
+MAX_FILES = limit("HARNESS_SOURCE_MAX_FILES", 2000)
+MAX_BYTES = limit("HARNESS_SOURCE_MAX_BYTES", 50 * 1024 * 1024)
+GIT_ENV = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_ALLOW_PROTOCOL": "https:ssh:file"}
+fetch_dir = tempfile.TemporaryDirectory()  # removed when the run exits
+fetched = {}  # (owner, repo, ref) -> (scratch repo, commit): one fetch each
+
+
+def git_in(repo_dir, *args):
+    """git in a scratch repo, killed with its children after FETCH_TIMEOUT."""
+    p = subprocess.Popen(["git", "-C", repo_dir, *args], stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE, env=GIT_ENV, start_new_session=True)
+    try:
+        out, err = p.communicate(timeout=FETCH_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        os.killpg(p.pid, 9)
+        p.communicate()
+        raise
+    if p.returncode:
+        raise subprocess.CalledProcessError(p.returncode, args, out, err)
+    return out
+
+
+def fetch_commit(name, owner, repo, ref):
+    key = (owner, repo, ref)
+    if key not in fetched:
+        url = f"{SOURCE_BASE}/{owner}/{repo}"
+        repo_dir = os.path.join(fetch_dir.name, str(len(fetched)))
+        os.mkdir(repo_dir)
+        try:
+            git_in(repo_dir, "init", "-q")
+        except subprocess.CalledProcessError as e:
+            die(f"[sources.skills] {name}: can't create a scratch repository: {e.stderr.decode(errors='replace').strip()}")
+        except subprocess.TimeoutExpired:
+            die(f"[sources.skills] {name}: git init timed out after {FETCH_TIMEOUT}s")
+        try:
+            git_in(repo_dir, "fetch", "-q", "--depth", "1", "--no-tags", "--", url, ref)
+            commit = git_in(repo_dir, "rev-parse", "--verify", "-q", "FETCH_HEAD^{commit}").decode().strip()
+        except subprocess.CalledProcessError as e:
+            die(f"[sources.skills] {name}: can't fetch {ref} from {url}: {e.stderr.decode(errors='replace').strip()}")
+        except subprocess.TimeoutExpired:
+            die(f"[sources.skills] {name}: fetching {ref} from {url} timed out after {FETCH_TIMEOUT}s")
+        fetched[key] = (repo_dir, commit)
+    return fetched[key]
+
+
+def frontmatter_name(text):
+    """The name: in a SKILL.md's leading --- frontmatter, or None."""
+    m = re.match(r"---\r?\n(.*?)\r?\n---\r?\n", text, re.S)
+    n = m and re.search(r"^name:[ \t]*(.*?)[ \t]*$", m.group(1), re.M)
+    return n.group(1).strip("\"'") if n else None
+
+
 def fetch(name):
     """The sourced skill's commit and files, {relative path: (bytes, mode)},
     read from git objects at the pinned ref; nothing is checked out."""
     owner, repo, ref, path = parsed[name]
-    url = f"{SOURCE_BASE}/{owner}/{repo}"
-    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_ALLOW_PROTOCOL": "https:ssh:file"}
-    with tempfile.TemporaryDirectory() as tmp:
-        def git_(*args):
-            return subprocess.run(["git", "-C", tmp, *args], capture_output=True, check=True, env=env).stdout
-
+    repo_dir, commit = fetch_commit(name, owner, repo, ref)
+    where = f"{path} of {owner}/{repo} at {commit}"
+    try:
+        raw = git_in(repo_dir, "ls-tree", "-r", "-l", "-z", f"{commit}:{path}")
+    except subprocess.CalledProcessError:
+        die(f"[sources.skills] {name}: {path} is not a directory in {owner}/{repo} at {commit}")
+    except subprocess.TimeoutExpired:
+        die(f"[sources.skills] {name}: listing {where} timed out after {FETCH_TIMEOUT}s")
+    try:
+        listing = raw.decode()
+    except UnicodeDecodeError:
+        die(f"[sources.skills] {name}: a file name in {where} is not UTF-8; refusing to vendor it")
+    entries, total = [], 0
+    for line in filter(None, listing.split("\0")):
+        meta, rel = line.split("\t", 1)
+        mode, _, obj, size = meta.split()
+        if mode == "120000":
+            die(f"[sources.skills] {name}: {path}/{rel} is a symlink; a snapshot holds real files only")
+        if mode == "160000" or any(p.lower() in ("", ".", "..", ".git") for p in rel.split("/")):
+            die(f"[sources.skills] {name}: refusing to vendor {path}/{rel}")
+        entries.append((rel, mode, obj))
+        total += int(size)
+        if len(entries) > MAX_FILES:
+            die(f"[sources.skills] {name}: {where} has more than {MAX_FILES} files")
+        if total > MAX_BYTES:
+            die(f"[sources.skills] {name}: {where} has more than {MAX_BYTES} bytes")
+    files = {}
+    for rel, mode, obj in entries:
         try:
-            git_("init", "-q")
-            git_("fetch", "-q", "--depth", "1", "--no-tags", url, ref)
-            commit = git_("rev-parse", "FETCH_HEAD^{commit}").decode().strip()
-        except subprocess.CalledProcessError as e:
-            die(f"[sources.skills] {name}: can't fetch {ref} from {url}: {e.stderr.decode().strip()}")
-        try:
-            listing = git_("ls-tree", "-r", "-z", f"{commit}:{path}").decode()
-        except subprocess.CalledProcessError:
-            die(f"[sources.skills] {name}: {path} is not a directory in {owner}/{repo} at {commit}")
-        files = {}
-        for line in filter(None, listing.split("\0")):
-            meta, rel = line.split("\t", 1)
-            mode, _, obj = meta.split()
-            if mode == "120000":
-                die(f"[sources.skills] {name}: {path}/{rel} is a symlink; a snapshot holds real files only")
-            if mode == "160000" or any(p in ("", ".", "..", ".git") for p in rel.split("/")):
-                die(f"[sources.skills] {name}: refusing to vendor {path}/{rel}")
-            files[rel] = (git_("cat-file", "blob", obj), 0o755 if mode == "100755" else 0o644)
+            files[rel] = (git_in(repo_dir, "cat-file", "blob", obj), 0o755 if mode == "100755" else 0o644)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            die(f"[sources.skills] {name}: can't read {path}/{rel} of {owner}/{repo} at {commit}")
     if "SKILL.md" not in files:
-        die(f"[sources.skills] {name}: no SKILL.md in {path} of {owner}/{repo} at {commit}")
+        die(f"[sources.skills] {name}: no SKILL.md in {where}")
+    declared = frontmatter_name(files["SKILL.md"][0].decode(errors="replace"))
+    if declared is not None and declared != name:
+        die(f"[sources.skills] {name}: {where} declares itself \"{declared}\"; "
+            f"list it as {declared} in skills and [sources.skills]")
     return commit, files
 
 # The vendored repo has no plugin root, so plugin-root paths to shared
