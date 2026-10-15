@@ -13,6 +13,8 @@ name: Harness update
 
 on:
   schedule:
+    # Set by [update] schedule in .harness/config.toml when the config has
+    # one: change that key and re-run vendor-snapshot.sh, not this line.
     - cron: "23 7 * * 1"
   workflow_dispatch:
 
