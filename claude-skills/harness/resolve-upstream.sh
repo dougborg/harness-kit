@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Resolve the upstream harness repository (owner/repo) for the current project.
+# Resolve the upstream harness repository (owner/repo) for the project in the
+# current directory. The one lookup the harness-issue skill and the vendored
+# update workflow (harness-update.sh) share.
 #
 # Resolution order:
-#   1. $HARNESS_UPSTREAM environment variable (escape hatch for CI/scripting)
-#   2. .claude/harness-upstream file (one line: owner/repo)
-#   3. .harness-lock.json — first source object's `repo` field
-#      (i.e. .sources.<name>.repo, where <name> is the first key whose value
-#       has a `repo` field)
+#   1. $HARNESS_UPSTREAM environment variable (empty counts as unset)
+#   2. .claude/harness-upstream file (one line: owner/repo), the location
+#      bootstrap and migrate write
+#   3. Unmigrated projects only (no .harness/lock.json): .harness-lock.json,
+#      the first source's `repo` field. Remove after the 1.x migrations (#175).
 #   4. Default: dougborg/harness-kit
 #
 # Usage: resolve-upstream.sh
@@ -47,7 +49,7 @@ if [ -f "$config" ]; then
 fi
 
 lock=".harness-lock.json"
-if [ -f "$lock" ] && command -v jq >/dev/null 2>&1; then
+if [ ! -f .harness/lock.json ] && [ -f "$lock" ] && command -v jq >/dev/null 2>&1; then
   upstream=$(jq -r '
     .sources // {}
     | to_entries

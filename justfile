@@ -8,7 +8,7 @@ check: validate-all lint-shell lint-md hygiene
 validate-all: validate validate-codex validate-hooks tests
 
 # Every regression test script
-tests: test-hooks test-discover-verification-cmd test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-vendor-snapshot test-check-snapshot test-migrate-inventory test-harness-update test-codex-install
+tests: test-hooks test-discover-verification-cmd test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-vendor-snapshot test-check-snapshot test-migrate-inventory test-harness-update test-resolve-upstream test-codex-install
 
 # Resolve the verification command from .harness/config.toml and by discovery
 test-discover-verification-cmd:
@@ -85,6 +85,10 @@ test-migrate-inventory:
 # Run the vendored update workflow's script against a scratch upstream and a stub gh
 test-harness-update:
     ./scripts/test-harness-update.sh
+
+# Resolve the upstream repo, source by source, as harness-issue and harness-update.sh do
+test-resolve-upstream:
+    ./scripts/test-resolve-upstream.sh
 
 # Install the repository through an isolated Codex marketplace/profile
 test-codex-install:
