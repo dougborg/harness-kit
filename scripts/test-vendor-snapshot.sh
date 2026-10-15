@@ -311,6 +311,13 @@ check json-fork-status test "$(jq_ "[(f['kind'], f['name'], f['status']) for f i
 check json-fork-changes test "$(jq_ "[f['changes'] for f in d['forks'] if f['name'] == 'tdd'][0]")" = \
   "[{'status': 'M', 'path': '.agents/skills/tdd/SKILL.md'}, {'status': 'M', 'path': '.claude/skills/tdd/SKILL.md'}]"
 check json-rerun-writes-nothing test -z "$(git -C "$proj" status --porcelain)"
+# --json-out: one run, the Markdown report on stdout and the JSON in a file.
+mdreport=$("$vendor" --json-out "$scratch/report.json" "$up_plugin" "$proj")
+check json-out-stdout-is-markdown grep -qxF "vendored harness-kit 9.9.9 (from 9.9.9): $(jq_ "len(d['skills'])") skills, $(jq_ "len(d['agents'])") agents, $(jq_ "d['files']") files" <<<"$mdreport"
+check json-out-stdout-has-forks grep -qF '## Forks' <<<"$mdreport"
+check json-out-file-is-the-json-report python3 -c 'import json,sys; sys.exit(json.load(open(sys.argv[1])) != json.loads(sys.argv[2]))' "$scratch/report.json" "$jreport"
+check json-out-writes-nothing-else test -z "$(git -C "$proj" status --porcelain)"
+check json-out-needs-a-file sh -c '"$1" --json-out >/dev/null 2>&1; test $? = 2' _ "$vendor"
 
 # --- Refusals: nothing is written ---------------------------------------------
 # expect_refusal <name> <project> <message>
