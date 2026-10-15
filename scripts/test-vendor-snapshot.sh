@@ -608,6 +608,29 @@ proj=$(new_sourced source-name-absent "acme/skills@$sha1:skills/plain" plain)
 check source-name-absent-vendored run "$proj"
 check source-name-absent-tree cmp "$src/skills/plain/SKILL.md" "$proj/.agents/skills/plain/SKILL.md"
 
+# The name is read whatever the line endings, behind a BOM, from a closing
+# --- at the end of the file, and from a quoted value with a comment.
+fm="$scratch/sources/acme/fm"
+mkdir -p "$fm"
+fm_skill() { mkdir -p "$fm/skills/$1" && printf %b "$2" >"$fm/skills/$1/SKILL.md"; }
+fm_skill crlf '---\r\nname: crlf\r\ndescription: x\r\n---\r\nbody\r\n'
+fm_skill bom '\xef\xbb\xbf---\nname: bom\n---\nbody\n'
+fm_skill bom-other '\xef\xbb\xbf---\nname: other\n---\nbody\n'
+fm_skill eof-other '---\nname: other\n---'
+fm_skill quoted '---\nname: "quoted" # the name\ndescription: x\n---\n'
+fm_skill single "---\nname: 'single'  # the name\n---\n"
+git -C "$fm" init -q -b main
+git -C "$fm" add -A
+git -C "$fm" -c user.name=t -c user.email=t@t commit -qm fm
+for ok in crlf bom quoted single; do
+  proj=$(new_sourced "source-name-$ok" "acme/fm@main:skills/$ok" "$ok")
+  check "source-name-$ok-matches" run "$proj"
+done
+for bad in bom-other eof-other; do
+  proj=$(new_sourced "source-name-$bad" "acme/fm@main:skills/$bad" "$bad")
+  expect_refusal "source-name-$bad-refused" "$proj" "declares itself \"other\""
+done
+
 # A lock from before source_commits existed still updates.
 proj=$(new_sourced source-old-lock "acme/skills@$sha1:skills/frontend-design")
 run "$proj" >/dev/null
