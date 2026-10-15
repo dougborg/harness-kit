@@ -36,7 +36,10 @@ check workflow-on-schedule grep -qE '^  schedule:' "$wf"
 check workflow-on-dispatch grep -qE '^  workflow_dispatch:' "$wf"
 check workflow-uses-github-token grep -qF 'GH_TOKEN: ${{ github.token }}' "$wf"
 check workflow-checkout-keeps-no-credentials grep -qE '^ +persist-credentials: false$' "$wf"
-check workflow-no-other-secrets sh -c '! grep -q "secrets\." "$1"' _ "$wf"
+# One optional secret, HARNESS_UPDATE_TOKEN, passed as itself; no other.
+check workflow-only-the-update-token-secret test "$(grep -oE 'secrets\.[A-Za-z0-9_]+' "$wf" | sort -u)" = secrets.HARNESS_UPDATE_TOKEN
+check workflow-update-token-env grep -qxE ' +HARNESS_UPDATE_TOKEN: \$\{\{ secrets\.HARNESS_UPDATE_TOKEN \}\}' "$wf"
+check workflow-update-token-once test "$(grep -c 'secrets\.' "$wf")" = 1
 check workflow-permissions python3 -c 'import sys; sys.exit("\npermissions:\n  contents: write\n  pull-requests: write\n\n" not in open(sys.argv[1]).read())' "$wf"
 check workflow-actions-pinned sh -c '! grep -E "uses: " "$1" | grep -vqE "uses: [^@ ]+@[0-9a-f]{40}( |$)"' _ "$wf"
 check script-runs-vendor-snapshot grep -qF '"$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" .' "$dir/harness-update.sh"
@@ -110,7 +113,12 @@ cat >"$scratch/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 # Stub gh: the latest release is $STUB_TAG; open PRs are in $STUB_DIR/prs.
 echo "$*" >>"$STUB_DIR/log"
-[ "${GH_TOKEN:-}" = test-token-s3cret ] || { echo "stub gh: no GH_TOKEN" >&2; exit 1; }
+case "${GH_TOKEN:-}" in
+  test-token-s3cret) token=github ;;
+  test-app-s3cret) token=app ;;
+  *) echo "stub gh: no GH_TOKEN" >&2; exit 1 ;;
+esac
+echo "$1 $2 token=$token" >>"$STUB_DIR/gh-tokens"
 body() {
   while [ $# -gt 0 ]; do
     if [ "$1" = --body-file ]; then cp "$2" "$STUB_DIR/body.md"; fi
@@ -140,7 +148,11 @@ cat >"$scratch/bin/git" <<'STUB'
 if [ "${1:-}" = push ]; then
   header=$("$REAL_GIT" config --get-all http.extraheader || true)
   auth=$(python3 -c 'import base64,sys; print(base64.b64decode(sys.argv[1].rsplit(" ", 1)[-1]).decode())' "$header" 2>/dev/null || true)
-  [ "$auth" = x-access-token:test-token-s3cret ] && auth=ok || auth=missing
+  case $auth in
+    x-access-token:test-token-s3cret) auth=ok ;;
+    x-access-token:test-app-s3cret) auth=app ;;
+    *) auth=missing ;;
+  esac
   echo "push auth=$auth keep=$("$REAL_GIT" config --get test.keep || true)" >>"$STUB_DIR/git-log"
 fi
 exec "$REAL_GIT" "$@"
@@ -151,11 +163,16 @@ mkdir -p "$STUB_DIR"
 : >"$STUB_DIR/log"
 
 # update <tag>: run the vendored harness-update.sh in the project; sets out, rc.
+# $update_token, when set, is passed as HARNESS_UPDATE_TOKEN.
+update_token=
+summary="$scratch/step-summary.md"
 update() {
   set +e
+  : >"$summary"
   # The caller's own GIT_CONFIG_* entry must survive the token's.
   out=$(cd "$proj" && PATH="$scratch/bin:$PATH" STUB_TAG=$1 GITHUB_SERVER_URL="file://$srv" \
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=test.keep GIT_CONFIG_VALUE_0=kept GITHUB_ACTIONS=true \
+    GITHUB_STEP_SUMMARY="$summary" HARNESS_UPDATE_TOKEN="$update_token" \
     HARNESS_UPSTREAM='' GH_TOKEN=test-token-s3cret .claude/skills/harness/harness-update.sh 2>&1)
   rc=$?
   set -e
@@ -193,6 +210,7 @@ check body-lists-hook-added body_has '- added `SessionEnd`:'
 # mentions don't fire inside a code block.
 check body-shows-added-command grep -qxF '  echo "@hubot ``` done"' "$STUB_DIR/body.md"
 check body-hook-fence-outlasts-command grep -qxF '  ````text' "$STUB_DIR/body.md"
+check pr-uses-github-token test "$(grep -c 'token=app' "$STUB_DIR/gh-tokens")" = 0
 check body-reports-fork-with-fetched-tag body_has "skill \`tdd\` (forked from $version): 2 files changed upstream"
 check push-gets-token grep -qx 'push auth=ok keep=kept' "$STUB_DIR/git-log"
 check token-masked-in-actions has "::add-mask::$(printf 'x-access-token:test-token-s3cret' | base64 | tr -d '\n')"
@@ -211,13 +229,16 @@ check rerun-same-content-not-pushed test "$(origin_branch)" = "$first"
 pgit switch -q main
 calls=$(pr_calls)
 release 9.9.10 sh -c 'echo "echo tampered >>AGENTS.md; env >\"\$STUB_DIR/upstream-env\"" >>skills/meta/harness/vendor-snapshot.sh'
+update_token=test-app-s3cret
 update v9.9.10
+update_token=
 check guard-fails test "$rc" = 1
 check guard-names-path has "  AGENTS.md"
 check guard-pushes-nothing test "$(origin_branch)" = "$first"
 check guard-touches-no-pr test "$(pr_calls)" = "$calls"
 check upstream-script-ran test -s "$STUB_DIR/upstream-env"
 check upstream-script-gets-no-token sh -c '! grep -q s3cret "$1"' _ "$STUB_DIR/upstream-env"
+check upstream-script-gets-no-update-token sh -c '! grep -q HARNESS_UPDATE_TOKEN "$1"' _ "$STUB_DIR/upstream-env"
 check no-token-in-git-config sh -c '! grep -rq s3cret "$1/.git/config"' _ "$proj"
 
 # --- A release that changes the workflow itself can't be pushed by GITHUB_TOKEN ---
@@ -228,7 +249,33 @@ release 9.9.11 sh -c 'git checkout -q v9.9.9 -- skills/meta/harness/vendor-snaps
 update v9.9.11
 check workflow-change-fails test "$rc" = 1
 check workflow-change-explains has "GITHUB_TOKEN can't push"
+# The failure names the exact local commands and the docs, in the log and the
+# job summary.
+check workflow-change-names-clone has "git clone --depth 1 --branch v9.9.11 file://$srv/dougborg/harness-kit \"\$release\""
+check workflow-change-names-vendor has '"$release"/skills/meta/harness/vendor-snapshot.sh "$release" .'
+check workflow-change-names-secret has "HARNESS_UPDATE_TOKEN"
+check workflow-change-links-docs has "Docs: file://$srv/dougborg/harness-kit/blob/v9.9.11/skills/meta/harness/vendoring.md#the-update-workflow"
+check workflow-change-in-summary grep -qF "git clone --depth 1 --branch v9.9.11" "$summary"
 check workflow-change-pushes-nothing test "$(origin_branch)" = "$first"
+
+# With HARNESS_UPDATE_TOKEN the same release is delivered: the token pushes
+# the branch and edits the PR, so the PR's CI runs; GITHUB_TOKEN does neither.
+pgit reset -q --hard
+pgit clean -qfd
+pgit switch -q main
+: >"$STUB_DIR/gh-tokens"
+update_token=test-app-s3cret
+update v9.9.11
+update_token=
+check token-workflow-change-exits-0 test "$rc" = 0
+[ "$rc" = 0 ] || echo "$out"
+check token-workflow-change-pushed sh -c 'git --git-dir "$1" show harness-kit/update:.github/workflows/harness-update.yml | grep -qx "# B"' _ "$scratch/origin.git"
+check token-push-uses-update-token test "$(tail -1 "$STUB_DIR/git-log")" = 'push auth=app keep=kept'
+check token-pr-uses-update-token grep -qx 'pr edit token=app' "$STUB_DIR/gh-tokens"
+check token-release-read-with-github-token grep -qx 'api repos/dougborg/harness-kit/releases/latest token=github' "$STUB_DIR/gh-tokens"
+check token-masked-in-actions has "::add-mask::$(printf 'x-access-token:test-app-s3cret' | base64 | tr -d '\n')"
+# Put back the 9.9.9 branch the later cases build on.
+git --git-dir "$scratch/origin.git" update-ref refs/heads/harness-kit/update "$first"
 
 # --- A release whose manifest doesn't match its tag is refused ----------------------
 pgit reset -q --hard

@@ -209,17 +209,27 @@ whose `verification_command` the base branch's skills then run
 (`${CLAUDE_SKILL_DIR}/github-action.md`), so an update PR never touches the config or
 `AGENTS.md`; review any PR that does like code.
 
-It uses only `GITHUB_TOKEN`, with `contents: write` and
-`pull-requests: write`, which has three consequences:
+By default it uses only `GITHUB_TOKEN`, with `contents: write` and
+`pull-requests: write`, which has three consequences (the
+[update token](#the-optional-update-token) removes the last two):
 
 - The repository must allow it: Settings > Actions > General > "Allow GitHub
   Actions to create and approve pull requests".
 - GitHub doesn't start `pull_request` workflows for a PR pushed with
   `GITHUB_TOKEN`. Close and reopen the PR to run CI; the PR body says so.
 - `GITHUB_TOKEN` can't push a change to a workflow file. The workflow is a
-  thin wrapper so it rarely changes; when a release does change it, the job
-  fails and says so, and someone runs the update locally (the command in
-  [Run it](#run-it), from a clone of the release tag) and opens the PR.
+  thin wrapper so it rarely changes. When a release does change it, the job
+  fails without pushing, and prints, in its log and its job summary, the
+  release's tag, a link to this section at that tag, and the commands to run
+  from a clean checkout of the default branch:
+
+  ```bash
+  release=$(mktemp -d)
+  git clone --depth 1 --branch vX.Y.Z https://github.com/dougborg/harness-kit "$release"
+  "$release"/skills/meta/harness/vendor-snapshot.sh "$release" .
+  ```
+
+  Commit the result on a branch and open the PR yourself.
 
 The workflow is snapshot-owned, so the edit check fails if it is edited. To
 follow a fork of harness-kit, set `HARNESS_UPSTREAM` rather than editing it.
@@ -249,6 +259,32 @@ with `GH_TOKEN` removed from its environment, and the token reaches git only on
 the fetch and push of the update branch. That keeps the token out of
 `.git/config` and the release's environment; it isn't a sandbox, since the
 release runs in the same job.
+
+### The optional update token
+
+A repository secret named `HARNESS_UPDATE_TOKEN` lets the job deliver a
+release that changes the workflow. Make it a fine-grained personal access
+token with access to this repository only and the repository permissions
+Contents, Pull requests, and Workflows set to read and write. With it, the job
+uses the token, in place of `GITHUB_TOKEN`, for exactly two things: the fetch
+and force-push of `harness-kit/update`, and the `gh pr` calls that find,
+open, or edit the PR. The release is still read with `GITHUB_TOKEN`, and the
+diff guard still allows only snapshot-owned paths, so the only workflow it can
+change is `harness-update.yml`. Without the secret, nothing changes.
+
+The token stays out of the release's code the same way `GITHUB_TOKEN` does,
+and more strictly: `harness-update.sh` copies it into a shell variable and
+unsets it before running anything, so no process it starts, the release's
+`vendor-snapshot.sh` included, has it in its environment. It reaches git
+only as an `http.extraheader` passed through `GIT_CONFIG_*` on the commands
+that talk to origin, masked in the log, and `gh` only on the PR calls. As
+with `GITHUB_TOKEN`, that isn't a sandbox: the release runs in the same job,
+as the same user.
+
+A GitHub App's installation tokens expire within an hour, so one can't be
+stored as this secret, and the vendored workflow has no step that mints one.
+The PR is opened as the token's owner, who therefore can't approve it;
+someone else reviews it.
 
 ## Third-party skills
 
