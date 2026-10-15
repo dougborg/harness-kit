@@ -273,10 +273,19 @@ def fetch_commit(name, owner, repo, ref):
 
 
 def frontmatter_name(text):
-    """The name: in a SKILL.md's leading --- frontmatter, or None."""
-    m = re.match(r"---\r?\n(.*?)\r?\n---\r?\n", text, re.S)
-    n = m and re.search(r"^name:[ \t]*(.*?)[ \t]*$", m.group(1), re.M)
-    return n.group(1).strip("\"'") if n else None
+    """The name: in a SKILL.md's leading --- frontmatter, or None. Any line
+    ending, a UTF-8 BOM, a closing --- at the end of the file, and a quoted
+    or commented value are all read as YAML would."""
+    lines = re.split(r"\r\n|\r|\n", text.removeprefix("﻿"))
+    fence = [i for i, line in enumerate(lines) if line.rstrip() == "---"]
+    if not fence or fence[0] != 0 or len(fence) < 2:
+        return None
+    for line in lines[1:fence[1]]:
+        m = re.match(r"name:[ \t]*(.*)$", line)
+        if m:
+            q = re.match(r"\"([^\"]*)\"|'([^']*)'", m.group(1))
+            return q.group(q.lastindex) if q else re.sub(r"(^|[ \t])#.*$", "", m.group(1)).strip()
+    return None
 
 
 def fetch(name):
