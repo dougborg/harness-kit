@@ -145,7 +145,8 @@ Before writing or deleting anything, show the maintainer the whole plan:
 - every file to delete, grouped by skill or agent, with a count;
 - every file kept, and every file moved;
 - that `.harness-lock.json` will be removed and harness-kit set to `false`
-  in `.claude/settings.json`, so only the snapshot loads.
+  in `.claude/settings.json`, so only the snapshot loads;
+- the upstream repo `.claude/harness-upstream` will name.
 
 Make no change until the maintainer approves this preview; a change to the
 plan means a new preview. Done when the maintainer approves.
@@ -167,7 +168,14 @@ plan means a new preview. Done when the maintainer approves.
    It exits 1, writing nothing, when the config names an unknown skill or a
    kept file is in the snapshot's way; fix that and re-run. Its report lists
    the forks it left alone.
-5. `git rm .harness-lock.json`.
+5. Record the upstream, then remove the old files. Once the old lock is
+   gone, the update workflow and the `harness-issue` skill read the upstream
+   only from `.claude/harness-upstream` (one line, `owner/repo`). Keep that
+   file when present; otherwise write it from `.harness-upstream` (a 1.x
+   bootstrap wrote both), or from the old lock's first source `repo` when
+   that isn't `dougborg/harness-kit`. Ask the maintainer when two of them
+   disagree. Then `git rm .harness-lock.json`, and `.harness-upstream` if
+   present.
 6. Remove hook entries the old harness added for harness-kit's own scripts
    (in `.claude/settings.local.json` or `.codex/hooks.json`) now that the
    snapshot wires them in `.claude/settings.json`; keep the project's own.

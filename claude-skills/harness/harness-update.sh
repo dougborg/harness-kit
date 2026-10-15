@@ -4,7 +4,8 @@
 # .github/workflows/harness-update.yml, from the project's checkout of its
 # default branch, with GH_TOKEN set.
 #
-# 1. Resolve the upstream repository: $HARNESS_UPSTREAM, then
+# 1. Resolve the upstream repository with the vendored
+#    .claude/skills/harness/resolve-upstream.sh: $HARNESS_UPSTREAM, then
 #    .claude/harness-upstream, then dougborg/harness-kit.
 # 2. Read its latest release. When it is not newer than the version in
 #    .harness/lock.json, stop: nothing is written.
@@ -36,12 +37,9 @@ mention_free() { python3 -c 'import sys; sys.stdout.write(sys.stdin.read().repla
 [ -z "$(git status --porcelain)" ] || die "the working tree is not clean"
 base=$(git rev-parse --abbrev-ref HEAD)
 
-upstream=${HARNESS_UPSTREAM:-}
-if [ -z "$upstream" ] && [ -f .claude/harness-upstream ]; then
-  upstream=$(tr -d '[:space:]' <.claude/harness-upstream)
-fi
-upstream=${upstream:-dougborg/harness-kit}
-[[ "$upstream" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "not an owner/repo: $upstream"
+# The project's own resolver, from the checked-out default branch: the Claude
+# projection ships it beside this script, and the workflow runs this copy.
+upstream=$(.claude/skills/harness/resolve-upstream.sh) || die "could not resolve the upstream repository"
 
 # The checkout keeps no credentials (persist-credentials: false), so the
 # token reaches git only on the commands that talk to origin, never through

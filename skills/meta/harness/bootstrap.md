@@ -80,8 +80,9 @@ Done when `<plugin-root>/.claude-plugin/plugin.json` exists.
      when they hold secrets or machine paths) and `.codex/hooks.json`, sharing
      invoked scripts where semantics match.
    - Merge the project's Codex defaults into `.codex/config.toml`.
-   - `.harness-upstream`, and `.claude/harness-upstream` as a compatibility
-     copy, naming the upstream repo.
+   - `.claude/harness-upstream`, one line naming the upstream repo
+     (`owner/repo`); the update workflow and the `harness-issue` skill read
+     it (`<skill-dir>/vendoring.md`).
    - `.gitignore`: commit `.harness/`, `.agents/`, `.codex/`, and `.claude/`'s
      `skills/`, `agents/`, `hooks/`, `settings.json`, and `harness-upstream`;
      ignore `.claude/settings.local.json`. Never generate `.claude/commands/`;

@@ -170,8 +170,12 @@ review gate. It runs weekly and on `workflow_dispatch`, on the default branch
 only, and calls the vendored `.claude/skills/harness/harness-update.sh`,
 which:
 
-1. Resolves the upstream repository: the `HARNESS_UPSTREAM` repository
-   variable, then `.claude/harness-upstream`, then `dougborg/harness-kit`.
+1. Resolves the upstream repository with
+   `${CLAUDE_SKILL_DIR}/resolve-upstream.sh`, the lookup the `harness-issue`
+   skill also uses: the `HARNESS_UPSTREAM` repository variable, then
+   `.claude/harness-upstream`, then `dougborg/harness-kit`. (The script also
+   reads the old `.harness-lock.json`, but only in a project without
+   `.harness/lock.json`, so never here.)
 2. Reads the upstream's latest release (`gh api repos/<upstream>/releases/latest`)
    and stops, writing nothing, unless it is newer than the lock's `version`.
    Only `vX.Y.Z` tags are followed: a pre-release or build tag such as
@@ -223,7 +227,14 @@ a private upstream needs a token this workflow doesn't have.
 upstream release's own `vendor-snapshot.sh` in a job that can push to the
 repository, and the PR it opens changes skills, agents, and hook commands that
 run in every later session. Set `HARNESS_UPSTREAM` or `.claude/harness-upstream`
-only to a repository whose releases you would merge as code. The checkout
+only to a repository whose releases you would merge as code, and review a pull
+request that changes the file like code. `.claude/harness-upstream`, one line
+`owner/repo`, is the one file bootstrap and migrate write. It lives under
+`.claude/`, which the GitHub Action restores from the base branch on a pull
+request, so a PR can't redirect the skills the Action runs on it;
+`.harness/config.toml` isn't restored, which is why the upstream is not a
+fact there. The update PR can't change the file either, since the diff guard
+allows only snapshot-owned paths. The checkout
 keeps no credentials (`persist-credentials: false`), the release's script runs
 with `GH_TOKEN` removed from its environment, and the token reaches git only on
 the fetch and push of the update branch. That keeps the token out of

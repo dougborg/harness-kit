@@ -36,10 +36,11 @@ rather than inventing context to look thorough.
 upstream=$(${CLAUDE_SKILL_DIR}/resolve-upstream.sh)
 ```
 
-The script reads `$HARNESS_UPSTREAM`, then `.claude/harness-upstream` (one
-line, `owner/repo`), then the first source `repo` in `.harness-lock.json`,
-then falls back to its built-in default. Refer to the repo by the resolved
-name in every message to the user rather than a hardcoded
+The script is the lookup the update workflow uses too: `$HARNESS_UPSTREAM`,
+then `.claude/harness-upstream` (one line, `owner/repo`), then, in a project
+not yet migrated to a vendored snapshot, the first source `repo` in
+`.harness-lock.json`, then its built-in default. Refer to the repo by the
+resolved name in every message to the user rather than a hardcoded
 `dougborg/harness-kit`. Done when `$upstream` holds an `owner/repo` and you
 have told the user which repo you are filing against.
 
@@ -178,7 +179,7 @@ triage stays clean. Batch them only when they are genuinely one concern.
 ## Configuration
 
 - `.claude/harness-upstream`: one line, `owner/repo`. Overrides the default
-  and the lock file.
+  and the old lock file.
 - `$HARNESS_UPSTREAM`: environment override for one-off runs or CI.
 - `$HARNESS_UPSTREAM_WORKSPACE`: root for cached upstream checkouts (default
   `${XDG_CACHE_HOME:-~/.cache}/harness-issue`).
