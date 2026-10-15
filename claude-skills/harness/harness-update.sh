@@ -23,7 +23,8 @@
 #    hook entries it changes in .claude/settings.json.
 #
 # HARNESS_UPDATE_TOKEN, when set, replaces GH_TOKEN for the push and the PR
-# calls only; reading the release still uses GH_TOKEN. It is taken out of the
+# calls only, so the PR's pull_request workflows run; reading the release
+# still uses GH_TOKEN. It is taken out of the
 # environment first, so nothing else this runs, the release's scripts
 # included, ever sees it.
 #
@@ -182,8 +183,13 @@ title="chore(harness): update harness-kit snapshot to ${tag#v}"
   echo
   echo "This PR changes only the snapshot's files, \`.harness/lock.json\`, and the"
   echo "harness hook entries in \`.claude/settings.json\`; the workflow refuses to push"
-  echo "anything else. It was opened with \`GITHUB_TOKEN\`, so \`pull_request\`"
-  echo "workflows don't start on their own: close and reopen it to run CI."
+  if [ -n "$update_token" ]; then
+    echo "anything else. It was pushed with \`HARNESS_UPDATE_TOKEN\`, so \`pull_request\`"
+    echo "workflows run on it."
+  else
+    echo "anything else. It was opened with \`GITHUB_TOKEN\`, so \`pull_request\`"
+    echo "workflows don't start on their own: close and reopen it to run CI."
+  fi
   echo
   echo "<details><summary>Release notes</summary>"
   echo
