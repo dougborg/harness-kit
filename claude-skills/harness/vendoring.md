@@ -20,7 +20,7 @@ update PR.
 ## Run it
 
 ```bash
-${CLAUDE_SKILL_DIR}/vendor-snapshot.sh [--json] [--discard-edits] ${CLAUDE_PLUGIN_ROOT} .
+${CLAUDE_SKILL_DIR}/vendor-snapshot.sh [--json] [--json-out FILE] [--discard-edits] ${CLAUDE_PLUGIN_ROOT} .
 ```
 
 The first argument is a harness-kit plugin root: the installed plugin, or a
@@ -31,6 +31,8 @@ version. The second is the project directory, which defaults to `.`. It needs
 config names an unknown skill or agent or a vendored path holds a
 project-local file. It prints a Markdown report, or the same report as JSON
 with `--json` (see [Updating to a new release](#updating-to-a-new-release)).
+`--json-out FILE` also writes the JSON report to `FILE`, so one run yields
+the Markdown on stdout and the JSON in the file.
 
 When a lock exists, it first runs [the edit check](#the-edit-check) against
 it. If the current snapshot was changed (a vendored file edited, added, or
@@ -158,7 +160,8 @@ Left unchanged. Upstream changes since each was forked:
 - agent `verifier` (forked from 1.0.0): no upstream changes
 ```
 
-`--json` prints the same facts for a workflow to read: `from` (the previous
+`--json` prints the same facts for a workflow to read (`--json-out FILE`
+writes them to `FILE` alongside the Markdown): `from` (the previous
 version, or `null`), `to`, `skills`, `agents`, `files` (a count), `removed`
 and `new` (each `{"skills": [...], "agents": [...]}`), and `forks`, a list of
 `{kind, name, forked_from, status, changes}` where `status` is `changed`,

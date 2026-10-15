@@ -24,23 +24,29 @@
 # file, or a changed hook entry) it exits 1 and writes nothing, unless
 # --discard-edits says to overwrite those changes.
 #
-# It reports, as Markdown (or JSON with --json): chosen skills and agents the
+# It reports, as Markdown (or JSON with --json; --json-out FILE also writes
+# the JSON to FILE, so one run yields both): chosen skills and agents the
 # release removed (dropped from the snapshot), ones new since the last
 # snapshot (offered, not installed), each third-party source's commit and
 # whether it moved, and, for each fork, which of its files
 # changed upstream since the version it was forked from. That comparison reads
 # the fork's version from tag v<version> when <plugin-dir> is a git checkout.
 #
-# Usage: vendor-snapshot.sh [--json] [--discard-edits] <plugin-dir> [project-dir]
+# Usage: vendor-snapshot.sh [--json] [--json-out FILE] [--discard-edits] <plugin-dir> [project-dir]
 #   <plugin-dir>   this plugin's installed root, or a release checkout
 #   [project-dir]  the project holding .harness/config.toml (default: .)
 set -euo pipefail
 
-usage="usage: vendor-snapshot.sh [--json] [--discard-edits] <plugin-dir> [project-dir]"
-as_json=0 discard=0
+usage="usage: vendor-snapshot.sh [--json] [--json-out FILE] [--discard-edits] <plugin-dir> [project-dir]"
+as_json=0 discard=0 json_out=
 while [ $# -gt 0 ]; do
   case $1 in
     --json) as_json=1 ;;
+    --json-out)
+      if [ $# -lt 2 ] || [ -z "$2" ]; then echo "$usage" >&2; exit 2; fi
+      json_out=$2
+      shift
+      ;;
     --discard-edits) discard=1 ;;
     -*) echo "$usage" >&2; exit 2 ;;
     *) break ;;
@@ -64,7 +70,7 @@ MSG
   exit 1
 fi
 
-python3 - "$as_json" "$1" "${2:-.}" <<'PY'
+python3 - "$as_json" "$json_out" "$1" "${2:-.}" <<'PY'
 import hashlib
 import json
 import os
@@ -85,8 +91,8 @@ try:
 except ImportError:
     die("needs Python 3.11 or later (tomllib)")
 
-as_json = sys.argv[1] == "1"
-plugin, project = Path(sys.argv[2]).resolve(), Path(sys.argv[3]).resolve()
+as_json, json_out = sys.argv[1] == "1", sys.argv[2]
+plugin, project = Path(sys.argv[3]).resolve(), Path(sys.argv[4]).resolve()
 manifest = plugin / ".claude-plugin/plugin.json"
 if not manifest.is_file():
     die(f"{plugin} is not a harness-kit plugin root (no .claude-plugin/plugin.json)")
@@ -530,6 +536,8 @@ report = {
                  "pinned": bool(SHA.fullmatch(parsed[name][2]))}
                 for name, commit in sorted(commits.items())],
 }
+if json_out:
+    Path(json_out).write_text(json.dumps(report, indent=2) + "\n")
 if as_json:
     print(json.dumps(report, indent=2))
     sys.exit(0)
