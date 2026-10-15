@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Helpers run indirectly through check(), which ShellCheck cannot see.
+# shellcheck disable=SC2317
 # resolve and asked run only through expect, which ShellCheck cannot see.
 # shellcheck disable=SC2329
 # Tests for the upstream lookup both callers share: resolve-upstream.sh run
