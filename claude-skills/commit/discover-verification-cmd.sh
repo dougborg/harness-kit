@@ -92,8 +92,12 @@ elif [ "$config_status" -ne 3 ]; then
   exit 1
 fi
 # The key written anywhere else (an inline table, a dotted key, another
-# table) would silently be ignored, so fail and say where it is.
-unread=$(grep -nE '^[^#]*verification_command' .harness/config.toml 2>/dev/null || true)
+# table) would silently be ignored, so fail and say where it is. Only key
+# positions count: a bare, quoted, or dotted key at the start of a line, or a
+# key inside an inline table; the word inside a string value is not a key.
+key='["'\'']?verification_command["'\'']?[[:space:]]*='
+unread=$(grep -nE "^[[:space:]]*([A-Za-z0-9_\"'.-]+\.)?$key|^[^#]*[{,][[:space:]]*$key" \
+  .harness/config.toml 2>/dev/null || true)
 if [ -n "$unread" ]; then
   while IFS=: read -r line _; do
     echo ".harness/config.toml:$line: verification_command is not read here; write it as" \
