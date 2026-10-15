@@ -235,13 +235,15 @@ fetch_dir = tempfile.TemporaryDirectory()  # removed when the run exits
 fetched = {}  # (owner, repo, ref) -> (scratch repo, commit): one fetch each
 
 
-def git_in(repo_dir, *args):
-    """git in a scratch repo, killed with its children after FETCH_TIMEOUT,
-    or when the run is interrupted, so no git outlives the run."""
+def git_in(repo_dir, *args, stdin=None):
+    """git in a scratch repo, given stdin bytes if any, killed with its
+    children after FETCH_TIMEOUT, or when the run is interrupted, so no git
+    outlives the run."""
     p = subprocess.Popen(["git", "-C", repo_dir, *args], stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE, env=GIT_ENV, start_new_session=True)
+                         stderr=subprocess.PIPE, env=GIT_ENV, start_new_session=True,
+                         stdin=subprocess.DEVNULL if stdin is None else subprocess.PIPE)
     try:
-        out, err = p.communicate(timeout=FETCH_TIMEOUT)
+        out, err = p.communicate(stdin, timeout=FETCH_TIMEOUT)
     except BaseException:  # the timeout, or Ctrl-C
         try:
             os.killpg(p.pid, signal.SIGKILL)
@@ -323,12 +325,24 @@ def fetch(name):
             die(f"[sources.skills] {name}: {where} has more than {MAX_FILES} files")
         if total > MAX_BYTES:
             die(f"[sources.skills] {name}: {where} has more than {MAX_BYTES} bytes")
-    files = {}
+    # One git process reads every blob, so FETCH_TIMEOUT bounds them all.
+    try:
+        out = git_in(repo_dir, "cat-file", "--batch",
+                     stdin="".join(f"{obj}\n" for _, _, obj in entries).encode())
+    except subprocess.CalledProcessError as e:
+        die(f"[sources.skills] {name}: can't read {where}: {e.stderr.decode(errors='replace').strip()}")
+    except subprocess.TimeoutExpired:
+        die(f"[sources.skills] {name}: reading {where} timed out after {FETCH_TIMEOUT}s")
+    files, at = {}, 0
     for rel, mode, obj in entries:
-        try:
-            files[rel] = (git_in(repo_dir, "cat-file", "blob", obj), 0o755 if mode == "100755" else 0o644)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        # Each object is "<oid> blob <size>\n<content>\n", or "<oid> missing\n".
+        end = out.find(b"\n", at)
+        header = out[at:end].split() if end >= 0 else []
+        if len(header) != 3 or header[0].decode() != obj or header[1] != b"blob":
             die(f"[sources.skills] {name}: can't read {path}/{rel} of {owner}/{repo} at {commit}")
+        size = int(header[2])
+        files[rel] = (out[end + 1:end + 1 + size], 0o755 if mode == "100755" else 0o644)
+        at = end + 1 + size + 1
     if "SKILL.md" not in files:
         die(f"[sources.skills] {name}: no SKILL.md in {where}")
     declared = frontmatter_name(files["SKILL.md"][0].decode(errors="replace"))

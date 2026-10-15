@@ -659,6 +659,7 @@ if [ "${3:-}" = fetch ]; then
   if [ -n "${GIT_WRAP_PIDFILE:-}" ]; then echo $$ >"$GIT_WRAP_PIDFILE"; fi
   if [ -n "${GIT_WRAP_SLEEP:-}" ]; then exec sleep "$GIT_WRAP_SLEEP"; fi
 fi
+if [ "${3:-}" = cat-file ]; then echo cat-file >>"$GIT_WRAP_LOG"; fi
 if [ "${3:-}" = init ] && [ -n "${GIT_WRAP_FAIL_INIT:-}" ]; then
   echo "wrapped init failure" >&2
   exit 1
@@ -676,6 +677,9 @@ commit_all "$proj"
 : >"$GIT_WRAP_LOG"
 check source-cache-vendors wrapped "$proj"
 check source-cache-fetches-once test "$(grep -c fetch "$GIT_WRAP_LOG")" = 1
+# Each skill's files (two, then one) are read by one git process each, so
+# one timeout bounds them all.
+check source-blobs-read-in-one-batch test "$(grep -c cat-file "$GIT_WRAP_LOG")" = 2
 check source-cache-both-trees test -f "$proj/.agents/skills/plain/SKILL.md" -a -f "$proj/.agents/skills/frontend-design/SKILL.md"
 
 # A stalled fetch times out; a failed git init says so. Nothing is written.

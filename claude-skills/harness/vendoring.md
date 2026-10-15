@@ -312,7 +312,9 @@ skills from one repository at one ref are fetched once.
 
 The fetch is bounded: each git call is killed after 300 seconds, and a
 sourced skill's directory may hold at most 2000 files and 50 MB, checked
-before any file is read. `HARNESS_SOURCE_FETCH_TIMEOUT`,
+before any file is read; one git call then reads them all. The file and size
+caps apply to the skill's directory only: the shallow fetch brings the whole
+commit, and only the timeout bounds that. `HARNESS_SOURCE_FETCH_TIMEOUT`,
 `HARNESS_SOURCE_MAX_FILES`, and `HARNESS_SOURCE_MAX_BYTES` override these
 from the environment only; they are test hooks, not settings, and the config
 can't change them.
