@@ -224,6 +224,7 @@ update v9.9.12
 check tag-mismatch-fails test "$rc" = 1
 check tag-mismatch-explains has "9.9.13, not the tag's 9.9.12"
 check tag-mismatch-pushes-nothing test "$(origin_branch)" = "$first"
+check tag-mismatch-writes-nothing test -z "$(git -C "$proj" status --porcelain)"
 
 # --- Pre-release tags are not followed -----------------------------------------------
 pgit reset -q --hard

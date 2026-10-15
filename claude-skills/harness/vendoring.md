@@ -176,11 +176,11 @@ which:
    and stops, writing nothing, unless it is newer than the lock's `version`.
    Only `vX.Y.Z` tags are followed: a pre-release or build tag such as
    `v1.2.0-rc.1` fails the job with a message rather than being compared.
-3. Shallow-clones the release tag, fetches the `v<version>` tag of each fork
-   in the config so the fork report can compare it, and runs that release's
-   `vendor-snapshot.sh`. An edited snapshot fails here, as it would locally.
-   The job also fails when the version the release vendored isn't its tag's
-   (a manifest that doesn't match its tag), and exits 0 without a commit when
+3. Shallow-clones the release tag and fails, writing nothing, when the
+   release's plugin manifest isn't the tag's version. Then it fetches the
+   `v<version>` tag of each fork in the config so the fork report can compare
+   it, and runs that release's `vendor-snapshot.sh`. An edited snapshot fails
+   here, as it would locally. The job exits 0 without a commit when
    vendoring changed nothing.
 4. Runs the diff guard (below).
 5. Commits to the branch `harness-kit/update`, force-pushes it, and opens a
