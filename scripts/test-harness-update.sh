@@ -210,6 +210,7 @@ check body-lists-hook-added body_has '- added `SessionEnd`:'
 # mentions don't fire inside a code block.
 check body-shows-added-command grep -qxF '  echo "@hubot ``` done"' "$STUB_DIR/body.md"
 check body-hook-fence-outlasts-command grep -qxF '  ````text' "$STUB_DIR/body.md"
+check body-says-close-and-reopen body_has "close and reopen it to run CI"
 check pr-uses-github-token test "$(grep -c 'token=app' "$STUB_DIR/gh-tokens")" = 0
 check body-reports-fork-with-fetched-tag body_has "skill \`tdd\` (forked from $version): 2 files changed upstream"
 check push-gets-token grep -qx 'push auth=ok keep=kept' "$STUB_DIR/git-log"
@@ -273,6 +274,8 @@ check token-workflow-change-pushed sh -c 'git --git-dir "$1" show harness-kit/up
 check token-push-uses-update-token test "$(tail -1 "$STUB_DIR/git-log")" = 'push auth=app keep=kept'
 check token-pr-uses-update-token grep -qx 'pr edit token=app' "$STUB_DIR/gh-tokens"
 check token-release-read-with-github-token grep -qx 'api repos/dougborg/harness-kit/releases/latest token=github' "$STUB_DIR/gh-tokens"
+check token-body-says-ci-runs body_has "HARNESS_UPDATE_TOKEN"
+check token-body-no-close-and-reopen sh -c '! grep -qF "close and reopen" "$1"' _ "$STUB_DIR/body.md"
 check token-masked-in-actions has "::add-mask::$(printf 'x-access-token:test-app-s3cret' | base64 | tr -d '\n')"
 # Put back the 9.9.9 branch the later cases build on.
 git --git-dir "$scratch/origin.git" update-ref refs/heads/harness-kit/update "$first"

@@ -219,7 +219,8 @@ By default it uses only `GITHUB_TOKEN`, with `contents: write` and
 - The repository must allow it: Settings > Actions > General > "Allow GitHub
   Actions to create and approve pull requests".
 - GitHub doesn't start `pull_request` workflows for a PR pushed with
-  `GITHUB_TOKEN`. Close and reopen the PR to run CI; the PR body says so.
+  `GITHUB_TOKEN`. Close and reopen the PR to run CI; on this path, and only
+  on this path, the PR body says so.
 - `GITHUB_TOKEN` can't push a change to a workflow file. The workflow is a
   thin wrapper so it rarely changes. When a release does change it, the job
   fails without pushing, and prints, in its log and its job summary, the
@@ -274,6 +275,11 @@ and force-push of `harness-kit/update`, and the `gh pr` calls that find,
 open, or edit the PR. The release is still read with `GITHUB_TOKEN`, and the
 diff guard still allows only snapshot-owned paths, so the only workflow it can
 change is `harness-update.yml`. Without the secret, nothing changes.
+
+Because the branch is pushed and the PR opened with the token rather than
+`GITHUB_TOKEN`, GitHub starts the repository's `pull_request` workflows on
+the update PR like on any other: on open, and on each later push of the
+branch. No close and reopen is needed, and the PR body says CI runs instead.
 
 The token stays out of the release's code the same way `GITHUB_TOKEN` does,
 and more strictly: `harness-update.sh` copies it into a shell variable and
