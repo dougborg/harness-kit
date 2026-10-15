@@ -57,7 +57,10 @@ commit or PR.
 In a repo with the scheduled update workflow, steps 2 to 5 happen on their
 own: on each release it runs the script and opens a PR carrying the report,
 which goes through the project's own CI and review before it lands. Run
-update by hand to pick up a release early, or when that PR needs redoing.
+update by hand to pick up a release early, when that PR needs redoing, or
+when the job fails because the release changes the workflow file and the repo
+has no `HARNESS_UPDATE_TOKEN` (`<skill-dir>/vendoring.md`, "The update
+workflow").
 
 ## Add Mode
 

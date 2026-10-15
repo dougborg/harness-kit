@@ -2,7 +2,8 @@
 # Open or update one pull request that moves a vendored project to the latest
 # harness-kit release (ADR 0001). Run by the vendored
 # .github/workflows/harness-update.yml, from the project's checkout of its
-# default branch, with GH_TOKEN set.
+# default branch, with GH_TOKEN set, and HARNESS_UPDATE_TOKEN when the
+# repository has that secret.
 #
 # 1. Resolve the upstream repository with the vendored
 #    .claude/skills/harness/resolve-upstream.sh: $HARNESS_UPSTREAM, then
@@ -14,11 +15,17 @@
 #    (for the fork report) and run that release's vendor-snapshot.sh; stop
 #    when nothing changed.
 # 4. Fail unless every changed path is a file the old or new lock owns,
-#    .harness/lock.json, or .claude/settings.json; and fail when the change
-#    touches a workflow file, which GITHUB_TOKEN can't push.
+#    .harness/lock.json, or .claude/settings.json; and, without
+#    HARNESS_UPDATE_TOKEN, fail when the change touches a workflow file,
+#    which GITHUB_TOKEN can't push, naming the commands that update by hand.
 # 5. Commit to branch harness-kit/update, force-push it, and open a PR, or
 #    edit the open one, with the release notes, the update report, and the
 #    hook entries it changes in .claude/settings.json.
+#
+# HARNESS_UPDATE_TOKEN, when set, replaces GH_TOKEN for the push and the PR
+# calls only; reading the release still uses GH_TOKEN. It is taken out of the
+# environment first, so nothing else this runs, the release's scripts
+# included, ever sees it.
 #
 # Clones from ${GITHUB_SERVER_URL:-https://github.com}/<owner>/<repo>.
 # Usage: harness-update.sh
@@ -41,14 +48,23 @@ base=$(git rev-parse --abbrev-ref HEAD)
 # projection ships it beside this script, and the workflow runs this copy.
 upstream=$(.claude/skills/harness/resolve-upstream.sh) || die "could not resolve the upstream repository"
 
+# The optional push token leaves the environment before anything runs.
+update_token=${HARNESS_UPDATE_TOKEN:-}
+unset HARNESS_UPDATE_TOKEN
+push_token=${update_token:-${GH_TOKEN:-}}
+# pr_gh: gh for the PR calls, as the push token.
+pr_gh() {
+  if [ -n "$update_token" ]; then GH_TOKEN=$update_token gh "$@"; else gh "$@"; fi
+}
+
 # The checkout keeps no credentials (persist-credentials: false), so the
 # token reaches git only on the commands that talk to origin, never through
 # .git/config, and the release's own scripts run without it. The header is
 # appended after any GIT_CONFIG_* entries the caller set, and masked in the
 # Actions log; nothing here turns on git tracing.
 auth=
-if [ -n "${GH_TOKEN:-}" ]; then
-  auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+if [ -n "$push_token" ]; then
+  auth=$(printf 'x-access-token:%s' "$push_token" | base64 | tr -d '\n')
   [ "${GITHUB_ACTIONS:-}" != true ] || echo "::add-mask::$auth"
 fi
 origin_git() {
@@ -133,13 +149,31 @@ if stray:
     print("harness-update: the update changed paths the snapshot doesn't own:", file=sys.stderr)
     print("\n".join(f"  {p}" for p in stray), file=sys.stderr)
     sys.exit(1)
-workflows = [p for p in changed if p.startswith(".github/workflows/")]
-if workflows:
-    print("harness-update: this release changes " + ", ".join(workflows) + ", which GITHUB_TOKEN"
-          " can't push. Run the update locally and open the PR yourself: vendor-snapshot.sh"
-          " from a clone of the release tag (see .claude/skills/harness/vendoring.md).", file=sys.stderr)
-    sys.exit(1)
 PY
+
+# GITHUB_TOKEN can't push a workflow change; HARNESS_UPDATE_TOKEN can. Without
+# it, say exactly how to update by hand, in the log and the job summary.
+workflows=$(grep '^\.github/workflows/' "$work/changed" || true)
+if [ -n "$workflows" ] && [ -z "$update_token" ]; then
+  server=${GITHUB_SERVER_URL:-https://github.com}
+  docs="$server/$upstream/blob/$tag/skills/meta/harness/vendoring.md#the-update-workflow"
+  {
+    echo "harness-update: $tag changes $(echo "$workflows" | paste -sd, - | sed 's/,/, /g'), which GITHUB_TOKEN can't push."
+    echo "Add a HARNESS_UPDATE_TOKEN repository secret so the job can deliver it, or update by hand"
+    echo "from a clean checkout of the default branch, then commit and open the PR:"
+    echo
+    # shellcheck disable=SC2016 # the commands are printed, not run
+    echo '    release=$(mktemp -d)'
+    echo "    git clone --depth 1 --branch $tag $server/$upstream \"\$release\""
+    # shellcheck disable=SC2016
+    echo '    "$release"/skills/meta/harness/vendor-snapshot.sh "$release" .'
+    echo
+    echo "Docs: $docs"
+  } >"$work/manual.md"
+  cat "$work/manual.md" >&2
+  [ -z "${GITHUB_STEP_SUMMARY:-}" ] || cat "$work/manual.md" >>"$GITHUB_STEP_SUMMARY"
+  exit 1
+fi
 
 from=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$work/old-lock.json")
 title="chore(harness): update harness-kit snapshot to ${tag#v}"
@@ -204,10 +238,10 @@ else
   origin_git push -q --force origin "HEAD:refs/heads/$branch"
 fi
 
-pr=$(gh pr list --head "$branch" --base "$base" --state open --json number --jq '.[0].number // empty')
+pr=$(pr_gh pr list --head "$branch" --base "$base" --state open --json number --jq '.[0].number // empty')
 if [ -n "$pr" ]; then
-  gh pr edit "$pr" --title "$title" --body-file "$work/body.md"
+  pr_gh pr edit "$pr" --title "$title" --body-file "$work/body.md"
   echo "harness-update: updated PR #$pr"
 else
-  gh pr create --head "$branch" --base "$base" --title "$title" --body-file "$work/body.md"
+  pr_gh pr create --head "$branch" --base "$base" --title "$title" --body-file "$work/body.md"
 fi

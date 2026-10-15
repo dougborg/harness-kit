@@ -5,10 +5,11 @@
 # .harness/lock.json, this opens (or updates) one pull request that replaces
 # the snapshot. The PR changes only the snapshot's files, .harness/lock.json,
 # and the hook entries in .claude/settings.json; the job fails rather than
-# push anything else. It uses only GITHUB_TOKEN. The repository must allow
+# push anything else. It uses GITHUB_TOKEN, and the repository must allow
 # GitHub Actions to create pull requests (Settings > Actions > General).
-# The steps live in the vendored harness skill, so this file rarely changes:
-# GITHUB_TOKEN can't push a change to a workflow file.
+# GITHUB_TOKEN can't push a change to this file, and its PRs don't start
+# pull_request workflows; the optional HARNESS_UPDATE_TOKEN secret fixes
+# both (.claude/skills/harness/vendoring.md, "The update workflow").
 name: Harness update
 
 on:
@@ -43,4 +44,9 @@ jobs:
           # owner/repo of the harness to follow; unset means
           # .claude/harness-upstream, then dougborg/harness-kit.
           HARNESS_UPSTREAM: ${{ vars.HARNESS_UPSTREAM }}
+          # Optional: a fine-grained token for this repository with Contents,
+          # Pull requests, and Workflows read and write. Used only to push
+          # the update branch and open the PR; the release's scripts never
+          # see it. Unset means GITHUB_TOKEN.
+          HARNESS_UPDATE_TOKEN: ${{ secrets.HARNESS_UPDATE_TOKEN }}
         run: .claude/skills/harness/harness-update.sh
