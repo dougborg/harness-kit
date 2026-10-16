@@ -1,5 +1,58 @@
 # Changelog
 
+## [2.0.0](https://github.com/dougborg/harness-kit/compare/v1.0.0...v2.0.0) (2026-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **harness:** harness-kit 2.0.0 vendors generic skills and agents as a pristine snapshot that projects never edit. `.harness-lock.json` and its `source`/`modified` provenance are replaced by `.harness/config.toml` (chosen skills, forks, facts) and the generated `.harness/lock.json`, and `harness update` no longer merges local edits into upstream files. Upgrade path: in each project bootstrapped before 2.0.0, run `/harness migrate` (Codex: `$harness migrate`) once. It moves edits to vendored copies into facts or declared forks, drops unused copies, and vendors the chosen set; after that, updates arrive as PRs.
+
+### Features
+
+* **harness:** add migrate mode for moving to a vendored snapshot ([d84d3bb](https://github.com/dougborg/harness-kit/commit/d84d3bbda806b10604c76db92c6e40d5a3e31dc3)), closes [#174](https://github.com/dougborg/harness-kit/issues/174)
+* **harness:** bootstrap a project onto a vendored snapshot ([4fc053b](https://github.com/dougborg/harness-kit/commit/4fc053bd7de8dde1cbc7f6c2a0187e6ed6d80262)), closes [#172](https://github.com/dougborg/harness-kit/issues/172)
+* **harness:** check that a vendored snapshot is unedited ([e17e9b7](https://github.com/dougborg/harness-kit/commit/e17e9b7fbb6550b815d83046fc1e093d31f36a90)), closes [#170](https://github.com/dougborg/harness-kit/issues/170)
+* **harness:** deliver workflow changes with an optional update token ([f87a7a6](https://github.com/dougborg/harness-kit/commit/f87a7a6992e41e24bdf611cf620ac48581385b3b)), closes [#179](https://github.com/dougborg/harness-kit/issues/179)
+* **harness:** describe the vendored model in every harness mode and the README ([fccb2b9](https://github.com/dougborg/harness-kit/commit/fccb2b9629b916e4b400e566847e3527c06b2439)), closes [#173](https://github.com/dougborg/harness-kit/issues/173)
+* **harness:** fetch and vendor third-party skills from [sources.skills] ([0c60bc3](https://github.com/dougborg/harness-kit/commit/0c60bc330bb698541beb39d8abaa781909ac107b)), closes [#177](https://github.com/dougborg/harness-kit/issues/177)
+* **harness:** inventory a copy-and-edit harness for migration ([5976219](https://github.com/dougborg/harness-kit/commit/5976219a4ea258f497a05d6d9d53eda364e1bbe8)), closes [#174](https://github.com/dougborg/harness-kit/issues/174)
+* **harness:** run CI on update PRs pushed with the update token ([7b8cc30](https://github.com/dougborg/harness-kit/commit/7b8cc305e2f3c850c7fcfed5390bbd0283208bcf)), closes [#179](https://github.com/dougborg/harness-kit/issues/179)
+* **harness:** run the edit check as part of a vendored project's gate ([c8f1c5d](https://github.com/dougborg/harness-kit/commit/c8f1c5d18cd49146dfc35689db8396b2c240c287)), closes [#170](https://github.com/dougborg/harness-kit/issues/170)
+* **harness:** set the update workflow's schedule from the config ([6715621](https://github.com/dougborg/harness-kit/commit/6715621e441cab25ca86a2872f6771609d8dd855)), closes [#179](https://github.com/dougborg/harness-kit/issues/179)
+* **harness:** update a snapshot to a new release, leaving forks alone ([166527e](https://github.com/dougborg/harness-kit/commit/166527ea068f7ec1fa035f8e3a595fbcf8651955)), closes [#169](https://github.com/dougborg/harness-kit/issues/169)
+* **harness:** vendor a pristine snapshot into a project ([977d918](https://github.com/dougborg/harness-kit/commit/977d91824076405bf23767315d6960c2bc37caab)), closes [#168](https://github.com/dougborg/harness-kit/issues/168)
+* **harness:** vendor a scheduled workflow that opens the update PR ([9af0cbb](https://github.com/dougborg/harness-kit/commit/9af0cbb564505ae38e3245c8ce2cbd2a425d9c77)), closes [#171](https://github.com/dougborg/harness-kit/issues/171)
+* **harness:** write both update reports from one vendor-snapshot run ([185c331](https://github.com/dougborg/harness-kit/commit/185c33168379d61398de0d5fb1ae8af164d8c897)), closes [#179](https://github.com/dougborg/harness-kit/issues/179)
+* **scripts:** read the verification command from .harness/config.toml ([b1f4c26](https://github.com/dougborg/harness-kit/commit/b1f4c2603e199dca0be84a6d818458de9b2236b4)), closes [#166](https://github.com/dougborg/harness-kit/issues/166)
+* **verifier:** use the config's verification command first ([29edc81](https://github.com/dougborg/harness-kit/commit/29edc81fc6d56cc960881c2814badd91f5bef2e4)), closes [#166](https://github.com/dougborg/harness-kit/issues/166)
+
+
+### Bug Fixes
+
+* **harness:** accept '..' inside a vendored name; test write cleanup ([098f055](https://github.com/dougborg/harness-kit/commit/098f0550b3b2ac00f54d59b492baed071333e4e5))
+* **harness:** append the push header after the caller's git config ([f8ec6df](https://github.com/dougborg/harness-kit/commit/f8ec6dfd8df901c604775c9a48b41dcf53e25c4e))
+* **harness:** bound and validate third-party skill fetches ([39bc7ef](https://github.com/dougborg/harness-kit/commit/39bc7efb5eacdd351ccaa93bc604a8b758a4962f))
+* **harness:** check the release's manifest version before vendoring ([d37cb36](https://github.com/dougborg/harness-kit/commit/d37cb3677130324f4023e0dbdad45268d4b1aa60))
+* **harness:** check the update's version and quiet release-note mentions ([8f3ff0f](https://github.com/dougborg/harness-kit/commit/8f3ff0ff39cae7dbcab7170444ba29ad2ed8805b))
+* **harness:** drop the update token before the resolver runs ([5680768](https://github.com/dougborg/harness-kit/commit/5680768980a13c2fc8977c0c90a2460270281285))
+* **harness:** fail when verification_command is written where it isn't read ([b6eb4a0](https://github.com/dougborg/harness-kit/commit/b6eb4a04e80f62ab68e89c09cad12897d3a9d6be))
+* **harness:** flag verification_command only in key positions ([af6dc22](https://github.com/dougborg/harness-kit/commit/af6dc223aa98612084ac595a103de07dc09dcd64))
+* **harness:** hash blobs in the plugin's object format when inventorying ([863ef42](https://github.com/dougborg/harness-kit/commit/863ef42660e9458b76ed2a34b492b3c50ebb996a))
+* **harness:** keep the push token away from the release's scripts ([42be887](https://github.com/dougborg/harness-kit/commit/42be88764b20125d6c7029317423c02010853b89))
+* **harness:** leave no git running after an interrupted fetch ([a74beed](https://github.com/dougborg/harness-kit/commit/a74beed8a2c94873fce1428d80c09889dcab30f8))
+* **harness:** pluralise the fetch-cap refusals and pin the name test ([460c1e8](https://github.com/dougborg/harness-kit/commit/460c1e8e3dd5f58ffe49c8ef0bab89c02779e969))
+* **harness:** read a sourced skill's files in one git call ([c0eb12d](https://github.com/dougborg/harness-kit/commit/c0eb12d1d8b5d5328c385ea24f6d42194d832cc8))
+* **harness:** read a sourced skill's frontmatter name as YAML would ([9b2dab6](https://github.com/dougborg/harness-kit/commit/9b2dab657f2bd5ade5088b958d051d3e597028b4))
+* **harness:** refuse config names that aren't one path component ([8b27170](https://github.com/dougborg/harness-kit/commit/8b271709f1f87614a0f6c6152fc92addb92d4bc5))
+* **harness:** refuse sourced paths that differ only in case ([055f9b4](https://github.com/dougborg/harness-kit/commit/055f9b437c7a0d2ec726a4f99d46d7cbaa2fe7d6))
+* **harness:** refuse to update over an edited snapshot ([bee3f74](https://github.com/dougborg/harness-kit/commit/bee3f7420f13da18cd352b4b1e7a160fff74ee97))
+* **harness:** render the update PR's hook changes and report safely ([9f962f3](https://github.com/dougborg/harness-kit/commit/9f962f352f0f41c9d347048afa6fc6f34a9bcc72))
+* **harness:** resolve the upstream repo one way for both callers ([04945f2](https://github.com/dougborg/harness-kit/commit/04945f2f18ccf00df07e21bebb2ffb08da12135b)), closes [#178](https://github.com/dougborg/harness-kit/issues/178)
+* **harness:** take ASCII digits only for fetch bounds, and name the timeout ([d42a792](https://github.com/dougborg/harness-kit/commit/d42a792ccfde6c749d822203078c7aa38f0a9ae6))
+* **harness:** write the snapshot atomically and keep shared directories ([ea4394c](https://github.com/dougborg/harness-kit/commit/ea4394c0231fd60aa64c600088d0f44f9586581b))
+* **test:** keep the snapshot tests portable to dash and quiet SC2317 ([c46db28](https://github.com/dougborg/harness-kit/commit/c46db28fb34b377cbcb1ff166916a2b72d89dbd6))
+* **test:** quiet SC2317 in the upstream resolver test ([32d9ec9](https://github.com/dougborg/harness-kit/commit/32d9ec9d02ca45f85f9cf4db1509acc8e2ecfdf2))
+
 ## [1.0.0](https://github.com/dougborg/harness-kit/compare/v0.8.0...v1.0.0) (2026-10-12)
 
 
