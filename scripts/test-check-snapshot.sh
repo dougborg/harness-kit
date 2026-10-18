@@ -365,7 +365,7 @@ dir=$(vendored bad-lock)
 echo '{' >"$dir/.harness/lock.json"
 expect bad-lock-fails 1 "$dir" "lock.json"
 dir=$(vendored bad-config)
-printf '\xff\n' >>"$dir/.harness/config.toml"
+printf '\377\n' >>"$dir/.harness/config.toml"
 expect unreadable-config-fails 1 "$dir" "config.toml"
 # expect passes its third argument to the check as is, so this runs
 # `check-snapshot.sh --bogus`.
