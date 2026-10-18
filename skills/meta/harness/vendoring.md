@@ -379,9 +379,11 @@ declare a fork. It reports:
 
 Skills and agents named in `[forks.skills]` or `[forks.agents]` pass, even
 before the next vendoring run drops them from the lock. The check reads only
-those two tables' keys from the config, a header line then one `name = ...`
-per line, so a fork written as a dotted key or an inline table isn't seen and
-its files are still checked. Project-local files,
+those two tables' keys from the config: a bare `[forks.skills]` or
+`[forks.agents]` header line, then one `name = ...` per line, skipping lines
+inside multi-line strings. A fork written another way (a quoted header such
+as `[forks."skills"]`, a dotted key, an inline table) isn't seen, so its
+files are still checked and the check fails rather than passes. Project-local files,
 other hook entries, the config, and `AGENTS.md` are never checked. That
 leaves one accepted gap: the GitHub Action doesn't restore the facts from the
 base branch, so a PR that changes `verification_command` changes what CI

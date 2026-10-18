@@ -208,6 +208,56 @@ echo x >>"$dir/.claude/skills/commit/SKILL.md"
 printf '\n[facts.forks]\ncommit = "x"\n\n[forks.agents]\ncommit = "1.0.0"\n' >>"$dir/.harness/config.toml"
 expect fork-of-other-table-fails 1 "$dir" "edited: .claude/skills/commit/SKILL.md"
 
+# A form the line reader can't read leaves the fork unseen, so its edited
+# files still fail the check: never a pass on a form it misreads.
+# misread_case <name> <config text>: commit is edited; the check must fail.
+misread_case() {
+  local dir
+  dir=$(vendored "$1")
+  echo x >>"$dir/.claude/skills/commit/SKILL.md"
+  printf '%s\n' "$2" >>"$dir/.harness/config.toml"
+  expect "$1-fails" 1 "$dir" "edited: .claude/skills/commit/SKILL.md"
+}
+# A header inside a multi-line string, basic or literal, opens no table.
+misread_case header-in-basic-string '
+[facts]
+note = """
+[forks.skills]
+"""
+commit = "1.0.0"'
+misread_case header-in-literal-string "
+[facts]
+note = '''
+[forks.skills]
+'''
+commit = '1.0.0'"
+# A key line inside a fork's multi-line value is not a fork.
+misread_case key-in-multiline-value '
+[forks.skills]
+tdd = """1.0.0
+commit = "1.0.0"
+"""'
+# Opened and closed on one line, then opened again: still inside the string.
+misread_case string-reopened-on-one-line "
+[facts]
+a = '''x''' # then
+b = '''
+[forks.skills]
+commit = '1.0.0'
+'''"
+# A quoted header names another table (or one this reader doesn't parse).
+misread_case quoted-header '
+["forks.skills"]
+commit = "1.0.0"'
+misread_case quoted-header-part '
+[forks."skills"]
+commit = "1.0.0"'
+# Whitespace around the dot is still [forks.skills].
+dir=$(vendored spaced-header)
+echo x >>"$dir/.claude/skills/commit/SKILL.md"
+printf '\n[ forks . skills ]\ncommit = "1.0.0"\n' >>"$dir/.harness/config.toml"
+expect spaced-header-fork-passes 0 "$dir"
+
 # --- The snapshot's paths, for formatter and linter excludes -------------------
 # --paths prints every file the lock owns, one per line, and nothing else: no
 # fork, no project-local file. It lists the files whether or not they were

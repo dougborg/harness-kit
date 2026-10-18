@@ -67,27 +67,54 @@ files = lock.get("files", {})
 
 # The fork names are the keys of the config's [forks.skills] and
 # [forks.agents] tables. They are read line by line rather than with tomllib,
-# so the check runs on any python3 (macOS ships 3.9). A fork written another
+# so the check runs on any python3 (macOS ships 3.9). Lines inside a
+# multi-line string (""" or ''') are skipped, and only a bare header,
+# [forks.skills] or [forks.agents], opens a fork table. A fork written another
 # way isn't seen, so its files are still checked: the check fails, never
 # passes, on a form it can't read.
-# shortcut: [forks.<kind>] table headers and one bare or quoted key per line
-# only (no dotted keys or inline tables) | revisit when a project needs them
+# shortcut: bare [forks.<kind>] headers and one bare or quoted key per line
+# only (no quoted headers, dotted keys, or inline tables) | revisit when a
+# project needs them
 forks = {"skills": set(), "agents": set()}
-HEADER = re.compile(r"\s*\[([^\[\]]*)\]\s*(?:#.*)?$")
+HEADER = re.compile(r"\s*\[\s*forks\s*\.\s*(skills|agents)\s*\]\s*(?:#.*)?$")
 KEY = re.compile(r"""\s*(?:"([^"\\]*)"|'([^']*)'|([A-Za-z0-9_-]+))\s*=""")
+TRIPLE = re.compile(r'"""|\'\'\'')
+
+
+def string_after(line, delim):
+    """The multi-line string delimiter still open at the end of a line, given
+    the one open at its start (None for none)."""
+    pos = 0
+    while True:
+        if delim is None:
+            m = TRIPLE.search(line, pos)
+            if not m:
+                return None
+            delim, pos = m.group(), m.end()
+            continue
+        end = line.find(delim, pos)
+        # In a basic string, \""" is an escaped quote, not the close.
+        while end != -1 and delim == '"""' and (len(line[:end]) - len(line[:end].rstrip("\\"))) % 2:
+            end = line.find(delim, end + 1)
+        if end == -1:
+            return delim
+        delim, pos = None, end + 3
+
+
 if config_path.is_file():
     try:
         lines = config_path.read_text().splitlines()
     except (OSError, UnicodeDecodeError) as e:
         die(f"{config_path}: {e}")
-    table = None
+    table, open_string = None, None
     for line in lines:
-        if line.lstrip().startswith("["):
-            m = HEADER.match(line)
-            name = re.sub(r"[\s\"']", "", m.group(1)) if m else ""
-            table = name[len("forks."):] if name in ("forks.skills", "forks.agents") else None
-        elif table and (m := KEY.match(line)):
-            forks[table].add(next(g for g in m.groups() if g is not None))
+        if open_string is None:
+            if line.lstrip().startswith("["):
+                m = HEADER.match(line)
+                table = m.group(1) if m else None
+            elif table and (m := KEY.match(line)):
+                forks[table].add(next(g for g in m.groups() if g is not None))
+        open_string = string_after(line, open_string)
 
 SKILL = re.compile(r"\.(?:claude|agents)/skills/([^/]+)/")
 AGENT = re.compile(r"\.(?:claude|codex)/agents/([^/]+)\.(?:md|toml)$")
