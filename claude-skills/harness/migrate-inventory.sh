@@ -191,16 +191,39 @@ for n, (diff, paths) in enumerate(sorted(diffs.items(), key=lambda kv: (-len(kv[
 
 # Project tooling that names what migrate removes: the old lock,
 # .harness-upstream, and each tracked harness-kit copy. Every file git tracks
-# outside the harness directories is searched, line by line; a dot may be
-# backslash-escaped, as in a regex (Renovate's managerFilePatterns). None
-# when the project is not a git repository.
+# outside the harness directories, up to 1 MB, is searched line by line. A
+# line's backslashes are dropped first, so a regex's \. and \/ (Renovate's
+# managerFilePatterns) read as . and /. A term matches only as whole path
+# segments: the characters either side of it must not be path-name
+# characters ([A-Za-z0-9_.-]), though a / may come before or after it, and a
+# full stop after it. None when the project is not a git repository.
 HARNESS_DIRS = (".claude/skills/", ".claude/agents/", ".agents/", ".codex/agents/")
-terms = sorted({".harness-lock.json", ".harness-upstream"} | {
-    r["path"] for r in files if r["status"] not in ("local", "other-source", "untracked")},
-    key=lambda t: (-len(t), t))  # longest first, so no path matches as a prefix of it
-pattern = re.compile("|".join(
-    "(?P<t%d>%s)" % (i, "".join(r"\\*\." if c == "." else re.escape(c) for c in t))
-    for i, t in enumerate(terms)))
+MAX_BYTES, MAX_TEXT = 1_000_000, 200
+terms = {".harness-lock.json", ".harness-upstream"} | {
+    r["path"] for r in files if r["status"] not in ("local", "other-source", "untracked")}
+# Every term holds one of these words, so a line with none of them is skipped.
+WORDS = ("harness", "claude", "agents", "codex")
+PATHLIKE = re.compile(r"[A-Za-z0-9_./-]+")  # path-name characters and /
+
+
+def named(line):
+    """The terms a line names, left to right; at each place, the longest."""
+    found = []
+    for run in PATHLIKE.finditer(line.replace("\\", "")):
+        s = run.group().rstrip(".")  # a sentence's full stop is not the path's
+        cuts = [i for i, c in enumerate(s) if c == "/"]
+        ends = cuts + [len(s)]
+        done = 0
+        for i in [0] + [c + 1 for c in cuts]:
+            if i < done:
+                continue
+            term = next((s[i:j] for j in reversed(ends) if j > i and s[i:j] in terms), None)
+            if term:
+                found.append(term)
+                done = i + len(term)
+    return found
+
+
 try:
     listed = subprocess.run(["git", "-C", str(project), "ls-files", "-z"],
                             capture_output=True, check=True).stdout.decode()
@@ -212,13 +235,21 @@ else:
         p = project / rel
         if rel == ".harness-lock.json" or rel.startswith(HARNESS_DIRS) or p.is_symlink() or not p.is_file():
             continue
+        # shortcut: files over 1 MB are not searched; tooling config is
+        # smaller | revisit if a project's is not
+        if p.stat().st_size > MAX_BYTES:
+            continue
         data = p.read_bytes()
         if b"\0" in data[:8192]:
             continue  # binary
         for n, line in enumerate(data.decode(errors="replace").splitlines(), 1):
-            for m in pattern.finditer(line):
-                term = terms[int(m.lastgroup[1:])]
-                references.append({"file": rel, "line": n, "term": term, "text": line.strip()})
+            if not any(w in line for w in WORDS):
+                continue
+            text = line.strip()
+            if len(text) > MAX_TEXT:
+                text = text[:MAX_TEXT - 3] + "..."
+            for term in named(line):
+                references.append({"file": rel, "line": n, "term": term, "text": text})
 
 if as_json:
     print(json.dumps({"schema": schema, "version": version, "files": files, "changes": changes,
