@@ -64,16 +64,48 @@ old_python3 "$d"
 ln -s "$real_python" "$d/python3.12"
 expect versioned-over-old-python3 0 "$d" "$d/python3.12"
 
-# uv run prints the interpreter it chose; the stub runs the real one.
-d=$(bin uv)
-old_python3 "$d"
-cat >"$d/uv" <<SH
+# uv_stub <dir> <installed|download>: a uv whose `run` prints the real
+# interpreter, as uv does, logging each call to <dir>/uv.log. With
+# --no-python-downloads it succeeds only when a Python is "installed"; any
+# call that isn't `run --no-project ... --python >=3.11` exits 9.
+uv_stub() {
+  cat >"$1/uv" <<SH
 #!/bin/sh
-[ "\$*" = "run --no-project --python >=3.11 python -c import sys; print(sys.executable)" ] || exit 9
+echo "\$*" >>"$1/uv.log"
+case " \$* " in *" run --no-project "*"--python >=3.11 "*) ;; *) exit 9 ;; esac
+case " \$* " in *" --no-python-downloads "*) [ "$2" = installed ] || exit 1 ;; esac
 exec "$real_python" -c 'import sys; print(sys.executable)'
 SH
-chmod +x "$d/uv"
-expect uv-over-old-python3 0 "$d" "$("$real_python" -c 'import sys; print(sys.executable)')"
+  chmod +x "$1/uv"
+}
+real_exe=$("$real_python" -c 'import sys; print(sys.executable)')
+
+# An installed Python is used without letting uv download one.
+d=$(bin uv)
+old_python3 "$d"
+uv_stub "$d" installed
+expect uv-over-old-python3 0 "$d" "$real_exe"
+if [ "$(wc -l <"$d/uv.log")" -eq 1 ] && grep -q -- --no-python-downloads "$d/uv.log"; then
+  echo "PASS: uv-installed-without-download"
+else
+  echo "FAIL: uv-installed-without-download"
+  sed 's/^/  | /' "$d/uv.log"
+  fail=1
+fi
+
+# With none installed, uv may download one, but only after that first try.
+d=$(bin uv-download)
+old_python3 "$d"
+uv_stub "$d" download
+expect uv-downloads-when-none-installed 0 "$d" "$real_exe"
+if [ "$(wc -l <"$d/uv.log")" -eq 2 ] && head -1 "$d/uv.log" | grep -q -- --no-python-downloads &&
+  ! tail -1 "$d/uv.log" | grep -q -- --no-python-downloads; then
+  echo "PASS: uv-download-is-last"
+else
+  echo "FAIL: uv-download-is-last"
+  sed 's/^/  | /' "$d/uv.log"
+  fail=1
+fi
 
 d=$(bin none)
 old_python3 "$d"
