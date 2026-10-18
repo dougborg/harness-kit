@@ -219,6 +219,25 @@ else
 fi
 json_is big-text-cut-short "$big" "all(len(x['text']) <= 200 for x in r['references'])"
 
+# A run of tens of thousands of slashes is searched in linear time, and a term
+# at its end is still found.
+slashes="$scratch/slashes"
+cp -R "$v1" "$slashes"
+python3 -c 'import sys; open(sys.argv[1], "w").write(("harness " + "a/" * 20000 + ".harness-lock.json\n") * 20)' \
+  "$slashes/slashes.txt"
+git -C "$slashes" init -q
+git -C "$slashes" add -A
+git -C "$slashes" -c user.name=t -c user.email=t@t commit -qm init
+start=$(date +%s)
+json_is refs-long-slash-run "$slashes" \
+  "[(x['file'], x['term']) for x in r['references']] == [('slashes.txt', '.harness-lock.json')] * 20"
+elapsed=$(($(date +%s) - start))
+if [ "$elapsed" -le 5 ]; then
+  pass "slashes-within-5s (${elapsed}s)"
+else
+  flunk "slashes-within-5s: took ${elapsed}s" ""
+fi
+
 # --- A v2 project at 1.0.0, both hosts ------------------------------------------
 v2="$scratch/v2"
 put "$v2/.claude/skills/commit/SKILL.md" 'commit 1.0.0 (claude)'
