@@ -42,8 +42,17 @@ It reads the lock and classifies every tracked file against the lock's
 version, following the release's symlinks, plus every untracked file under
 `.claude/skills`, `.claude/agents`, `.agents/skills`, `.agents/scripts`, and
 `.codex/agents`. It changes nothing. Add `--json` for the same data as
-`files` (each with `path`, `owner`, `source`, `status`, `upstream`, `change`)
-and `changes` (each with `id`, `paths`, `diff`).
+`files` (each with `path`, `owner`, `source`, `status`, `upstream`, `change`),
+`changes` (each with `id`, `paths`, `diff`), and `references`.
+
+`references` (the "References outside the harness" section) lists each line,
+as `file:line`, of a file git tracks outside those directories that names
+`.harness-lock.json`, `.harness-upstream`, or a tracked harness-kit copy,
+with the `term` it names and its `text`. A dot written as `\.`, as in a regex,
+still matches. These are the project's own tooling that migrate would break:
+a pre-commit hook or a Renovate custom manager that reads the old lock's
+version, a script that runs an old copy's path. It is null, and the section
+says "not searched", when the project is not a git repository.
 
 | Status | Meaning |
 | --- | --- |
@@ -142,8 +151,10 @@ snapshot: formatters and fixers in `.pre-commit-config.yaml`, `flake.nix`
 format recipes, and format-on-edit hooks. They were free to reformat the old
 copies; a reformatted snapshot file fails the edit check. Plan an exclusion
 for each from `${CLAUDE_SKILL_DIR}/vendoring.md` ("Keeping formatters off the
-snapshot"). Done when every file in the inventory has a disposition and every
-such tool has a planned exclusion.
+snapshot"). Plan an edit, too, for each entry in the inventory's references
+outside the harness (step 6 lists the usual ones). Done when every file in
+the inventory has a disposition, every such tool has a planned exclusion,
+and every reference has a planned edit.
 
 ## 6. Preview, then confirm
 
@@ -154,6 +165,15 @@ Before writing or deleting anything, show the maintainer the whole plan:
 - every file to delete, grouped by skill or agent, with a count;
 - every file kept, and every file moved;
 - each formatter exclusion to add, by file, or "none found";
+- each reference outside the harness, as `file:line`, with the edit that
+  keeps it working, or "none found". One that reads the old lock's version
+  usually reads `.harness/lock.json`'s top-level `version` instead (`jq -r
+  .version .harness/lock.json`; a Renovate manager's file pattern becomes
+  `^\.harness/lock\.json$`, with a `"version": "..."` match). One that names
+  `.harness-upstream` reads `.claude/harness-upstream`. One that names a
+  copy that comes back in the snapshot needs nothing; one whose copy goes
+  away points at its vendored successor (`.claude/skills/<skill>/`,
+  `.agents/scripts/shared/`) or is removed;
 - that `.harness-lock.json` will be removed and harness-kit set to `false`
   in `.claude/settings.json`, so only the snapshot loads;
 - the upstream repo `.claude/harness-upstream` will name.
@@ -165,7 +185,8 @@ plan means a new preview. Done when the maintainer approves.
 
 1. Write `.harness/config.toml` and the `AGENTS.md` facts section. A
    Claude-only project that has no `AGENTS.md` gets one, imported from
-   `CLAUDE.md` with `@AGENTS.md`. Add the planned formatter exclusions.
+   `CLAUDE.md` with `@AGENTS.md`. Add the planned formatter exclusions, and
+   make the planned edit to each reference outside the harness.
 2. Delete the planned files with `git rm`, and move the kept ones.
 3. Write each fork's files from the target release, with its edit
    re-applied.

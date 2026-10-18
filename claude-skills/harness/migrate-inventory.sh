@@ -14,6 +14,10 @@
 # Modified files whose diffs are identical (the same patch applied to several
 # copies) are grouped into one change. Upstream symlinks are followed, so a
 # project's real-file copy of a symlinked shared script compares to its target.
+# It also lists, as file:line, each line of a file git tracks outside the
+# harness directories that names .harness-lock.json, .harness-upstream, or a
+# tracked harness-kit copy, since migrate removes them (pre-commit hooks and
+# Renovate managers that read the old lock's version, say).
 # It only reads; nothing in the project is changed.
 #
 # Usage: migrate-inventory.sh [--json] <plugin-dir> [project-dir]
@@ -185,8 +189,40 @@ for n, (diff, paths) in enumerate(sorted(diffs.items(), key=lambda kv: (-len(kv[
         if row["path"] in paths:
             row["change"] = n
 
+# Project tooling that names what migrate removes: the old lock,
+# .harness-upstream, and each tracked harness-kit copy. Every file git tracks
+# outside the harness directories is searched, line by line; a dot may be
+# backslash-escaped, as in a regex (Renovate's managerFilePatterns). None
+# when the project is not a git repository.
+HARNESS_DIRS = (".claude/skills/", ".claude/agents/", ".agents/", ".codex/agents/")
+terms = sorted({".harness-lock.json", ".harness-upstream"} | {
+    r["path"] for r in files if r["status"] not in ("local", "other-source", "untracked")},
+    key=lambda t: (-len(t), t))  # longest first, so no path matches as a prefix of it
+pattern = re.compile("|".join(
+    "(?P<t%d>%s)" % (i, "".join(r"\\*\." if c == "." else re.escape(c) for c in t))
+    for i, t in enumerate(terms)))
+try:
+    listed = subprocess.run(["git", "-C", str(project), "ls-files", "-z"],
+                            capture_output=True, check=True).stdout.decode()
+except (OSError, subprocess.CalledProcessError):
+    references = None
+else:
+    references = []
+    for rel in sorted(filter(None, listed.split("\0"))):
+        p = project / rel
+        if rel == ".harness-lock.json" or rel.startswith(HARNESS_DIRS) or p.is_symlink() or not p.is_file():
+            continue
+        data = p.read_bytes()
+        if b"\0" in data[:8192]:
+            continue  # binary
+        for n, line in enumerate(data.decode(errors="replace").splitlines(), 1):
+            for m in pattern.finditer(line):
+                term = terms[int(m.lastgroup[1:])]
+                references.append({"file": rel, "line": n, "term": term, "text": line.strip()})
+
 if as_json:
-    print(json.dumps({"schema": schema, "version": version, "files": files, "changes": changes}, indent=2))
+    print(json.dumps({"schema": schema, "version": version, "files": files, "changes": changes,
+                      "references": references}, indent=2))
     sys.exit(0)
 
 print(f"harness-kit {version}, .harness-lock.json schema v{schema}: {len(tracked)} tracked files")
@@ -221,4 +257,13 @@ for status, heading, meaning in sections:
     if rows:
         print(f"\n## {heading}: {len(rows)}\n\n{meaning}\n")
         print("\n".join(label(r) + (f" from `{r['source']}`" if status == "other-source" else "") for r in rows))
+
+if references is None:
+    print("\n## References outside the harness: not searched\n\n"
+          f"{project} is not a git repository, so its tracked files can't be listed.")
+elif references:
+    print(f"\n## References outside the harness: {len(references)}\n\n"
+          "Tracked files that name the old lock, `.harness-upstream`, or a copy migrate may delete.\n")
+    for x in references:
+        print(f"- `{x['file']}:{x['line']}` names `{x['term']}`: `{x['text'].replace('`', '')}`")
 PY

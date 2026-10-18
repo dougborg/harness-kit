@@ -141,6 +141,48 @@ json_is v1-change-diff "$v1" \
 run v1-text-groups 0 '### Change 1: 3 files' "$plugin" "$v1"
 run v1-text-diff 0 '+if [ -f moon.yml ]; then echo "moon ci"; exit 0; fi' "$plugin" "$v1"
 
+# --- Project tooling that reads what migrate removes ----------------------------
+# nix-config style: a pre-commit hook and a Renovate custom manager read the
+# old lock's version, the latter through a regex-escaped file pattern, and a
+# doc names a tracked copy. Each is reported as file:line; the harness's own
+# directories, the lock itself, and files git doesn't track are not searched.
+refs="$scratch/refs"
+cp -R "$v1" "$refs"
+put "$refs/.pre-commit-config.yaml" 'repos:
+  - repo: local
+    hooks:
+      - id: harness-lock
+        entry: jq -r ".sources[\"harness-kit\"].version" .harness-lock.json'
+put "$refs/renovate.json5" '{
+  customManagers: [
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^\\.harness-lock\\.json$/"],
+    },
+  ],
+}'
+put "$refs/docs/gate.md" 'The gate is .claude/skills/shared/discover-verification-cmd.sh.
+Upstream is in .harness-upstream.'
+put "$refs/.claude/skills/deploy/notes.md" 'reads .harness-lock.json'
+git -C "$refs" init -q
+git -C "$refs" add -A
+git -C "$refs" -c user.name=t -c user.email=t@t commit -qm init
+put "$refs/scratch-notes.md" 'untracked: .harness-lock.json'
+
+ref_is() { echo "sorted((x['file'], x['line'], x['term']) for x in r['references']) == $1"; }
+json_is refs-found "$refs" "$(ref_is "[
+  ('.pre-commit-config.yaml', 5, '.harness-lock.json'),
+  ('docs/gate.md', 1, '.claude/skills/shared/discover-verification-cmd.sh'),
+  ('docs/gate.md', 2, '.harness-upstream'),
+  ('renovate.json5', 5, '.harness-lock.json'),
+]")"
+json_is refs-carry-text "$refs" \
+  "any(x['file'] == 'renovate.json5' and 'managerFilePatterns' in x['text'] for x in r['references'])"
+# shellcheck disable=SC2016 # the backticks are Markdown, not a substitution
+run refs-text 0 '- `.pre-commit-config.yaml:5` names `.harness-lock.json`' "$plugin" "$refs"
+json_is refs-none-without-git "$v1" "r['references'] is None"
+run refs-text-without-git 0 'not searched' "$plugin" "$v1"
+
 # --- A v2 project at 1.0.0, both hosts ------------------------------------------
 v2="$scratch/v2"
 put "$v2/.claude/skills/commit/SKILL.md" 'commit 1.0.0 (claude)'
