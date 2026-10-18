@@ -262,6 +262,44 @@ b = '''
 [forks.skills]
 commit = '1.0.0'
 '''"
+# A """ or ''' in a comment or a one-line string opens no multi-line string,
+# so a later one can't close a phantom and hand [facts]' keys to a fork table.
+misread_case triple-in-comment '
+[forks.skills]
+tdd = "1" # """
+[facts]
+x = 1 # """
+commit = "x"'
+misread_case triple-in-literal-string "
+[forks.skills]
+tdd = '\"\"\"'
+[facts]
+x = '\"\"\"'
+commit = 'x'"
+dir=$(vendored triple-in-string-then-fork)
+echo x >>"$dir/.claude/skills/commit/SKILL.md"
+printf '%s\n' '' '[facts]' "a = '\"\"\"'" 'b = "x \" # \"\"\""' '[forks.skills]' 'commit = "1.0.0"' \
+  >>"$dir/.harness/config.toml"
+expect triple-in-string-then-fork-passes 0 "$dir"
+# Quotes next to a delimiter belong to the string: """" opens one whose text
+# starts with a quote, and """a""""" closes with a"" as its text.
+misread_case four-quotes-open '
+[facts]
+a = """"
+[forks.skills]
+commit = "1.0.0"
+"""'
+dir=$(vendored five-quotes-close)
+echo x >>"$dir/.claude/skills/commit/SKILL.md"
+printf '%s\n' '' '[forks.skills]' 'tdd = """a"""""' 'commit = "1.0.0"' >>"$dir/.harness/config.toml"
+expect five-quotes-close-passes 0 "$dir"
+# Keys after a multi-line string closes are a fork only under a new header.
+misread_case key-after-multiline-value '
+[forks.skills]
+tdd = """
+1.0.0
+"""
+commit = "1.0.0"'
 # A quoted header names another table (or one this reader doesn't parse).
 misread_case quoted-header '
 ["forks.skills"]

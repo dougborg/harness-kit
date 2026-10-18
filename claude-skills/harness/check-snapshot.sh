@@ -68,8 +68,10 @@ files = lock.get("files", {})
 # The fork names are the keys of the config's [forks.skills] and
 # [forks.agents] tables. They are read line by line rather than with tomllib,
 # so the check runs on any python3 (macOS ships 3.9). Lines inside a
-# multi-line string (""" or ''') are skipped, and only a bare header,
-# [forks.skills] or [forks.agents], opens a fork table. A fork written another
+# multi-line string (""" or ''') are skipped, a delimiter inside a comment or a
+# one-line string opens none, and only a bare header, [forks.skills] or
+# [forks.agents], opens a fork table; a key after a multi-line string belongs
+# to no fork table until such a header comes again. A fork written another
 # way isn't seen, so its files are still checked: the check fails, never
 # passes, on a form it can't read.
 # shortcut: bare [forks.<kind>] headers and one bare or quoted key per line
@@ -78,27 +80,42 @@ files = lock.get("files", {})
 forks = {"skills": set(), "agents": set()}
 HEADER = re.compile(r"\s*\[\s*forks\s*\.\s*(skills|agents)\s*\]\s*(?:#.*)?$")
 KEY = re.compile(r"""\s*(?:"([^"\\]*)"|'([^']*)'|([A-Za-z0-9_-]+))\s*=""")
-TRIPLE = re.compile(r'"""|\'\'\'')
 
 
 def string_after(line, delim):
-    """The multi-line string delimiter still open at the end of a line, given
-    the one open at its start (None for none)."""
-    pos = 0
-    while True:
-        if delim is None:
-            m = TRIPLE.search(line, pos)
-            if not m:
-                return None
-            delim, pos = m.group(), m.end()
-            continue
-        end = line.find(delim, pos)
-        # In a basic string, \""" is an escaped quote, not the close.
-        while end != -1 and delim == '"""' and (len(line[:end]) - len(line[:end].rstrip("\\"))) % 2:
-            end = line.find(delim, end + 1)
-        if end == -1:
-            return delim
-        delim, pos = None, end + 3
+    """The multi-line string delimiter, basic or literal, still open at the
+    end of a line, given the one open at its start (None for none). One-line
+    strings and comments are skipped, so a delimiter inside them opens nothing."""
+    i, n = 0, len(line)
+    while i < n:
+        if delim:
+            if delim == '"""' and line[i] == "\\":
+                i += 2  # an escape, such as \", is never the close
+            elif line.startswith(delim, i):
+                i += 3
+                # Up to two more quotes are the string's own, as in a""
+                # closed by five quotes.
+                for _ in range(2):
+                    if i < n and line[i] == delim[0]:
+                        i += 1
+                delim = None
+            else:
+                i += 1
+        elif line[i] == "#":
+            return None
+        elif line.startswith('"""', i) or line.startswith("'''", i):
+            delim, i = line[i:i + 3], i + 3
+        elif line[i] == '"':
+            i += 1
+            while i < n and line[i] != '"':
+                i += 2 if line[i] == "\\" else 1
+            i += 1
+        elif line[i] == "'":
+            close = line.find("'", i + 1)
+            i = n if close == -1 else close + 1
+        else:
+            i += 1
+    return delim
 
 
 if config_path.is_file():
@@ -114,7 +131,12 @@ if config_path.is_file():
                 table = m.group(1) if m else None
             elif table and (m := KEY.match(line)):
                 forks[table].add(next(g for g in m.groups() if g is not None))
-        open_string = string_after(line, open_string)
+        was_open, open_string = open_string, string_after(line, open_string)
+        if was_open or open_string:
+            # Should the reader misjudge a string's bounds, the keys after it
+            # are no fork's until a fork header comes again: a misreading only
+            # loses forks.
+            table = None
 
 SKILL = re.compile(r"\.(?:claude|agents)/skills/([^/]+)/")
 AGENT = re.compile(r"\.(?:claude|codex)/agents/([^/]+)\.(?:md|toml)$")
