@@ -237,6 +237,24 @@ json_is refs-escape-bounds-term "$esc" "$(ref_is "[
   ('renovate.json5', 4, '.harness-lock.json'),
 ]")"
 
+# A tracked copy whose path holds none of harness, claude, agents, or codex,
+# in any case, is still found.
+odd="$scratch/odd"
+put "$odd/CLAUDE.md" 'project notes'
+put "$odd/.github/workflows/sync.yml" 'on: push'
+put "$odd/docs/x.md" 'See CLAUDE.md.
+CI runs .github/workflows/sync.yml nightly.'
+put "$odd/.harness-lock.json" '{"sources": {"harness-kit": {"version": "0.7.0"}}, "files": {
+  "CLAUDE.md": {"source": "harness-kit"},
+  ".github/workflows/sync.yml": {"source": "harness-kit"}}}'
+git -C "$odd" init -q
+git -C "$odd" add -A
+git -C "$odd" -c user.name=t -c user.email=t@t commit -qm init
+json_is refs-term-without-words "$odd" "$(ref_is "[
+  ('docs/x.md', 1, 'CLAUDE.md'),
+  ('docs/x.md', 2, '.github/workflows/sync.yml'),
+]")"
+
 # A run of tens of thousands of slashes is searched in linear time, and a term
 # at its end is still found.
 slashes="$scratch/slashes"
