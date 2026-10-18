@@ -204,6 +204,9 @@ terms = {".harness-lock.json", ".harness-upstream"} | {
 # Every term holds one of these words, so a line with none of them is skipped.
 WORDS = ("harness", "claude", "agents", "codex")
 PATHLIKE = re.compile(r"[A-Za-z0-9_./-]+")  # path-name characters and /
+# A term spans at most this many segments, so only that many ends are tried
+# from each start: linear in a run's slashes, not quadratic.
+MAX_SEGS = max(t.count("/") for t in terms) + 1
 
 
 def named(line):
@@ -214,10 +217,10 @@ def named(line):
         cuts = [i for i, c in enumerate(s) if c == "/"]
         ends = cuts + [len(s)]
         done = 0
-        for i in [0] + [c + 1 for c in cuts]:
+        for k, i in enumerate([0] + [c + 1 for c in cuts]):
             if i < done:
                 continue
-            term = next((s[i:j] for j in reversed(ends) if j > i and s[i:j] in terms), None)
+            term = next((s[i:j] for j in reversed(ends[k:k + MAX_SEGS]) if s[i:j] in terms), None)
             if term:
                 found.append(term)
                 done = i + len(term)
