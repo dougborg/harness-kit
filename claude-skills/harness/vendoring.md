@@ -30,7 +30,8 @@ https://github.com/dougborg/harness-kit`). The snapshot takes that root's
 version. The second is the project directory, which defaults to `.`. It needs
 Python 3.11 or later, for `tomllib`. `${CLAUDE_SKILL_DIR}/find-python.sh` picks one:
 `python3` when it is new enough, else `python3.14` down to `python3.11` on
-`PATH`, else the one `uv run --python '>=3.11'` provides. With none, it exits 1
+`PATH`, else one uv already has (`uv run --no-python-downloads --python
+'>=3.11'`), and only then one uv downloads. With none, it exits 1
 naming what to install; macOS's system `python3` is 3.9, so there install a
 newer Python or uv. The script exits 1 with a message, writing nothing, when
 the config names an unknown skill or agent or a vendored path holds a
