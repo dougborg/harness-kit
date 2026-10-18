@@ -201,6 +201,23 @@ else
 fi
 PATH="$old:$PATH" expect old-python-revendored-passes 0 "$dir" "snapshot is unedited"
 
+# The stub has the new interpreter's syntax, so it can't catch 3.10+-only
+# syntax. Where the machine's own /usr/bin/python3 predates 3.11 (macOS's
+# 3.9), run the check on it too.
+if [ -x /usr/bin/python3 ] && /usr/bin/python3 -c 'import sys; sys.exit(sys.version_info >= (3, 11))' 2>/dev/null; then
+  system="$scratch/system-python"
+  mkdir -p "$system"
+  ln -s /usr/bin/python3 "$system/python3"
+  dir=$(vendored system-python)
+  echo x >>"$dir/.claude/skills/commit/SKILL.md"
+  printf '\n[forks.skills]\ncommit = "1.0.0"\n' >>"$dir/.harness/config.toml"
+  PATH="$system:$PATH" expect system-python-fork-passes 0 "$dir" "snapshot is unedited"
+  echo x >>"$dir/.claude/skills/tdd/SKILL.md"
+  PATH="$system:$PATH" expect system-python-edit-fails 1 "$dir" "edited: .claude/skills/tdd/SKILL.md"
+else
+  echo "SKIP: system-python: no /usr/bin/python3 older than 3.11"
+fi
+
 # Only the [forks.skills] and [forks.agents] tables name forks: a key of that
 # name elsewhere doesn't.
 dir=$(vendored fork-elsewhere)
@@ -309,6 +326,11 @@ paths_case paths-without-lock-empty "$scratch/plain" "$scratch/empty"
 dir=$(vendored bad-lock)
 echo '{' >"$dir/.harness/lock.json"
 expect bad-lock-fails 1 "$dir" "lock.json"
+dir=$(vendored bad-config)
+printf '\xff\n' >>"$dir/.harness/config.toml"
+expect unreadable-config-fails 1 "$dir" "config.toml"
+# expect passes its third argument to the check as is, so this runs
+# `check-snapshot.sh --bogus`.
 expect unknown-flag-is-usage 2 --bogus "usage: check-snapshot.sh"
 
 exit $fail
