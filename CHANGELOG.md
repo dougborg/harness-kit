@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.1](https://github.com/dougborg/harness-kit/compare/v2.0.0...v2.0.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **harness:** give projects the snapshot's paths for formatter excludes ([7f2b587](https://github.com/dougborg/harness-kit/commit/7f2b58797a2aa9d17c649c6717266000da6317ab)), closes [#184](https://github.com/dougborg/harness-kit/issues/184)
+* **harness:** make the edit check's fork reader fail closed on forms it misreads ([f0a1e84](https://github.com/dougborg/harness-kit/commit/f0a1e84c2678ba45562c87f873e4f9b02813f79c))
+* **harness:** match migrate's reference terms by path segment, not one regex ([3859133](https://github.com/dougborg/harness-kit/commit/3859133e460b311f0a62fdb2fc999104a6fbf52c))
+* **harness:** read fork tables past a """ in a comment or one-line string ([36c3f9c](https://github.com/dougborg/harness-kit/commit/36c3f9cd5b22e2aeb0d818c2f31b31703b5d3d9f))
+* **harness:** report project tooling that reads what migrate removes ([3b991f1](https://github.com/dougborg/harness-kit/commit/3b991f1de6e7f2b0390cadbf704f4ae3cad0cf36)), closes [#185](https://github.com/dougborg/harness-kit/issues/185)
+* **harness:** run the edit check on macOS's Python 3.9 ([26a8e65](https://github.com/dougborg/harness-kit/commit/26a8e65a2f423c56fced15bfc5ac2d3bf77a1f43)), closes [#183](https://github.com/dougborg/harness-kit/issues/183)
+* **harness:** say a reference term matches after any slash ([4ad92f9](https://github.com/dougborg/harness-kit/commit/4ad92f965cc028fc26baa52d214f04bfef60ef8a))
+* **harness:** search a long slash run in linear time ([7114cd6](https://github.com/dougborg/harness-kit/commit/7114cd644ffcd852650380afdaf12eac97b742e0))
+* **harness:** search every line when a term holds none of the prefilter words ([1e996c9](https://github.com/dougborg/harness-kit/commit/1e996c991dc7ad94fbcc75d0b1ee60b374212fe2))
+* **harness:** treat a regex's other escapes as term boundaries ([bb449e1](https://github.com/dougborg/harness-kit/commit/bb449e1942f11f50ff4ca5b0800545b726999c3d))
+* **harness:** use a Python uv already has before letting it download one ([4f29918](https://github.com/dougborg/harness-kit/commit/4f299183eb67f881e249ed19386cef74ee2f8474))
+
 ## [2.0.0](https://github.com/dougborg/harness-kit/compare/v1.0.0...v2.0.0) (2026-10-16)
 
 
