@@ -27,8 +27,12 @@ The first argument is a harness-kit plugin root: the installed plugin, or a
 release checkout (`git clone --depth 1 --branch vX.Y.Z
 https://github.com/dougborg/harness-kit`). The snapshot takes that root's
 version. The second is the project directory, which defaults to `.`. It needs
-`python3` 3.11 or later and exits 1 with a message, writing nothing, when the
-config names an unknown skill or agent or a vendored path holds a
+Python 3.11 or later, for `tomllib`. `<skill-dir>/find-python.sh` picks one:
+`python3` when it is new enough, else `python3.14` down to `python3.11` on
+`PATH`, else the one `uv run --python '>=3.11'` provides. With none, it exits 1
+naming what to install; macOS's system `python3` is 3.9, so there install a
+newer Python or uv. The script exits 1 with a message, writing nothing, when
+the config names an unknown skill or agent or a vendored path holds a
 project-local file. It prints a Markdown report, or the same report as JSON
 with `--json` (see [Updating to a new release](#updating-to-a-new-release)).
 `--json-out FILE` also writes the JSON report to `FILE`, so one run yields
@@ -373,7 +377,10 @@ declare a fork. It reports:
 - `hook:` a vendored hook entry edited or removed in `.claude/settings.json`.
 
 Skills and agents named in `[forks.skills]` or `[forks.agents]` pass, even
-before the next vendoring run drops them from the lock. Project-local files,
+before the next vendoring run drops them from the lock. The check reads only
+those two tables' keys from the config, a header line then one `name = ...`
+per line, so a fork written as a dotted key or an inline table isn't seen and
+its files are still checked. Project-local files,
 other hook entries, the config, and `AGENTS.md` are never checked. That
 leaves one accepted gap: the GitHub Action doesn't restore the facts from the
 base branch, so a PR that changes `verification_command` changes what CI
@@ -387,13 +394,13 @@ change takes effect only once merged, and a new or moved source lands as a
 reviewable diff of the fetched skill's files and the lock. Review config
 changes like code.
 
-The check needs
-`python3`, and 3.11 or later when the config exists.
+The check runs on any `python3` from 3.8, including macOS's 3.9, since it
+doesn't parse the whole config.
 
 | Exit | Meaning |
 | --- | --- |
 | 0 | The snapshot is unedited, or there is no lock: not a vendored project, nothing to check |
-| 1 | A vendored file or hook entry changed, or the lock, config, or settings can't be parsed |
+| 1 | A vendored file or hook entry changed, the lock or settings can't be parsed, or the config can't be read |
 | 2 | Bad usage |
 
 It runs as part of the project's gate without a config change.

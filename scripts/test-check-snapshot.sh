@@ -162,13 +162,55 @@ expect declared-fork-passes 0 "$dir"
 "$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" "$dir" >/dev/null
 expect revendored-fork-passes 0 "$dir"
 
+# --- An older python3 -----------------------------------------------------------
+# macOS's system python3 is 3.9, which has no tomllib. The stub reports 3.9 and
+# runs the real interpreter with tomllib shadowed, so the import fails as it
+# does there. The check reads forks without tomllib, so it still runs.
+real_python=$(command -v python3)
+old="$scratch/python39"
+mkdir -p "$old/shadow"
+echo 'raise ImportError("No module named tomllib (stub Python 3.9)")' >"$old/shadow/tomllib.py"
+cat >"$old/python3" <<SH
+#!/bin/sh
+case "\$1" in --version | -V) echo "Python 3.9.6"; exit 0 ;; esac
+PYTHONPATH="$old/shadow" exec "$real_python" "\$@"
+SH
+chmod +x "$old/python3"
+if PATH="$old:$PATH" python3 -c 'import tomllib' 2>/dev/null; then
+  echo "FAIL: python39-stub: the stub imports tomllib"
+  fail=1
+fi
+dir=$(vendored old-python)
+echo x >>"$dir/.claude/skills/commit/SKILL.md"
+printf '\n[forks.skills]\n"commit" = "1.0.0" # re-synced by hand\n' >>"$dir/.harness/config.toml"
+PATH="$old:$PATH" expect old-python-fork-passes 0 "$dir" "snapshot is unedited"
+echo x >>"$dir/.claude/skills/tdd/SKILL.md"
+PATH="$old:$PATH" expect old-python-edit-fails 1 "$dir" "edited: .claude/skills/tdd/SKILL.md"
+
+# Vendoring needs tomllib, so it finds a newer interpreter (find-python.sh)
+# when python3 is too old.
+newer="$scratch/python311"
+mkdir -p "$newer"
+ln -s "$real_python" "$newer/python3.11"
+if out=$(PATH="$old:$newer:$PATH" "$plugin/skills/meta/harness/vendor-snapshot.sh" --discard-edits "$plugin" "$dir" 2>&1); then
+  echo "PASS: old-python-vendors"
+else
+  echo "FAIL: old-python-vendors"
+  printf '%s\n' "$out" | sed 's/^/  | /'
+  fail=1
+fi
+PATH="$old:$PATH" expect old-python-revendored-passes 0 "$dir" "snapshot is unedited"
+
+# Only the [forks.skills] and [forks.agents] tables name forks: a key of that
+# name elsewhere doesn't.
+dir=$(vendored fork-elsewhere)
+echo x >>"$dir/.claude/skills/commit/SKILL.md"
+printf '\n[facts.forks]\ncommit = "x"\n\n[forks.agents]\ncommit = "1.0.0"\n' >>"$dir/.harness/config.toml"
+expect fork-of-other-table-fails 1 "$dir" "edited: .claude/skills/commit/SKILL.md"
+
 # --- Broken inputs ------------------------------------------------------------
 dir=$(vendored bad-lock)
 echo '{' >"$dir/.harness/lock.json"
 expect bad-lock-fails 1 "$dir" "lock.json"
-
-dir=$(vendored bad-config)
-echo 'skills = [' >"$dir/.harness/config.toml"
-expect bad-config-fails 1 "$dir" "config.toml"
 
 exit $fail
