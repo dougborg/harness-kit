@@ -8,7 +8,7 @@ check: validate-all lint-shell lint-md hygiene
 validate-all: validate validate-codex validate-hooks tests
 
 # Every regression test script
-tests: test-hooks test-discover-verification-cmd test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-vendor-snapshot test-check-snapshot test-migrate-inventory test-harness-update test-resolve-upstream test-codex-install
+tests: test-hooks test-discover-verification-cmd test-cross-host-hooks test-poll-review test-poll-ci test-sub-issue-frontier test-retro-nudge test-codex-agents test-wizard test-rebase-preflight test-pr-threads test-validate-codex test-vendor-snapshot test-check-snapshot test-find-python test-migrate-inventory test-harness-update test-resolve-upstream test-codex-install
 
 # Resolve the verification command from .harness/config.toml and by discovery
 test-discover-verification-cmd:
@@ -77,6 +77,10 @@ test-vendor-snapshot:
 # Edit, add, and delete files in vendored scratch projects and run the edit check
 test-check-snapshot:
     ./scripts/test-check-snapshot.sh
+
+# Find a Python with tomllib past a stub python3 that reports 3.9
+test-find-python:
+    ./scripts/test-find-python.sh
 
 # Classify v1 and v2 .harness-lock.json projects against a scratch plugin's tagged releases
 test-migrate-inventory:

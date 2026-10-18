@@ -77,7 +77,10 @@ MSG
   exit 1
 fi
 
-python3 - "$as_json" "$json_out" "$1" "${2:-.}" <<'PY'
+# tomllib needs Python 3.11 or later; find-python.sh finds one or says what
+# to install.
+python=$("$SCRIPT_DIR/find-python.sh") || exit 1
+"$python" - "$as_json" "$json_out" "$1" "${2:-.}" <<'PY'
 import hashlib
 import json
 import os
@@ -86,6 +89,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unicodedata
 from pathlib import Path
 
@@ -94,11 +98,6 @@ def die(msg):
     print(f"vendor-snapshot: {msg}", file=sys.stderr)
     sys.exit(1)
 
-
-try:
-    import tomllib
-except ImportError:
-    die("needs Python 3.11 or later (tomllib)")
 
 as_json, json_out = sys.argv[1] == "1", sys.argv[2]
 plugin, project = Path(sys.argv[3]).resolve(), Path(sys.argv[4]).resolve()

@@ -7,7 +7,9 @@
 # hook entry the lock records must still be in .claude/settings.json. Skills
 # and agents named in the config's [forks.*] tables are the project's own and
 # are skipped, even before the next vendor run drops them from the lock.
-# Project-local files, the config, and AGENTS.md are never checked.
+# Project-local files, the config, and AGENTS.md are never checked. It runs on
+# any python3 3.8 or later: it reads only the fork names from the config, and
+# needs no tomllib.
 #
 # Usage: check-snapshot.sh [project-dir]   (default: .)
 # Exit: 0 when the snapshot is unedited, or when there is no lock (not a
@@ -51,18 +53,29 @@ if not lock_path.is_file():
 lock = load_json(lock_path)
 files = lock.get("files", {})
 
+# The fork names are the keys of the config's [forks.skills] and
+# [forks.agents] tables. They are read line by line rather than with tomllib,
+# so the check runs on any python3 (macOS ships 3.9). A fork written another
+# way isn't seen, so its files are still checked: the check fails, never
+# passes, on a form it can't read.
+# shortcut: [forks.<kind>] table headers and one bare or quoted key per line
+# only (no dotted keys or inline tables) | revisit when a project needs them
 forks = {"skills": set(), "agents": set()}
+HEADER = re.compile(r"\s*\[([^\[\]]*)\]\s*(?:#.*)?$")
+KEY = re.compile(r"""\s*(?:"([^"\\]*)"|'([^']*)'|([A-Za-z0-9_-]+))\s*=""")
 if config_path.is_file():
     try:
-        import tomllib
-    except ImportError:
-        die("needs Python 3.11 or later (tomllib)")
-    try:
-        config = tomllib.loads(config_path.read_text())
-    except tomllib.TOMLDecodeError as e:
+        lines = config_path.read_text().splitlines()
+    except (OSError, UnicodeDecodeError) as e:
         die(f"{config_path}: {e}")
-    for kind in forks:
-        forks[kind] = set(config.get("forks", {}).get(kind, {}))
+    table = None
+    for line in lines:
+        if line.lstrip().startswith("["):
+            m = HEADER.match(line)
+            name = re.sub(r"[\s\"']", "", m.group(1)) if m else ""
+            table = name[len("forks."):] if name in ("forks.skills", "forks.agents") else None
+        elif table and (m := KEY.match(line)):
+            forks[table].add(next(g for g in m.groups() if g is not None))
 
 SKILL = re.compile(r"\.(?:claude|agents)/skills/([^/]+)/")
 AGENT = re.compile(r"\.(?:claude|codex)/agents/([^/]+)\.(?:md|toml)$")

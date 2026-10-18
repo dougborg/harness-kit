@@ -38,6 +38,7 @@ set -euo pipefail
 update_token=${HARNESS_UPDATE_TOKEN:-}
 unset HARNESS_UPDATE_TOKEN
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 branch=harness-kit/update
 die() {
   echo "harness-update: $*" >&2
@@ -120,7 +121,8 @@ manifest=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["vers
 
 # Forks are compared against the release they were forked from; a tag that
 # can't be fetched is reported as not compared.
-python3 - <<'PY' >"$work/fork-tags"
+python=$("$SCRIPT_DIR/find-python.sh") || exit 1
+"$python" - <<'PY' >"$work/fork-tags"
 import tomllib
 config = tomllib.load(open(".harness/config.toml", "rb"))
 forks = config.get("forks", {})
