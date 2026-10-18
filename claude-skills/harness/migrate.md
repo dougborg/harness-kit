@@ -133,8 +133,17 @@ Done when every numbered change has a confirmed outcome.
 A kept file inside a directory the snapshot will own, such as
 `.claude/skills/commit/notes.md` with `commit` in the set, makes
 `vendor-snapshot.sh` refuse to run. Move it into a project-local skill, or
-make that skill a fork. Done when every file in the inventory has a
-disposition.
+make that skill a fork.
+
+Then find the project's tools that rewrite files and would reach the
+snapshot: formatters and fixers in `.pre-commit-config.yaml`, `flake.nix`
+(git-hooks.nix, treefmt), `treefmt.toml`, `lefthook.yml`, lint-staged,
+`.editorconfig`, Prettier and markdownlint config, the justfile or Makefile's
+format recipes, and format-on-edit hooks. They were free to reformat the old
+copies; a reformatted snapshot file fails the edit check. Plan an exclusion
+for each from `${CLAUDE_SKILL_DIR}/vendoring.md` ("Keeping formatters off the
+snapshot"). Done when every file in the inventory has a disposition and every
+such tool has a planned exclusion.
 
 ## 6. Preview, then confirm
 
@@ -144,6 +153,7 @@ Before writing or deleting anything, show the maintainer the whole plan:
 - each fork, with the edit that will be re-applied;
 - every file to delete, grouped by skill or agent, with a count;
 - every file kept, and every file moved;
+- each formatter exclusion to add, by file, or "none found";
 - that `.harness-lock.json` will be removed and harness-kit set to `false`
   in `.claude/settings.json`, so only the snapshot loads;
 - the upstream repo `.claude/harness-upstream` will name.
@@ -155,7 +165,7 @@ plan means a new preview. Done when the maintainer approves.
 
 1. Write `.harness/config.toml` and the `AGENTS.md` facts section. A
    Claude-only project that has no `AGENTS.md` gets one, imported from
-   `CLAUDE.md` with `@AGENTS.md`.
+   `CLAUDE.md` with `@AGENTS.md`. Add the planned formatter exclusions.
 2. Delete the planned files with `git rm`, and move the kept ones.
 3. Write each fork's files from the target release, with its edit
    re-applied.

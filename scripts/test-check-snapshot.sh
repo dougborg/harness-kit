@@ -208,9 +208,57 @@ echo x >>"$dir/.claude/skills/commit/SKILL.md"
 printf '\n[facts.forks]\ncommit = "x"\n\n[forks.agents]\ncommit = "1.0.0"\n' >>"$dir/.harness/config.toml"
 expect fork-of-other-table-fails 1 "$dir" "edited: .claude/skills/commit/SKILL.md"
 
+# --- The snapshot's paths, for formatter and linter excludes -------------------
+# --paths prints every file the lock owns, one per line, and nothing else: no
+# fork, no project-local file. It lists the files whether or not they were
+# edited, and follows the lock across a re-vendor.
+# paths_case <name> <dir> <want file>: --paths output must equal the file.
+paths_case() {
+  local got
+  if ! got=$("$check" --paths "$2" 2>&1); then
+    echo "FAIL: $1: exit nonzero"
+    printf '%s\n' "$got" | sed 's/^/  | /'
+    fail=1
+  elif [ "$got" != "$(cat "$3")" ]; then
+    echo "FAIL: $1: paths differ from the want list"
+    diff <(printf '%s\n' "$got") "$3" | sed 's/^/  | /'
+    fail=1
+  else
+    echo "PASS: $1"
+  fi
+}
+dir=$(vendored paths)
+mkdir -p "$dir/.claude/skills/local-thing"
+echo local >"$dir/.claude/skills/local-thing/SKILL.md"
+echo x >>"$dir/.claude/skills/tdd/SKILL.md"
+python3 -c 'import json,sys; print("\n".join(sorted(json.load(open(sys.argv[1]))["files"])))' \
+  "$dir/.harness/lock.json" >"$scratch/paths-want"
+for p in .claude/skills/tdd/SKILL.md .codex/agents/verifier.toml .github/workflows/harness-update.yml \
+  .claude/skills/harness/check-snapshot.sh; do
+  grep -qxF "$p" "$scratch/paths-want" || {
+    echo "FAIL: paths-fixture: the lock lacks $p"
+    fail=1
+  }
+done
+paths_case paths-lists-the-lock "$dir" "$scratch/paths-want"
+if grep -q 'local-thing' <("$check" --paths "$dir"); then
+  echo "FAIL: paths-omit-project-local"
+  fail=1
+else
+  echo "PASS: paths-omit-project-local"
+fi
+printf '\n[forks.skills]\ntdd = "1.0.0"\n' >>"$dir/.harness/config.toml"
+grep -v '/tdd/' "$scratch/paths-want" >"$scratch/paths-want-forked"
+paths_case paths-omit-forks "$dir" "$scratch/paths-want-forked"
+"$plugin/skills/meta/harness/vendor-snapshot.sh" "$plugin" "$dir" >/dev/null
+paths_case paths-follow-revendor "$dir" "$scratch/paths-want-forked"
+: >"$scratch/empty"
+paths_case paths-without-lock-empty "$scratch/plain" "$scratch/empty"
+
 # --- Broken inputs ------------------------------------------------------------
 dir=$(vendored bad-lock)
 echo '{' >"$dir/.harness/lock.json"
 expect bad-lock-fails 1 "$dir" "lock.json"
+expect unknown-flag-is-usage 2 --bogus "usage: check-snapshot.sh"
 
 exit $fail

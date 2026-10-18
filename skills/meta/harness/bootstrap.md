@@ -62,6 +62,14 @@ Done when `<plugin-root>/.claude-plugin/plugin.json` exists.
    - **Project-local skills and agents:** name, purpose, and model for agents.
      None may share a name with the generic set.
    - **Hooks:** execution order and commands.
+   - **Formatter excludes:** each project tool that rewrites files and would
+     reach the snapshot, with the exclusion to add to its config. Look in
+     `.pre-commit-config.yaml`, `flake.nix` (git-hooks.nix, treefmt),
+     `treefmt.toml`, `lefthook.yml`, lint-staged, `.editorconfig`, Prettier
+     and markdownlint config, the justfile or Makefile's format recipes, and
+     format-on-edit hooks. The pattern and per-tool examples are in
+     `<skill-dir>/vendoring.md` ("Keeping formatters off the snapshot"). Say
+     "none found" when there are none.
 
    A project quirk that a generic skill should honor is a fact, not a reason
    to copy or edit that skill. Done when the user approves the list. Write no
@@ -80,6 +88,7 @@ Done when `<plugin-root>/.claude-plugin/plugin.json` exists.
      when they hold secrets or machine paths) and `.codex/hooks.json`, sharing
      invoked scripts where semantics match.
    - Merge the project's Codex defaults into `.codex/config.toml`.
+   - The approved formatter excludes, in each tool's config.
    - `.claude/harness-upstream`, one line naming the upstream repo
      (`owner/repo`); the update workflow and the `harness-issue` skill read
      it (`<skill-dir>/vendoring.md`).
@@ -110,8 +119,10 @@ Done when `<plugin-root>/.claude-plugin/plugin.json` exists.
    `.claude/skills/harness/check-snapshot.sh &&`, so the edit check is part of
    the gate from the first commit. If the project's CI runs the verification
    command directly rather than the discovered one, add the check there too.
-   On a Nix flake, `git add` the new files first. Done when the command
-   passes.
+   On a Nix flake, `git add` the new files first. An `edited:` line after a
+   formatter ran means its exclude is missing or wrong: fix the exclude,
+   re-run step 4 with `--discard-edits` to restore the snapshot, and run the
+   gate again. Done when the command passes.
 
 6. **Offer the GitHub Action (optional).** If the project wants Claude in CI,
    set up `claude-code-action` per `<skill-dir>/github-action.md`: `Skill` in
