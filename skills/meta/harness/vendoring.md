@@ -460,6 +460,15 @@ git ls-files '*.sh' | grep -vxFf <(.claude/skills/harness/check-snapshot.sh --pa
 if .claude/skills/harness/check-snapshot.sh --paths | grep -qxF "$rel_path"; then exit 0; fi
 ```
 
+`--paths` is the source of truth for what the snapshot owns. The patterns
+below cover its directories; to confirm one still does, filter `--paths`
+through it, and expect no output:
+
+```bash
+.claude/skills/harness/check-snapshot.sh --paths |
+  grep -vE '^\.(claude/(skills|agents|hooks/harness-kit)|agents/(skills|scripts/shared)|codex/agents)/|^\.github/workflows/harness-update\.yml$'
+```
+
 The pattern in each tool's own config:
 
 - **pre-commit** (`.pre-commit-config.yaml`), at the top level or per hook:
@@ -501,7 +510,12 @@ The pattern in each tool's own config:
 - **markdownlint-cli2** (`.markdownlint-cli2.jsonc`):
 
   ```jsonc
-  "ignores": [".claude/skills/**", ".claude/agents/**", ".agents/skills/**"]
+  {
+    // Only the snapshot's directories that hold Markdown: .codex/agents/
+    // (TOML), .claude/hooks/harness-kit/, and .agents/scripts/shared/
+    // (scripts) hold none.
+    "ignores": [".claude/skills/**", ".claude/agents/**", ".agents/skills/**"]
+  }
   ```
 
 A format-on-edit hook (a `PostToolUse` entry in `.claude/settings.json` or
