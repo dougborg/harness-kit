@@ -191,9 +191,10 @@ for n, (diff, paths) in enumerate(sorted(diffs.items(), key=lambda kv: (-len(kv[
 
 # Project tooling that names what migrate removes: the old lock,
 # .harness-upstream, and each tracked harness-kit copy. Every file git tracks
-# outside the harness directories, up to 1 MB, is searched line by line. A
-# line's backslashes are dropped first, so a regex's \. and \/ (Renovate's
-# managerFilePatterns) read as . and /. A term matches only as whole path
+# outside the harness directories, up to 1 MB, is searched line by line. An
+# escaped ., /, $, or - reads as itself, so a regex's \. and \/ (Renovate's
+# managerFilePatterns) read as . and /; any other escape, such as \b, ends a
+# term. A term matches only as whole path
 # segments: the characters either side of it must not be path-name
 # characters ([A-Za-z0-9_.-]), though a / may come before or after it, and a
 # full stop after it. None when the project is not a git repository.
@@ -207,12 +208,19 @@ PATHLIKE = re.compile(r"[A-Za-z0-9_./-]+")  # path-name characters and /
 # A term spans at most this many segments, so only that many ends are tried
 # from each start: linear in a run's slashes, not quadratic.
 MAX_SEGS = max(t.count("/") for t in terms) + 1
+# Backslashes and the character they escape: a regex's \. (\\. inside a JSON
+# string) is the full stop; any other escape, such as \b or \n, is a boundary.
+ESCAPE = re.compile(r"\\+(.)")
+
+
+def unescape(m):
+    return m.group(1) if m.group(1) in "./$-" else " "
 
 
 def named(line):
     """The terms a line names, left to right; at each place, the longest."""
     found = []
-    for run in PATHLIKE.finditer(line.replace("\\", "")):
+    for run in PATHLIKE.finditer(ESCAPE.sub(unescape, line)):
         s = run.group().rstrip(".")  # a sentence's full stop is not the path's
         cuts = [i for i, c in enumerate(s) if c == "/"]
         ends = cuts + [len(s)]

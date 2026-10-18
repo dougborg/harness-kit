@@ -219,6 +219,24 @@ else
 fi
 json_is big-text-cut-short "$big" "all(len(x['text']) <= 200 for x in r['references'])"
 
+# A regex's other escapes, such as \b and \n, bound a term rather than join it
+# to the letter after the backslash.
+esc="$scratch/esc"
+cp -R "$v1" "$esc"
+put "$esc/renovate.json5" '{managerFilePatterns: ["/\\.harness-lock\\.json\\b/"]}
+{matchStrings: ["harness a\\n.harness-lock.json"]}
+files: ^\.harness-lock\.json\b
+note: "a\n.harness-lock.json"'
+git -C "$esc" init -q
+git -C "$esc" add -A
+git -C "$esc" -c user.name=t -c user.email=t@t commit -qm init
+json_is refs-escape-bounds-term "$esc" "$(ref_is "[
+  ('renovate.json5', 1, '.harness-lock.json'),
+  ('renovate.json5', 2, '.harness-lock.json'),
+  ('renovate.json5', 3, '.harness-lock.json'),
+  ('renovate.json5', 4, '.harness-lock.json'),
+]")"
+
 # A run of tens of thousands of slashes is searched in linear time, and a term
 # at its end is still found.
 slashes="$scratch/slashes"
