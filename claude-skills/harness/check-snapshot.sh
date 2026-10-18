@@ -11,25 +11,36 @@
 # any python3 3.8 or later: it reads only the fork names from the config, and
 # needs no tomllib.
 #
-# Usage: check-snapshot.sh [project-dir]   (default: .)
+# --paths prints, instead, each file the snapshot owns (the lock's files,
+# less forks), one project-relative path per line, for excluding them from a
+# project's formatters and linters; it prints nothing without a lock.
+#
+# Usage: check-snapshot.sh [--paths] [project-dir]   (default: .)
 # Exit: 0 when the snapshot is unedited, or when there is no lock (not a
-#       vendored project); 1 when a vendored file or hook entry changed, or
-#       the lock, config, or settings can't be read; 2 on bad usage.
+#       vendored project), or --paths printed the list; 1 when a vendored
+#       file or hook entry changed, or the lock, config, or settings can't be
+#       read; 2 on bad usage.
 set -euo pipefail
 
-if [ $# -gt 1 ]; then
-  echo "usage: check-snapshot.sh [project-dir]" >&2
+paths=0
+if [ "${1:-}" = --paths ]; then
+  paths=1
+  shift
+fi
+arg=${1:-}
+if [ $# -gt 1 ] || [ "${arg#-}" != "$arg" ]; then
+  echo "usage: check-snapshot.sh [--paths] [project-dir]" >&2
   exit 2
 fi
 
-python3 - "${1:-.}" <<'PY'
+python3 - "$paths" "${1:-.}" <<'PY'
 import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 
-project = Path(sys.argv[1]).resolve()
+list_paths, project = sys.argv[1] == "1", Path(sys.argv[2]).resolve()
 lock_path = project / ".harness/lock.json"
 config_path = project / ".harness/config.toml"
 settings_path = project / ".claude/settings.json"
@@ -48,7 +59,8 @@ def load_json(path):
 
 
 if not lock_path.is_file():
-    print("check-snapshot: not a vendored project (no .harness/lock.json); nothing to check")
+    if not list_paths:
+        print("check-snapshot: not a vendored project (no .harness/lock.json); nothing to check")
     sys.exit(0)
 lock = load_json(lock_path)
 files = lock.get("files", {})
@@ -94,6 +106,10 @@ def forked(path):
     o = owner(path)
     return o is not None and o[1] in forks[o[0]]
 
+
+if list_paths:
+    print("".join(f"{path}\n" for path in sorted(files) if not forked(path)), end="")
+    sys.exit(0)
 
 problems = []  # (label, path)
 for path, digest in sorted(files.items()):

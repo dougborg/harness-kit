@@ -6,8 +6,8 @@ project's `.harness/config.toml` (keys in `<skill-dir>/project-facts.md`),
 copies real files, never symlinks, and records what it wrote in
 `.harness/lock.json`. It does no merging. Read this when a mode vendors or
 re-vendors a project, updates it to a new release, checks that a snapshot is
-unedited, explains what the snapshot owns, or sets up or debugs the scheduled
-update PR.
+unedited, explains what the snapshot owns, keeps a project's formatters off
+it, or sets up or debugs the scheduled update PR.
 
 - [Run it](#run-it)
 - [What it writes](#what-it-writes)
@@ -16,6 +16,7 @@ update PR.
 - [The update workflow](#the-update-workflow)
 - [Third-party skills](#third-party-skills)
 - [The edit check](#the-edit-check)
+- [Keeping formatters off the snapshot](#keeping-formatters-off-the-snapshot)
 
 ## Run it
 
@@ -403,6 +404,10 @@ doesn't parse the whole config.
 | 1 | A vendored file or hook entry changed, the lock or settings can't be parsed, or the config can't be read |
 | 2 | Bad usage |
 
+`check-snapshot.sh --paths [project-dir]` checks nothing: it prints the
+snapshot's files, for a project's formatter excludes
+([Keeping formatters off the snapshot](#keeping-formatters-off-the-snapshot)).
+
 It runs as part of the project's gate without a config change.
 `discover-verification-cmd.sh` prints
 `.claude/skills/harness/check-snapshot.sh && <command>` whenever
@@ -416,3 +421,90 @@ gate command directly, rather than the discovered one, adds the check itself.
 Inside the GitHub Action, a pull request runs the base branch's `.claude/`
 against the PR's lock (`<skill-dir>/github-action.md`), so the check reports
 an update PR's new files as edited there. Run it in the project's own CI.
+
+## Keeping formatters off the snapshot
+
+A project formatter or fixer that rewrites a vendored file (`shfmt -w`,
+`prettier --write`, `markdownlint --fix`, a format-on-edit hook) makes the
+edit check fail, and the next update would undo the rewrite anyway. Exclude
+the snapshot from every tool that writes files. Read-only linters can keep
+running on it; send what they find upstream.
+
+The snapshot lives in fixed places, so this pattern stays correct across
+updates and config changes without being regenerated:
+
+```text
+^\.(claude/(skills|agents|hooks/harness-kit)|agents/(skills|scripts/shared)|codex/agents)/
+^\.github/workflows/harness-update\.yml$
+```
+
+It also skips the project-local skills and agents in those directories. To
+keep formatting those, list the vendored ones instead
+(`.claude/skills/commit/`, `.agents/skills/commit/`,
+`.claude/agents/verifier.md`, and so on for each name in the config, plus
+`harness`), and revise the list whenever the config's `skills` or `agents`
+change.
+
+For the exact files, `.claude/skills/harness/check-snapshot.sh --paths` prints
+each one the lock owns, forks excluded, one per line; it prints nothing
+without a lock. It reads the lock each time, so it follows every update. Use
+it where a tool takes a file list, or a hook decides per file:
+
+```bash
+# Format the tracked shell scripts, less the snapshot's
+git ls-files '*.sh' | grep -vxFf <(.claude/skills/harness/check-snapshot.sh --paths) | xargs shfmt -w
+
+# In a format-on-edit hook, given the edited file's project-relative path
+if .claude/skills/harness/check-snapshot.sh --paths | grep -qxF "$rel_path"; then exit 0; fi
+```
+
+The pattern in each tool's own config:
+
+- **pre-commit** (`.pre-commit-config.yaml`), at the top level or per hook:
+
+  ```yaml
+  exclude: '^\.(claude/(skills|agents|hooks/harness-kit)|agents/(skills|scripts/shared)|codex/agents)/|^\.github/workflows/harness-update\.yml$'
+  ```
+
+- **git-hooks.nix**, per hook:
+
+  ```nix
+  hooks.shfmt.excludes = [
+    "^\\.(claude/(skills|agents|hooks/harness-kit)|agents/(skills|scripts/shared)|codex/agents)/"
+  ];
+  ```
+
+- **shfmt** reads `ignore = true` from `.editorconfig`. It applies only when
+  shfmt walks a directory (`shfmt -w .`); files named on its command line,
+  as pre-commit and git-hooks.nix pass them, need the hook's exclude above.
+
+  ```ini
+  [{.claude/skills,.claude/hooks/harness-kit,.agents/skills,.agents/scripts/shared}/**]
+  ignore = true
+  ```
+
+- **Prettier** (`.prettierignore`) and **markdownlint-cli**
+  (`.markdownlintignore`), in gitignore syntax:
+
+  ```text
+  .claude/skills/
+  .claude/agents/
+  .claude/hooks/harness-kit/
+  .agents/skills/
+  .agents/scripts/shared/
+  .codex/agents/
+  .github/workflows/harness-update.yml
+  ```
+
+- **markdownlint-cli2** (`.markdownlint-cli2.jsonc`):
+
+  ```jsonc
+  "ignores": [".claude/skills/**", ".claude/agents/**", ".agents/skills/**"]
+  ```
+
+A format-on-edit hook (a `PostToolUse` entry in `.claude/settings.json` or
+`.codex/hooks.json`) runs on whatever file an agent edits, so it needs the
+same exclusion. An agent's edit to a vendored file is already a mistake the
+edit check reports; reformatting the file on top only muddies that report.
+To confirm the exclusions, run the project's formatters, then the edit
+check: it passes when they left the snapshot alone.
