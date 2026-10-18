@@ -202,8 +202,10 @@ HARNESS_DIRS = (".claude/skills/", ".claude/agents/", ".agents/", ".codex/agents
 MAX_BYTES, MAX_TEXT = 1_000_000, 200
 terms = {".harness-lock.json", ".harness-upstream"} | {
     r["path"] for r in files if r["status"] not in ("local", "other-source", "untracked")}
-# Every term holds one of these words, so a line with none of them is skipped.
+# A line holding none of these words, in any case, is skipped, but only while
+# every term holds one of them (a tracked copy may be named anything).
 WORDS = ("harness", "claude", "agents", "codex")
+PREFILTER = all(any(w in t.lower() for w in WORDS) for t in terms)
 PATHLIKE = re.compile(r"[A-Za-z0-9_./-]+")  # path-name characters and /
 # A term spans at most this many segments, so only that many ends are tried
 # from each start: linear in a run's slashes, not quadratic.
@@ -254,7 +256,7 @@ else:
         if b"\0" in data[:8192]:
             continue  # binary
         for n, line in enumerate(data.decode(errors="replace").splitlines(), 1):
-            if not any(w in line for w in WORDS):
+            if PREFILTER and not any(w in line.lower() for w in WORDS):
                 continue
             text = line.strip()
             if len(text) > MAX_TEXT:
