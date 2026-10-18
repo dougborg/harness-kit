@@ -159,10 +159,15 @@ put "$refs/renovate.json5" '{
       customType: "regex",
       managerFilePatterns: ["/^\\.harness-lock\\.json$/"],
     },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^\\.claude\\/agents\\/verifier\\.md$/"],
+    },
   ],
 }'
 put "$refs/docs/gate.md" 'The gate is .claude/skills/shared/discover-verification-cmd.sh.
-Upstream is in .harness-upstream.'
+Upstream is in .harness-upstream.
+Backups like .harness-lock.json.bak and foo.harness-upstream-x are not it.'
 put "$refs/.claude/skills/deploy/notes.md" 'reads .harness-lock.json'
 git -C "$refs" init -q
 git -C "$refs" add -A
@@ -175,6 +180,7 @@ json_is refs-found "$refs" "$(ref_is "[
   ('docs/gate.md', 1, '.claude/skills/shared/discover-verification-cmd.sh'),
   ('docs/gate.md', 2, '.harness-upstream'),
   ('renovate.json5', 5, '.harness-lock.json'),
+  ('renovate.json5', 9, '.claude/agents/verifier.md'),
 ]")"
 json_is refs-carry-text "$refs" \
   "any(x['file'] == 'renovate.json5' and 'managerFilePatterns' in x['text'] for x in r['references'])"
@@ -182,6 +188,36 @@ json_is refs-carry-text "$refs" \
 run refs-text 0 '- `.pre-commit-config.yaml:5` names `.harness-lock.json`' "$plugin" "$refs"
 json_is refs-none-without-git "$v1" "r['references'] is None"
 run refs-text-without-git 0 'not searched' "$plugin" "$v1"
+
+# Many tracked copies against a few MB of dot-heavy text stays quick; a file
+# over 1 MB is skipped, and a long line's text is cut short.
+big="$scratch/big"
+mkdir -p "$big"
+python3 - "$big" <<'PY'
+import json, sys
+from pathlib import Path
+d = Path(sys.argv[1])
+files = {f".claude/skills/s{i}/ref.{i}.md": {"source": "harness-kit"} for i in range(500)}
+(d / ".harness-lock.json").write_text(json.dumps(
+    {"sources": {"harness-kit": {"version": "0.7.0"}}, "files": files}))
+line = "harness a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.claude.skills.s1.ref " * 8 + "\n"
+for n in range(3):
+    (d / f"dots{n}.txt").write_text(line * (950_000 // len(line)))
+(d / "huge.txt").write_text("x\n" * 600_000 + ".harness-lock.json\n")
+(d / "long.txt").write_text("." * 5000 + " .harness-lock.json " + "." * 5000 + "\n")
+PY
+git -C "$big" init -q
+git -C "$big" add -A
+git -C "$big" -c user.name=t -c user.email=t@t commit -qm init
+start=$(date +%s)
+json_is big-skips-huge-file "$big" "[x['file'] for x in r['references']] == ['long.txt']"
+elapsed=$(($(date +%s) - start))
+if [ "$elapsed" -le 10 ]; then
+  pass "big-within-10s (${elapsed}s)"
+else
+  flunk "big-within-10s: took ${elapsed}s" ""
+fi
+json_is big-text-cut-short "$big" "all(len(x['text']) <= 200 for x in r['references'])"
 
 # --- A v2 project at 1.0.0, both hosts ------------------------------------------
 v2="$scratch/v2"
