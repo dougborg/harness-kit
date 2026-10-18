@@ -51,8 +51,10 @@ as `file:line`, of a file git tracks outside those directories that names
 with the `term` it names and its `text` (cut to 200 characters). A regex's
 `\.` and `\/` read as `.` and `/`, so they still match, while other escapes,
 such as `\b`, end a term; and a term matches only as whole path segments, so
-`.harness-lock.json.bak` doesn't. Files over 1 MB
-are not searched. These are the project's own tooling that migrate would break:
+`.harness-lock.json.bak` doesn't. A term matches after any `/`, so
+`vendor/.claude/skills/x/SKILL.md` names the tracked copy
+`.claude/skills/x/SKILL.md`. Files over 1 MB are not searched. These are the
+project's own tooling that migrate would break:
 a pre-commit hook or a Renovate custom manager that reads the old lock's
 version, a script that runs an old copy's path. It is null, and the section
 says "not searched", when the project is not a git repository.
